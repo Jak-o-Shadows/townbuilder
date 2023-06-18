@@ -1,0 +1,6 @@
+[requires]
+flecs/3.1.4
+
+[generators]
+CMakeDeps
+CMakeToolchain
