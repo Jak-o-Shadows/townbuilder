@@ -7,10 +7,13 @@
 
 // The entity for each individual grid
 struct GridCellStatic {
+    int x, y;
     int height;
 };
 
-struct GridConnected {};  // Empty type = flecs tag
+struct GridConnected {
+    float weight;
+};
 
 
 // Have a normal vector of the the cells of the grid.
@@ -30,7 +33,7 @@ public:
                 auto cell = ecs->entity(name)
                     // The set operation finds or creates a component, and sets it.
                     // Components are automatically registered with the world.
-                    .set<GridCellStatic>({0});
+                    .set<GridCellStatic>({x, y, 10*x + y});
                 m_values.push_back(ecs->id(cell));
             }
         }
@@ -85,6 +88,7 @@ struct PawnAbilityTraits {
     float speed;
 };
 
+struct PawnOccupying {};
 
 
 struct Position {
@@ -96,6 +100,7 @@ struct Velocity {
 };
 
 
+struct Likes { };
 
 
 
@@ -108,7 +113,27 @@ int main(int, char *[]) {
     ecs.set<flecs::Rest>({});
     ecs.import<flecs::monitor>(); // Enable statistics in explorer
 
+
+    // Create basic timers
+    // 1000 Hz should be enough for anybody
+    flecs::entity tick_100_Hz = ecs.timer("Timer_100 Hz")
+        .interval(0.01);
+
+    // Pawn behaviour
+    flecs::entity tick_pawn_behaviour = ecs.timer("Timer_Pawn Behaviour")
+        .rate(4, tick_100_Hz);  // 4 ticks @ 100 Hz => 25 Hz
+
+
+
+
+
+
     // Define the map
+    // Make the GridConnection transitive, so that (A, B), (B, C) = (A, C)
+    // Does this make sense to do if the links have weights?
+    // When I do this it crashes?????
+   //ecs.component<GridConnected>().add(flecs::Transitive);
+
     //  Each cell of the map is an entity
     const int map_width = 4;
     const int map_height = 4;
@@ -122,44 +147,84 @@ int main(int, char *[]) {
     for (int x = 0; x<map_width; x++){
         for (int y = 0; y<map_height; y++){
             // Rectangular grid is simply connected
-            snprintf(cellName, 100, "%d_%d", x, y);
-            auto e = ecs.lookup(cellName);
+            flecs::entity thisCell = flecs::entity(ecs, map->get(x,y));
             if (x > 0){
                 // Left valid
-                snprintf(otherCellName, 100, "%d_%d", x-1, y);
-                auto other = ecs.lookup(otherCellName);
-                e.add<GridConnected>(other);
-                //grid.get(x, y).add(GridConnected, grid.get(x-1, y));
+                thisCell.set<GridConnected>(map->get(x-1, y), {5});
             }
             if (x <map_width-1){
                 // Right valid
-                flecs::entity e2 = flecs::entity(ecs, map->get(x,y));
-                //flecs::entity(grid(x,y)).add<GridConnected>(e);
-                //grid(x, y).add<GridConnected>(grid(x+1, y));
+                thisCell.set<GridConnected>(map->get(x+1, y), {2});
             }
             if (y > 0) {
                 // Top valid
-                //grid[x, y].add(GridConnected, grid[x, y-1]);
+                thisCell.set<GridConnected>(map->get(x, y-1), {6});
             }
             if (y < map_height-1){
                 // Bottom valid
-                //grid[x, y].add(GridConnected, grid[x, y+1]);
+                thisCell.set<GridConnected>(map->get(x, y+1), {3});
             }
-
         }
+    }
+
+
+    // Get the connections for a given cell
+    int x = 2;
+    int y = 2;
+    flecs::entity thisCell = flecs::entity(ecs, map->get(x,y));
+
+    // Use a loop rather than a query, as I can't figure out how to get
+    //  a query to return relationships FROM a given entity (rather than to)
+    int32_t index = 0;
+    flecs::entity nextCell;
+    while ((nextCell = thisCell.target<GridConnected>(index++))){
+        std::cout << nextCell.name() << std::endl;
     }
 
 
 
 
 
+    std::cout << "Grid Query Testing" << std::endl;
+    
+    auto q = ecs.query_builder()
+        .term<GridConnected>(flecs::Wildcard)
+        .build();
+
+    //int t_var = q.find_var("t");
+    
+    q.iter([](flecs::iter& it) {
+        auto id = it.pair(1);
+        for (auto i : it) {
+            std::cout << "entity " << it.entity(i) << " " << it.entity(i).name() << " has relationship "
+            << id.first().name() << ", "
+            << id.second().name() << std::endl;
+        }
+    });
+    
+
+   // This gives all the entities that have the pairs?
+//   flecs::filter<> f = ecs.filter_builder()
+//    .expr("GridCellStatic, (GridConnected, *)")
+//    .build();
+
+
+
+//  flecs::Query<GridCellStatic> q = ecs.query<GridCellStatic>();
+//   q.each([](GridCellStatic& a) {
+//    std::cout << a.height << std::endl;
+//   });
 
 
 
 
 
 
-
+    // Generate a single pawn
+    auto pawn = ecs.entity("Pawn0")
+        .set<Position>({0.5, 0.5})
+        .set<Velocity>({0.1, 0})
+        .add<PawnOccupying>(flecs::entity(ecs, map->get(0,0)));
 
 
 
@@ -178,60 +243,44 @@ int main(int, char *[]) {
 
     // Put systems in
     auto move_sys = ecs.system<Position, Velocity>()
+    .tick_source(tick_pawn_behaviour)
     .iter([](flecs::iter it, Position *p, Velocity *v){
+        std::cout << it.delta_system_time() << std::endl;
         for (int i: it) {
-            p[i].x += v[i].x * it.delta_time();
-            p[i].y += v[i].y * it.delta_time();
+            p[i].x += v[i].x * it.delta_system_time();
+            p[i].y += v[i].y * it.delta_system_time();
+
+            // Figure out what cell we went to
+
+            bool movedCell = false;
+            int nextCellX;
+            int nextCellY;
+            if (p[i].x > 1){
+                // Moved cell right
+                movedCell = true;
+            } else if (p[i].x < 0) {
+                // Moved cell left
+                movedCell = true;
+            } else if (p[i].y > 1) {
+                // Moved cell up
+                movedCell = true;
+            } else if (p[i].y < 0) {
+                // Moved cell down
+                movedCell = true;
+            }
+
+            //std::cout << p[i].x << ", " << p[i].y << std::endl;
+            // Remove current 
+
         }
     });
-    move_sys.add(flecs::OnUpdate);
 
-
-
-
-
-    // Create an entity with name Bob
-    auto bob = ecs.entity("Bob")
-        // The set operation finds or creates a component, and sets it.
-        // Components are automatically registered with the world.
-        .set<Position>({10, 20})
-        // The add operation adds a component without setting a value. This is
-        // useful for tags, or when adding a component with its default value.
-        .add<Walking>();
-    bob.set<Velocity>({0.1, 0.05});
-
-
-    // Get the value for the Position component
-//    const Position* ptr = bob.get<Position>();
-//    std::cout << "{" << ptr->x << ", " << ptr->y << "}" << "\n";
-    // Overwrite the value of the Position component
-//    bob.set<Position>({20, 30});
-
-    // Create another named entity
-    auto alice = ecs.entity("Alice")
-        .set<Position>({10, 20});
-        //.set<Velocity>({2, 4});
-
-    // Add a tag after entity is created
-    alice.add<Walking>();
-
-    // Print all of the components the entity has. This will output:
-    //    Position, Walking, (Identifier,Name)
-    std::cout << "[" << alice.type().str() << "]" << "\n";
-
-    // Remove tag
-    alice.remove<Walking>();
 
     // Iterate all entities with Position
     ecs.each([](flecs::entity e, Position& p) {
         std::cout << e.name() << ": {" << p.x << ", " << p.y << "}" << "\n";
     });
 
-    // Output
-    //  {10, 20}
-    //  [Position, Walking, (Identifier,Name)]
-    //  Alice: {10, 20}
-    //  Bob: {20, 30}
 
     while(ecs.progress(0)){};
 }
