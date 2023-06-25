@@ -121,9 +121,13 @@ int main(int, char *[]) {
 
     // Pawn behaviour
     flecs::entity tick_pawn_behaviour = ecs.timer("Timer_Pawn Behaviour")
-        .rate(4, tick_100_Hz);  // 4 ticks @ 100 Hz => 25 Hz
+        .rate(100, tick_100_Hz);  // 4 ticks @ 100 Hz => 25 Hz
 
 
+    // Modify components
+    // Each pawn can only occupy a single cell, so make exclusive
+    flecs::entity e_PawnOccupying = ecs.lookup("PawnOccupying");
+    e_PawnOccupying.add(flecs::Exclusive);
 
 
 
@@ -220,6 +224,10 @@ int main(int, char *[]) {
 
 
 
+
+
+
+
     // Generate a single pawn
     auto pawn = ecs.entity("Pawn0")
         .set<Position>({0.5, 0.5})
@@ -233,7 +241,15 @@ int main(int, char *[]) {
 
 
 
-
+    auto queryTest = ecs.query_builder<PawnOccupying>("Pawn Occupying Test Query")
+        .term_at(1).second(flecs::Wildcard)  // Change first argument to (PawnOccupying, *)
+        .build();
+    queryTest.each([](flecs::iter& it, size_t index, PawnOccupying& pawnOccupying) {
+        auto e = it.entity(index);
+        auto thisCell = it.pair(1).second();
+        
+        std::cout << "querytest " << e.name() << " Occupying " << thisCell.name() << std::endl;
+    });
 
 
 
@@ -242,10 +258,9 @@ int main(int, char *[]) {
 
 
     // Put systems in
-    auto move_sys = ecs.system<Position, Velocity>()
+    auto move_sys = ecs.system<Position, Velocity>("System_Intra Cell Movement")
     .tick_source(tick_pawn_behaviour)
     .iter([](flecs::iter it, Position *p, Velocity *v){
-        std::cout << it.delta_system_time() << std::endl;
         for (int i: it) {
             p[i].x += v[i].x * it.delta_system_time();
             p[i].y += v[i].y * it.delta_system_time();
@@ -274,6 +289,12 @@ int main(int, char *[]) {
 
         }
     });
+
+    auto cell_move_sys = ecs.system<PawnOccupying>("Cell Moveover")
+        .tick_source(tick_pawn_behaviour)
+        .iter([](flecs::iter it, PawnOccupying *po){
+            std::cout<<"Pawn Occuping" << std::endl;
+        });
 
 
     // Iterate all entities with Position
