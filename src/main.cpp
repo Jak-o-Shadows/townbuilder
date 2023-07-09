@@ -57,7 +57,32 @@ private:
     std::vector<flecs::id_t> m_values;
 };
 
+template< class T >
+class templateGrid {
+public:
+    templateGrid(int width, int height)
+        : m_width(width)
+        , m_height(height)
+        , m_values(width*height)
+    { }
 
+    void set(int32_t x, int32_t y, T value) {
+        m_values[y * m_width + x] = value;
+    }
+
+    T operator()(int32_t x, int32_t y) {
+        return m_values[y * m_width + x];
+    }
+
+    T get(int32_t x, int32_t y) {  // TODO: just use an operator as above
+        return m_values[y * m_width + x];
+    }
+
+private:
+    int m_width;
+    int m_height;
+    std::vector<T> m_values;
+};
 
 
 
@@ -129,18 +154,15 @@ int main(int, char *[]) {
     flecs::entity e_PawnOccupying = ecs.lookup("PawnOccupying");
     e_PawnOccupying.add(flecs::Exclusive);
 
-
-
-
-    // Define the map
     // Make the GridConnection transitive, so that (A, B), (B, C) = (A, C)
     // Does this make sense to do if the links have weights?
     // When I do this it crashes?????
    //ecs.component<GridConnected>().add(flecs::Transitive);
 
+    // Define the map
     //  Each cell of the map is an entity
-    const int map_width = 4;
-    const int map_height = 4;
+    const int map_width = 10;
+    const int map_height = 10;
     // Stored in a vector for each access
     grid *map = new grid(map_width, map_height, &ecs);
 
@@ -154,7 +176,7 @@ int main(int, char *[]) {
             flecs::entity thisCell = flecs::entity(ecs, map->get(x,y));
             if (x > 0){
                 // Left valid
-                thisCell.set<GridConnected>(map->get(x-1, y), {5});
+                thisCell.set<GridConnected>(map->get(x-1, y), {1});
             }
             if (x <map_width-1){
                 // Right valid
@@ -191,6 +213,7 @@ int main(int, char *[]) {
 
     std::cout << "Grid Query Testing" << std::endl;
     
+    /*
     auto q = ecs.query_builder()
         .term<GridConnected>(flecs::Wildcard)
         .build();
@@ -205,6 +228,8 @@ int main(int, char *[]) {
             << id.second().name() << std::endl;
         }
     });
+    */
+    
     
 
    // This gives all the entities that have the pairs?
@@ -220,14 +245,118 @@ int main(int, char *[]) {
 //   });
 
 
+    // Path-finding testing
+    std::cout << "Path-Finding Testing" << std::endl;
+    // Define variables
+    templateGrid<bool> visitedGrid = templateGrid<bool>(map_width, map_height);
+    templateGrid<float> costGrid = templateGrid<float>(map_width, map_height);
+    templateGrid<flecs::id_t> prevGrid = templateGrid<flecs::id_t>(map_width, map_height);
+    // Initialise start values
+    for (int x=0;x<map_width;x++){
+        for (int y=0; y<map_height;y++){
+            visitedGrid.set(x, y, false);
+            costGrid.set(x, y, 999999999); // TODO: Swap to an inf
+        }
+    }
+
+    // Begin pathfinding
+    x = 2;
+    y = 2;
+
+    thisCell = flecs::entity(ecs, map->get(x,y));
+    costGrid.set(x, y, 0);  // First cell has zero cost
+    
+    //while (true) {
+    for (int i=0; i<500; i++){
+        std::cout << thisCell.name() << std::endl;
+        // Mark the current grid as visisted
+        visitedGrid.set(x, y, true);
+
+        // Get the the links from the current cell
+        auto queryTest = ecs.query_builder<GridConnected, GridCellStatic>("Getting next cell query")
+            .term_at(1).second(thisCell)  // Change first argument to (PawnOccupying, *)
+            .build();
+        queryTest.each([&map, &ecs, &costGrid, &visitedGrid, &prevGrid, &thisCell, &x, &y](flecs::iter& it, size_t index, GridConnected& conn, GridCellStatic& nextCellStatic) {
+            auto e = it.entity(index);
+            auto thisCell = it.pair(1).second();
+
+            std::cout << "\t" <<  e.name() << " at " << nextCellStatic.x << ", " << nextCellStatic.y << std::endl;
+            //std::cout << "\t" << conn.weight << std::endl;
+
+            auto nextX = nextCellStatic.x;
+            auto nextY = nextCellStatic.y;
+            if (!visitedGrid.get(nextX, nextY)) {
+                // IF the neighbouring cell hasn't already been visited,
+                //  check if it's cost an be lowered
+                auto potentialCost = conn.weight + costGrid.get(x, y);
+                if (potentialCost < costGrid.get(nextX, nextY)) {
+                    // If the cost can be lowered, lower it, and set it's previous cell
+                    //  to the current cell
+                    std::cout << "\t\t" << "Updating cost to " << potentialCost << std::endl;
+                    costGrid.set(nextX, nextY, potentialCost);
+                    prevGrid.set(nextX, nextY, thisCell);
+                }
+            }
+        });
+        // Select the next cell that has the lowest cost that hasn't been visited yet
+        //  TODO: This really should be more efficient by using some kind of priority heap
+        float minCost = 9999999999;
+        int minCostX;
+        int minCostY;
+        for (int x=0;x<map_width;x++){
+            for (int y=0; y<map_height;y++){
+                if (!visitedGrid.get(x, y)) {
+                    if (costGrid.get(x,y) < minCost) {
+                        minCost = costGrid.get(x,y);
+                        minCostX = x;
+                        minCostY = y;
+                    }
+                }
+            }
+        }
+
+        if (minCost != 9999999999) {
+            x = minCostX;
+            y = minCostY;
+            thisCell = flecs::entity(ecs, map->get(x,y));
+        } else {
+            break;
+        }
+
+    }
+
+    // Print it
 
 
+    // Work backwards from the target cell to get the path
+    for (int y=0; y<map_height;y++){
+        for (int x=0;x<map_width;x++){
+            if (costGrid.get(x, y) > 0) {
+                auto prev = flecs::entity(ecs, prevGrid.get(x, y));
+                auto blah = prev.get<GridCellStatic>();
+                std::cout << "(" << blah->x << "," << blah->y << ") ";
+            } else {
+                // Starting cell does't have a previous
+                std::cout << "[" << x << "," << y << "] ";
+            }
+        }
+        std::cout << std::endl;
+    }
+    x = 8;
+    y = 8;
+    for (int maxIter = 0; maxIter <= map_width*map_height; maxIter++) { 
+        auto next =  flecs::entity(ecs, prevGrid.get(x, y));
+        std::cout << next.name() << std::endl;
+        auto blah = next.get<GridCellStatic>();
+        x = blah->x;
+        y = blah->y;
+        if ((x == 2) && (y == 2)){
+            break;
+        }
+    }
 
 
-
-
-
-
+    /*
     // Generate a single pawn
     auto pawn = ecs.entity("Pawn0")
         .set<Position>({0.5, 0.5})
@@ -241,17 +370,49 @@ int main(int, char *[]) {
 
 
 
-    auto queryTest = ecs.query_builder<PawnOccupying>("Pawn Occupying Test Query")
+    auto queryTest = ecs.query_builder<PawnOccupying, Position>("Pawn Occupying Test Query")
         .term_at(1).second(flecs::Wildcard)  // Change first argument to (PawnOccupying, *)
         .build();
-    queryTest.each([](flecs::iter& it, size_t index, PawnOccupying& pawnOccupying) {
+    queryTest.each([&map, &ecs](flecs::iter& it, size_t index, PawnOccupying& pawnOccupying, Position& p) {
         auto e = it.entity(index);
         auto thisCell = it.pair(1).second();
         
         std::cout << "querytest " << e.name() << " Occupying " << thisCell.name() << std::endl;
+
+        std::cout << "\t " << p.x << std::endl;
+
+            bool movedCell = false;
+            flecs::entity nextCell;
+            if (p[i].x > 1){
+                // Moved cell right
+                nextCell = map->get(thisCell.x+1, thisCell.y);
+                p[i].x = 0;
+                movedCell = true;
+            } else if (p[i].x < 0) {
+                // Moved cell left
+                nextCell = map->get(thisCell.x-1, thisCell.y);
+                p[i].x = 1;
+                movedCell = true;
+            } else if (p[i].y > 1) {
+                // Moved cell up
+                nextCell = map->get(thisCell.x, thisCell.y+1);
+                p[i].y = 0;
+                movedCell = true;
+            } else if (p[i].y < 0) {
+                // Moved cell down
+                nextCell = map->get(thisCell.x, thisCell.y-1);
+                p[i].y = 1;
+                movedCell = true;
+            }
+
+        if (movedCell==true){
+            e.add<PawnOccupying>(flecs::entity(ecs, nextCell));
+        }
+
+
     });
 
-
+    */
 
 
 
@@ -264,38 +425,16 @@ int main(int, char *[]) {
         for (int i: it) {
             p[i].x += v[i].x * it.delta_system_time();
             p[i].y += v[i].y * it.delta_system_time();
-
-            // Figure out what cell we went to
-
-            bool movedCell = false;
-            int nextCellX;
-            int nextCellY;
-            if (p[i].x > 1){
-                // Moved cell right
-                movedCell = true;
-            } else if (p[i].x < 0) {
-                // Moved cell left
-                movedCell = true;
-            } else if (p[i].y > 1) {
-                // Moved cell up
-                movedCell = true;
-            } else if (p[i].y < 0) {
-                // Moved cell down
-                movedCell = true;
-            }
-
-            //std::cout << p[i].x << ", " << p[i].y << std::endl;
-            // Remove current 
-
         }
     });
 
+    /*
     auto cell_move_sys = ecs.system<PawnOccupying>("Cell Moveover")
         .tick_source(tick_pawn_behaviour)
         .iter([](flecs::iter it, PawnOccupying *po){
             std::cout<<"Pawn Occuping" << std::endl;
         });
-
+    */
 
     // Iterate all entities with Position
     ecs.each([](flecs::entity e, Position& p) {
