@@ -25,11 +25,12 @@ public:
         : m_width(width)
         , m_height(height) 
     { 
-        for (int x = 0; x < width; x ++) {
-            for (int y = 0; y < height; y ++) {
+        for (int y = 0; y < height; y ++) {
+            for (int x = 0; x < width; x ++) {
                 // TODO: Name them better
                 char name[100];
                 snprintf(name, 100, "%d_%d", x, y);
+                //std::cout << x << ", " << y << " name is " << name << std::endl;
                 auto cell = ecs->entity(name)
                     // The set operation finds or creates a component, and sets it.
                     // Components are automatically registered with the world.
@@ -67,6 +68,7 @@ public:
     { }
 
     void set(int32_t x, int32_t y, T value) {
+        //std::cout << "\t\t\tSetting " << x << ", " << y << " from " << y * m_width + x << " to " << value << std::endl;
         m_values[y * m_width + x] = value;
     }
 
@@ -75,6 +77,7 @@ public:
     }
 
     T get(int32_t x, int32_t y) {  // TODO: just use an operator as above
+        //std::cout << "\t\t\tGetting " << x << ", " << y << " from " << y * m_width + x << std::endl;
         return m_values[y * m_width + x];
     }
 
@@ -195,8 +198,8 @@ int main(int, char *[]) {
 
 
     // Get the connections for a given cell
-    int x = 2;
-    int y = 2;
+    int x = 4;
+    int y = 3;
     flecs::entity thisCell = flecs::entity(ecs, map->get(x,y));
 
     // Use a loop rather than a query, as I can't figure out how to get
@@ -268,9 +271,11 @@ int main(int, char *[]) {
     
     //while (true) {
     for (int i=0; i<500; i++){
-        std::cout << thisCell.name() << std::endl;
+        std::cout << thisCell.name() << " (" << x << ", " << y << ")" << std::endl;
         // Mark the current grid as visisted
         visitedGrid.set(x, y, true);
+        //std::cout << "\tVisited self? " << visitedGrid.get(x, y) << std::endl;
+        //std::cout << "\tVisited 8, 7? " << visitedGrid.get(8, 7) << std::endl;
 
         // Get the the links from the current cell
         auto queryTest = ecs.query_builder<GridConnected, GridCellStatic>("Getting next cell query")
@@ -280,7 +285,7 @@ int main(int, char *[]) {
             auto e = it.entity(index);
             auto thisCell = it.pair(1).second();
 
-            std::cout << "\t" <<  e.name() << " at " << nextCellStatic.x << ", " << nextCellStatic.y << std::endl;
+            std::cout << "\t" << nextCellStatic.x << ", " << nextCellStatic.y << std::endl;
             //std::cout << "\t" << conn.weight << std::endl;
 
             auto nextX = nextCellStatic.x;
@@ -288,6 +293,7 @@ int main(int, char *[]) {
             if (!visitedGrid.get(nextX, nextY)) {
                 // IF the neighbouring cell hasn't already been visited,
                 //  check if it's cost an be lowered
+                std::cout << "\t\tUnvisisted" << std::endl;
                 auto potentialCost = conn.weight + costGrid.get(x, y);
                 if (potentialCost < costGrid.get(nextX, nextY)) {
                     // If the cost can be lowered, lower it, and set it's previous cell
