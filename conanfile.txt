@@ -1,5 +1,6 @@
 [requires]
 flecs/3.1.4
+tracy/0.9.1
 
 [generators]
 CMakeDeps
