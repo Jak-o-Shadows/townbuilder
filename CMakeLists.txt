@@ -11,6 +11,7 @@ find_package(FLECS REQUIRED)
 find_package(Tracy REQUIRED)
 
 add_executable(${PROJECT_NAME} src/main.cpp)
+target_sources(${PROJECT_NAME} PRIVATE "$<$<CONFIG:Release>:${CMAKE_CURRENT_SOURCE_DIR}/src/gridMap.cpp>")
 
 
 target_link_libraries(${PROJECT_NAME} flecs::flecs_static)
