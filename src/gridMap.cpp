@@ -1,17 +1,6 @@
 
 #include "gridMap.hpp"
 
-// The entity for each individual grid
-struct GridCellStatic {
-    int x, y;
-    int height;
-};
-
-struct GridConnected {
-    float weight;
-};
-
-
 // Have a normal vector of the the cells of the grid.
 //  This makes it easier than having them all as entities, as otherwise
 //  would need to query all the time just to get a cell reference
@@ -190,3 +179,4 @@ flecs::id_t pathfind(flecs::world &ecs, grid* map, int currentX, int currentY, i
     return prevSpot;
 
 }
+

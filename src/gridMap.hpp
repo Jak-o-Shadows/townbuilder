@@ -1,4 +1,7 @@
+#pragma once
 
+#include "componentsPawn.hpp"  // TODO: Move this logic out when I figure out how to do templates better
+#include "componentsMap.hpp"
 
 #include <flecs.h>
 

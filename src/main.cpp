@@ -1,24 +1,30 @@
-
+//#define TRACY_ON_DEMAND
 
 #include "gridMap.hpp"
+#include "componentsPawn.hpp"
+#include "componentsMap.hpp"
+#include "tracy_zones.hpp"
 
 #include <flecs.h>
+#include <tracy/Tracy.hpp>
+
+
+void* operator new(std::size_t count) {
+    auto ptr = malloc(count);
+    TracyAlloc(ptr, count);
+    return ptr;
+}
+void operator delete(void* ptr) noexcept {
+    TracyFree(ptr);
+    free(ptr);
+}
+
 
 #include <iostream>
-#include <string>
 #include <vector>
 #include <random>
 
 
-// The entity for each individual grid
-struct GridCellStatic {
-    int x, y;
-    int height;
-};
-
-struct GridConnected {
-    float weight;
-};
 
 
 
@@ -30,50 +36,6 @@ struct GridConnected {
 
 
 
-
-
-
-
-
-
-
-
-
-
-struct PawnLifeTraits {
-    float hunger;
-    float thirst;
-    float cold;
-    float comfort;
-};
-
-struct PawnAbilityTraits {
-    float strength;
-    float speed;
-};
-
-struct PawnPathfindingGoal {};
-
-struct PawnOccupying {};
-
-struct PawnNextCell {};
-
-struct Position {
-    double x, y;
-};
-
-struct Velocity {
-    double x, y;
-};
-
-
-struct Likes { };
-
-
-
-
-
-struct Walking { };
 
 int main(int, char *[]) {
 
@@ -138,54 +100,6 @@ int main(int, char *[]) {
     }
 
 
-    // Test out the pathfinding
-    int x = 4;
-    int y = 3;
-    int pTargetX = 4;
-    int pTargetY = 6;
-    while (!(x == pTargetX) || !(y == pTargetY)) {
-        flecs::id_t nextCellId = pathfind(ecs, map, x, y, pTargetX, pTargetY);
-        flecs::entity nextCell = flecs::entity(ecs, nextCellId);
-        std::cout <<  "\tnext " << nextCell.name() << std::endl;
-        auto blah = nextCell.get<GridCellStatic>();
-        x = blah->x;
-        y = blah->y;
-    }
-
-
-    std::cout << "Grid Query Testing" << std::endl;
-    
-    /*
-    auto q = ecs.query_builder()
-        .term<GridConnected>(flecs::Wildcard)
-        .build();
-
-    //int t_var = q.find_var("t");
-    
-    q.iter([](flecs::iter& it) {
-        auto id = it.pair(1);
-        for (auto i : it) {
-            std::cout << "entity " << it.entity(i) << " " << it.entity(i).name() << " has relationship "
-            << id.first().name() << ", "
-            << id.second().name() << std::endl;
-        }
-    });
-    */
-    
-    
-
-   // This gives all the entities that have the pairs?
-//   flecs::filter<> f = ecs.filter_builder()
-//    .expr("GridCellStatic, (GridConnected, *)")
-//    .build();
-
-
-
-//  flecs::Query<GridCellStatic> q = ecs.query<GridCellStatic>();
-//   q.each([](GridCellStatic& a) {
-//    std::cout << a.height << std::endl;
-//   });
-
 
 
 
@@ -208,7 +122,8 @@ int main(int, char *[]) {
         .with<PawnOccupying>(flecs::Wildcard)
         .with<PawnPathfindingGoal>(flecs::Wildcard)
         .each([&map, &ecs](flecs::entity e){
-            //std::cout << "Pathfinding Update: " <<  e.name() << std::endl;
+            ZoneScopedN(ts_PawnPathfindingUpdate);
+            //std::cout << "Pathfinding Update: for " <<  e.name() << std::endl;
             flecs::entity currentCell = e.target<PawnOccupying>();
             flecs::entity targetCell = e.target<PawnPathfindingGoal>();
             //std::cout << "\t " << currentCell.name() << " to " << targetCell.name() << std::endl;
@@ -236,40 +151,42 @@ int main(int, char *[]) {
                 // TODO: This might need to be smarter if I have non-uniform cells
                 // TODO: This is assuming from middle of cell to middle of cell, not from edge to edge
                 auto nextStatic = nextCell.get<GridCellStatic>();
-                float vx = (nextStatic->x - x)/3.0;
-                float vy = (nextStatic->y -y)/3.0;
+                const PawnAbilityTraits *pawnAbilityTraits = e.get<PawnAbilityTraits>();
+                float speed = pawnAbilityTraits->speed;
+                float vx = (nextStatic->x - x)*speed;
+                float vy = (nextStatic->y -y)*speed;
                 //std::cout << "\t Velocity To: " << vx << ", " << vy << std::endl;
                 e.set<Velocity>({vx, vy});
             }
         });
     
 
-        //std::cout << " - " << it.event().name() << ": " 
-        //    << it.event_id().str() << ": "
-        //    << it.entity(i).name() << ": "
-        //    << "p: {" <<  "} " << std::endl;
+
 
     flecs::entity pawnsParent = ecs.entity("pawns");  // Need to give the pawns cells a parent so they show nicer in the flecs explorer
-    
 
     // Generate pawns
-    //  Randomly distribute startign & target positions
+    //  Randomly distribute starting & target positions
     std::mt19937 rng;
     rng.seed(20231104);
     std::uniform_int_distribution<int> xDist(0, map_width-1);
     std::uniform_int_distribution<int> yDist(0, map_height-1);
+    std::uniform_real_distribution<float> speedDist(0.6, 0.8);
 
-    constexpr int numPawns = 1000;
+    constexpr int numPawns = 10;
     for (int pawnNumber=0; pawnNumber < numPawns; pawnNumber++){
         int targetX = xDist(rng);
         int targetY = yDist(rng);
         int myX = xDist(rng);
         int myY = yDist(rng);
-        //std::cout << "Pawn" << pawnNumber << " (" << myX << ", " << myY << ") -> (" << targetX << ", " << targetY << ")" << std::endl;
-        auto pawn = ecs.entity() // std::string("Pawn") + std::to_string(pawnNumber)
+        float speed = (float) speedDist(rng);
+        char pawnName[20];
+        sprintf(pawnName, "Pawn%d", pawnNumber);  // TODO: Replace with std::format
+        auto pawn = ecs.entity(pawnName)
             .child_of(pawnsParent)
             .set<Position>({0.5, 0.5})
             .set<Velocity>({0, 0})
+            .set<PawnAbilityTraits>({0, speed})
             .add<PawnOccupying>(flecs::entity(ecs, map->get(myX,myY)))
             .add<PawnPathfindingGoal>(flecs::entity(ecs, map->get(targetX, targetY)));
 
@@ -305,7 +222,9 @@ int main(int, char *[]) {
     auto moveCell_sys = ecs.system<Position>("System Between Cell Movement")
     .with<PawnNextCell>(flecs::Wildcard)
     .tick_source(tick_pawn_behaviour)
+    .multi_threaded()
     .iter([](flecs::iter it, Position *p){
+        ZoneScopedN("System Between Cell Movement");
         for (int i: it){
             //std::cout << "Checking Cell Moveover" << std::endl;
             flecs::entity e = it.entity(i);
@@ -341,10 +260,24 @@ int main(int, char *[]) {
         }
     });
     
+    // Frame Markers for Tracy
+    if (true) {
+        ecs.system("Tracy 100 Hz Frame")
+            .kind(flecs::OnUpdate)
+            .tick_source(tick_100_Hz)
+            .iter([](flecs::iter& it) {
+                FrameMarkNamed("100Hz");
+        });
+        ecs.system("Tracy Pawn Behaviour Frame")
+            .kind(flecs::OnUpdate)
+            .tick_source(tick_pawn_behaviour)
+            .iter([](flecs::iter& it) {
+                FrameMarkNamed("Pawn Behaviour");
+        });
+    }
 
-
-
-
-
-    while(ecs.progress(0)){};
+    ecs.set_threads(4);
+    while(ecs.progress(0)){
+        FrameMarkNamed("Flecs Update");
+    };
 }
