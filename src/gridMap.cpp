@@ -116,8 +116,8 @@ flecs::id_t pathfind(flecs::world &ecs, grid* map, int currentX, int currentY, i
         //std::cout << "\tVisited self? " << visitedGrid.get(x, y) << std::endl;
         //std::cout << "\tVisited 8, 7? " << visitedGrid.get(8, 7) << std::endl;
 
-        // Get the the links from the current cell
-        auto queryTest = ecs.query_builder<GridConnected, GridCellStatic>("Getting next cell query")
+        // Get the the links from the current cell. Use a filter because it doesn't need to last
+       auto queryTest = ecs.filter_builder<GridConnected, GridCellStatic>("Getting next cell query")
             .term_at(1).second(thisCell)  // Change first argument to (PawnOccupying, *)
             .build();
         queryTest.each([&map, &ecs, &costGrid, &visitedGrid, &prevGrid, &thisCell, &x, &y](flecs::iter& it, size_t index, GridConnected& conn, GridCellStatic& nextCellStatic) {

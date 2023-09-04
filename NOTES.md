@@ -34,3 +34,18 @@ Secondary traits
  * Stonecutter
  * Forager
  
+
+
+
+&insp
+ * Ixion
+  * https://store.steampowered.com/app/1113120/IXION/
+  * Has trains
+ * Banished
+ * Timberborn
+ * Pharoah
+  * https://store.steampowered.com/app/1351080/Pharaoh_A_New_Era/
+  * Isometric
+ * Golbulation 2
+  * https://globulation2.org/wiki/Main_Page
+  
