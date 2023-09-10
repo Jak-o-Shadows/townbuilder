@@ -1,8 +1,12 @@
 //#define TRACY_ON_DEMAND
 
 #include "gridMap.hpp"
+
 #include "componentsPawn.hpp"
 #include "componentsMap.hpp"
+#include "componentsBuilding.hpp"
+#include "componentsUi.hpp"
+
 #include "tracy_zones.hpp"
 
 #include <flecs.h>
@@ -48,10 +52,15 @@ int main(int, char *[]) {
     // 1000 Hz should be enough for anybody
     flecs::entity tick_100_Hz = ecs.timer("Timer_100 Hz")
         .interval(0.01);
-
     // Pawn behaviour
     flecs::entity tick_pawn_behaviour = ecs.timer("Timer_Pawn Behaviour")
         .rate(4, tick_100_Hz);  // 4 ticks @ 100 Hz => 25 Hz
+    // UI Updates
+    flecs::entity tick_ui = ecs.timer("Timer_UI Update")
+        .rate(8, tick_100_Hz);  // 8 ticks @ 100 Hz => 12.5 Hz
+
+
+
 
 
     // Modify pathfinding components
@@ -63,14 +72,62 @@ int main(int, char *[]) {
     ecs.component<PawnNextCell>().add(flecs::Exclusive);
 
 
+    // Need to give the entities a parent so they show nicer in the flecs explorer
+    flecs::entity pawnsParent = ecs.entity("pawns");
+    flecs::entity resourcesParent = ecs.entity("resources");
+    flecs::entity buildingsParent = ecs.entity("buildings");
+    flecs::entity mapEntity = ecs.entity("map");
+
+
+
+
+    // Register components with reflection data
+    ecs.component<PawnLifeTraits>()
+        .member<float>("hunger")
+        .member<float>("thirst")
+        .member<float>("cold")
+        .member<float>("comfort");
+    ecs.component<PawnAbilityTraits>()
+        .member<float>("strength")
+        .member<float>("speed");
+    ecs.component<Resources>()
+        .member<int>("fish")
+        .member<int>("stone")
+        .member<int>("wood");
+    
+    // Register UI components so I can see them
+    ecs.component<UiPawnJobs>()
+        .member<int>("unemployed")
+        .member<int>("woodcutter");
+
+
+
+
+
+
+
+
+
+
+
+    // State Machines
+    //  Each 
+    ecs.component<PawnWoodcutterState>().add(flecs::Exclusive);
+
+
+
 
     // Define the map
     //  Each cell of the map is an entity
-    const int map_width = 128;
-    const int map_height = 128;
+    std::mt19937 rngMap;
+    rngMap.seed(641331);
+    const int map_width = 20;
+    const int map_height = 20;
     // Stored in a vector for each access
-    flecs::entity mapEntity = ecs.entity("map");  // Need to give the map cells a parent so they show nicer in the flecs explorer
     grid *map = new grid(map_width, map_height, &ecs, mapEntity);
+
+    // Map random-generation is VERY VERY primitive right now
+    std::bernoulli_distribution treeDist(0.2);
 
     // Define adjacency
     //  Initially, fully connected
@@ -78,23 +135,33 @@ int main(int, char *[]) {
     char otherCellName[100];
     for (int x = 0; x<map_width; x++){
         for (int y = 0; y<map_height; y++){
-            // Rectangular grid is simply connected
+            // Rectangular grid is simply connected if no trees
+                // TODO: This currently lets you go onto tree-cells, but not out. Is that smart?
             flecs::entity thisCell = flecs::entity(ecs, map->get(x,y));
-            if (x > 0){
-                // Left valid
-                thisCell.set<GridConnected>(map->get(x-1, y), {1});
-            }
-            if (x <map_width-1){
-                // Right valid
-                thisCell.set<GridConnected>(map->get(x+1, y), {2});
-            }
-            if (y > 0) {
-                // Top valid
-                thisCell.set<GridConnected>(map->get(x, y-1), {6});
-            }
-            if (y < map_height-1){
-                // Bottom valid
-                thisCell.set<GridConnected>(map->get(x, y+1), {3});
+
+            if (treeDist(rngMap)){
+                auto tree = ecs.entity()
+                    .child_of(resourcesParent)
+                    .set<Location>({x, y})
+                    .set<Resources>({0, 100, 0})
+                    .add<Nature>();
+            } else {
+                if (x > 0){
+                    // Left valid
+                    thisCell.set<GridConnected>(map->get(x-1, y), {1});
+                }
+                if (x <map_width-1){
+                    // Right valid
+                    thisCell.set<GridConnected>(map->get(x+1, y), {2});
+                }
+                if (y > 0) {
+                    // Top valid
+                    thisCell.set<GridConnected>(map->get(x, y-1), {6});
+                }
+                if (y < map_height-1){
+                    // Bottom valid
+                    thisCell.set<GridConnected>(map->get(x, y+1), {3});
+                }
             }
         }
     }
@@ -103,18 +170,7 @@ int main(int, char *[]) {
 
 
 
-    // Testing
-    // This works
-    /*
-    ecs.observer<Position>()
-    .event(flecs::OnSet)
-    .each([](flecs::iter& it, size_t i, Position& po) {
-        std::cout << " - " << it.event().name() << ": " 
-            << it.event_id().str() << ": "
-            << it.entity(i).name() << ": "
-            << "p: {" << po.x <<  "} " << std::endl;
-    });
-    */
+
 
     
     ecs.observer()
@@ -163,7 +219,7 @@ int main(int, char *[]) {
 
 
 
-    flecs::entity pawnsParent = ecs.entity("pawns");  // Need to give the pawns cells a parent so they show nicer in the flecs explorer
+
 
     // Generate pawns
     //  Randomly distribute starting & target positions
@@ -171,7 +227,7 @@ int main(int, char *[]) {
     rng.seed(20231104);
     std::uniform_int_distribution<int> xDist(0, map_width-1);
     std::uniform_int_distribution<int> yDist(0, map_height-1);
-    std::uniform_real_distribution<float> speedDist(0.6, 0.8);
+    std::uniform_real_distribution<float> speedDist(0.1, 0.3);
 
     constexpr int numPawns = 10;
     for (int pawnNumber=0; pawnNumber < numPawns; pawnNumber++){
@@ -187,6 +243,8 @@ int main(int, char *[]) {
             .set<Position>({0.5, 0.5})
             .set<Velocity>({0, 0})
             .set<PawnAbilityTraits>({0, speed})
+            .add<PawnOccupationWoodcutter>()
+            .add<PawnWoodcutterState>(ecs.component<PawnWoodcutterStateIdle>())
             .add<PawnOccupying>(flecs::entity(ecs, map->get(myX,myY)))
             .add<PawnPathfindingGoal>(flecs::entity(ecs, map->get(targetX, targetY)));
 
@@ -216,8 +274,6 @@ int main(int, char *[]) {
             //std::cout << p[i].x << ", " << p[i].y << " @ " << v[i].x << ", " << v[i].y << std::endl;
         }
     });
-
-
     
     auto moveCell_sys = ecs.system<Position>("System Between Cell Movement")
     .with<PawnNextCell>(flecs::Wildcard)
@@ -260,19 +316,121 @@ int main(int, char *[]) {
         }
     });
     
+
+
+    // Start some buildings!
+    auto granary = ecs.entity("Granary")
+        .child_of(buildingsParent)
+        .set<Location>({3, 8})
+        .set<BuildingUI>({3, 3, -1, 0})
+        .set<Resources>({0, 0, 0})
+        .add<Building>();
+
+
+
+
+
+
+    // State actions
+    auto blah_sys = ecs.system<>("ASDF")
+        .with<PawnWoodcutterState>(ecs.component<PawnWoodcutterStateIdle>())
+        .tick_source(tick_pawn_behaviour)
+        .multi_threaded()
+        .iter([](flecs::iter it){
+            ZoneScopedN("Pawn Woodctuter Idle State Actions");
+            for (int i: it){
+                flecs::entity e = it.entity(i);
+                // If they are idle, get them to find the nearest wood and path-find towards it
+                
+            }
+    });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    // Global
+    auto ui = ecs.entity("UI Things")
+        .add<Resources>()
+        .add<UiPawnJobs>();
+
+
+
+    // System to update resources
+    //  A system is used here because it doesn't need to update at the same
+    //  (probably faster) rate as the things are taken down
+    auto updateResourceUI_sys = ecs.system<Resources>("System_Update Resource UI")
+        .with<Building>()
+        .tick_source(tick_ui)
+        .iter([&ui](flecs::iter it, Resources *r){
+            ZoneScopedN("System_Update Resource UI");
+            Resources sum{0, 0, 0};
+            for (int i: it) {
+                // TODO: Replace with the reflection interface?
+                sum.fish += r[i].fish;
+                sum.stone += r[i].stone;
+                sum.wood += r[i].wood;
+            }
+            //std::cout << "Resources: " << std::endl;
+            //std::cout << "\t fish: "  << sum.fish << std::endl;
+            //std::cout << "\t stone: " << sum.stone << std::endl;
+            //std::cout << "\t wood: "  << sum.wood << std::endl;
+            ui.set<Resources>(sum);
+        });
+
+    // Get a count of how many pawns are doing each job
+    auto unemployedQuery = ecs.query<PawnOccupationUnemployed>();
+    auto woodcutterQuery = ecs.query<PawnOccupationWoodcutter>();
+    auto updatePopulationUI_sys = ecs.system("System_Update Pawn Jobs UI")
+        .tick_source(tick_ui)
+        .iter([&ui, &unemployedQuery, &woodcutterQuery](flecs::iter it){
+            ZoneScopedN("System_Update Pawn Jobs UI");
+            // TODO: Use the reflection interface somehow?
+            UiPawnJobs sum{unemployedQuery.count(),
+                           woodcutterQuery.count()};
+            ui.set<UiPawnJobs>(sum);
+        });
+    
+
     // Frame Markers for Tracy
     if (true) {
         ecs.system("Tracy 100 Hz Frame")
             .kind(flecs::OnUpdate)
             .tick_source(tick_100_Hz)
             .iter([](flecs::iter& it) {
-                FrameMarkNamed("100Hz");
+                FrameMarkNamed("100 Hz");
         });
         ecs.system("Tracy Pawn Behaviour Frame")
             .kind(flecs::OnUpdate)
             .tick_source(tick_pawn_behaviour)
             .iter([](flecs::iter& it) {
                 FrameMarkNamed("Pawn Behaviour");
+        });
+        ecs.system("Tracy UI Frame")
+            .kind(flecs::OnUpdate)
+            .tick_source(tick_ui)
+            .iter([](flecs::iter& it) {
+                FrameMarkNamed("Tick UI");
         });
     }
 

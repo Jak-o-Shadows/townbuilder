@@ -29,8 +29,19 @@ struct Velocity {
 
 struct Likes { };
 
-
-
-
-
 struct Walking { };
+
+
+// Pawn Occupations
+struct PawnOccupationUnemployed {};
+struct PawnOccupationWoodcutter {};
+
+
+
+// Pawn States
+//  Woodcutter
+struct PawnWoodcutterState {};
+struct PawnWoodcutterStateIdle {};
+struct PawnWoodcutterStateWalkingTo {};
+struct PawnWoodcutterStateReturning {};
+struct PawnWoodcutterStateChopping {};
