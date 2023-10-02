@@ -49,3 +49,26 @@ Secondary traits
  * Golbulation 2
   * https://globulation2.org/wiki/Main_Page
   
+
+
+  More variety
+   * More building types
+   * More crop types
+   * More ways to make the bars fill up
+ * If things have colour variations, let the player choose them
+
+
+OVERLAYS
+ * Path cost
+
+
+Trading
+ * Hidden model in background, not just random
+
+
+Use real world elevation map?
+
+Ability to pick up pawns and just move them lol (/throw them)
+
+
+Everything goes brown in summer
