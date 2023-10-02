@@ -12,7 +12,11 @@
 #include <flecs.h>
 #include <tracy/Tracy.hpp>
 
+#define HFSM2_ENABLE_STRUCTURE_REPORT
+#include <hfsm2/machine.hpp>
 
+
+// Tracy memory tracking
 void* operator new(std::size_t count) {
     auto ptr = malloc(count);
     TracyAlloc(ptr, count);
@@ -27,6 +31,164 @@ void operator delete(void* ptr) noexcept {
 #include <iostream>
 #include <vector>
 #include <random>
+
+
+// State machine for Pawn
+//  Events
+struct Ev_PawnAttacked {};
+
+// States
+using Context = flecs::id_t;
+using M = hfsm2::MachineT<hfsm2::Config::ContextT<Context>>;
+// Magic to define the FSM?
+#define S(s) struct s
+using FSM = M::Root<
+                    M::Composite<
+                        S(Alive),
+                        M::Orthogonal<
+                            S(Idle),
+                            S(Working),
+                            S(Fleeing),
+                            S(Attacking)
+                        >,
+                        M::Orthogonal<
+                            S(Woodcutter),
+                            S(Labourer)
+                        >
+                    >,
+                    S(Dead)
+                >;
+#undef S
+
+// Start defining the states
+struct Alive: FSM::State {
+    void enter(FullControl& control) {
+        auto& context = control.context();
+        control.changeTo<Idle>;
+    }
+};
+
+struct Dead: FSM::State {
+    void enter(FullControl& control){}
+};
+
+struct Idle: FSM::State {
+    void enter(FullControl& control) {
+        auto& context = control.context();
+        // Set to not moving
+    }
+
+    void react(const Ev_PawnAttacked&, FullControl& control) {
+        control.changeTo<Fleeing>();
+    }
+};
+
+struct Working: FSM::State {
+    void enter(FullControl& control) {}
+};
+
+struct Fleeing: FSM::State {
+    void enter(FullControl& control) {}
+};
+
+struct Attacking: FSM::State {
+    void enter(FullControl& control) {}
+};
+
+struct Woodcutter: FSM::State {
+    void enter(FullControl& control) {}
+};
+
+struct Labourer: FSM::State {
+    void enter(FullControl& control) {}
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -46,6 +208,18 @@ int main(int, char *[]) {
     flecs::world ecs;
     ecs.set<flecs::Rest>({});
     ecs.import<flecs::monitor>(); // Enable statistics in explorer
+
+
+
+	Context context;
+
+	FSM::Instance machine{context};
+
+//	while (machine.isActive<Dead>() == false) {
+//		machine.update();
+//    }
+
+
 
 
     // Create basic timers
@@ -380,7 +554,7 @@ int main(int, char *[]) {
     //  A system is used here because it doesn't need to update at the same
     //  (probably faster) rate as the things are taken down
     auto updateResourceUI_sys = ecs.system<Resources>("System_Update Resource UI")
-        .with<Building>()
+        .with<Building>()  // TODO: Want this to also consider the resources that pawns are carrying
         .tick_source(tick_ui)
         .iter([&ui](flecs::iter it, Resources *r){
             ZoneScopedN("System_Update Resource UI");

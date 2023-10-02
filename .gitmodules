@@ -1,0 +1,3 @@
+[submodule "tpl/hfsm2"]
+	path = tpl/hfsm2
+	url = https://github.com/andrew-gresyk/HFSM2.git
