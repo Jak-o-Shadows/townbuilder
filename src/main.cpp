@@ -1,19 +1,14 @@
 //#define TRACY_ON_DEMAND
 
-#include "gridMap.hpp"
 
-#include "componentsPawn.hpp"
-#include "componentsMap.hpp"
-#include "componentsBuilding.hpp"
-#include "componentsUi.hpp"
+
 
 #include "tracy_zones.hpp"
 
 #include <flecs.h>
 #include <tracy/Tracy.hpp>
 
-#define HFSM2_ENABLE_STRUCTURE_REPORT
-#include <hfsm2/machine.hpp>
+
 
 
 // Tracy memory tracking
@@ -31,89 +26,6 @@ void operator delete(void* ptr) noexcept {
 #include <iostream>
 #include <vector>
 #include <random>
-
-
-// State machine for Pawn
-//  Events
-struct Ev_PawnAttacked {};
-
-// States
-using Context = flecs::id_t;
-using M = hfsm2::MachineT<hfsm2::Config::ContextT<Context>>;
-// Magic to define the FSM?
-#define S(s) struct s
-using FSM = M::Root<
-                    M::Composite<
-                        S(Alive),
-                        M::Orthogonal<
-                            S(Idle),
-                            S(Working),
-                            S(Fleeing),
-                            S(Attacking)
-                        >,
-                        M::Orthogonal<
-                            S(Woodcutter),
-                            S(Labourer)
-                        >
-                    >,
-                    S(Dead)
-                >;
-#undef S
-
-// Start defining the states
-struct Alive: FSM::State {
-    void enter(FullControl& control) {
-        auto& context = control.context();
-        control.changeTo<Idle>;
-    }
-};
-
-struct Dead: FSM::State {
-    void enter(FullControl& control){}
-};
-
-struct Idle: FSM::State {
-    void enter(FullControl& control) {
-        auto& context = control.context();
-        // Set to not moving
-    }
-
-    void react(const Ev_PawnAttacked&, FullControl& control) {
-        control.changeTo<Fleeing>();
-    }
-};
-
-struct Working: FSM::State {
-    void enter(FullControl& control) {}
-};
-
-struct Fleeing: FSM::State {
-    void enter(FullControl& control) {}
-};
-
-struct Attacking: FSM::State {
-    void enter(FullControl& control) {}
-};
-
-struct Woodcutter: FSM::State {
-    void enter(FullControl& control) {}
-};
-
-struct Labourer: FSM::State {
-    void enter(FullControl& control) {}
-};
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -211,14 +123,6 @@ int main(int, char *[]) {
 
 
 
-	Context context;
-
-	FSM::Instance machine{context};
-
-//	while (machine.isActive<Dead>() == false) {
-//		machine.update();
-//    }
-
 
 
 
@@ -237,42 +141,12 @@ int main(int, char *[]) {
 
 
 
-    // Modify pathfinding components
-    // Each pawn can only occupy a single cell, so make exclusive
-    ecs.component<PawnOccupying>().add(flecs::Exclusive);
-    // Each pawn can only have a single target cell, so make exclusive
-    ecs.component<PawnPathfindingGoal>().add(flecs::Exclusive);
-    // Each pawn can only have a single next cell, so make exclusive
-    ecs.component<PawnNextCell>().add(flecs::Exclusive);
 
 
-    // Need to give the entities a parent so they show nicer in the flecs explorer
-    flecs::entity pawnsParent = ecs.entity("pawns");
-    flecs::entity resourcesParent = ecs.entity("resources");
-    flecs::entity buildingsParent = ecs.entity("buildings");
-    flecs::entity mapEntity = ecs.entity("map");
 
 
 
 
-    // Register components with reflection data
-    ecs.component<PawnLifeTraits>()
-        .member<float>("hunger")
-        .member<float>("thirst")
-        .member<float>("cold")
-        .member<float>("comfort");
-    ecs.component<PawnAbilityTraits>()
-        .member<float>("strength")
-        .member<float>("speed");
-    ecs.component<Resources>()
-        .member<int>("fish")
-        .member<int>("stone")
-        .member<int>("wood");
-    
-    // Register UI components so I can see them
-    ecs.component<UiPawnJobs>()
-        .member<int>("unemployed")
-        .member<int>("woodcutter");
 
 
 
@@ -280,311 +154,6 @@ int main(int, char *[]) {
 
 
 
-
-
-
-
-    // State Machines
-    //  Each 
-    ecs.component<PawnWoodcutterState>().add(flecs::Exclusive);
-
-
-
-
-    // Define the map
-    //  Each cell of the map is an entity
-    std::mt19937 rngMap;
-    rngMap.seed(641331);
-    const int map_width = 20;
-    const int map_height = 20;
-    // Stored in a vector for each access
-    grid *map = new grid(map_width, map_height, &ecs, mapEntity);
-
-    // Map random-generation is VERY VERY primitive right now
-    std::bernoulli_distribution treeDist(0.2);
-
-    // Define adjacency
-    //  Initially, fully connected
-    char cellName[100];  // TODO: not use the lookup
-    char otherCellName[100];
-    for (int x = 0; x<map_width; x++){
-        for (int y = 0; y<map_height; y++){
-            // Rectangular grid is simply connected if no trees
-                // TODO: This currently lets you go onto tree-cells, but not out. Is that smart?
-            flecs::entity thisCell = flecs::entity(ecs, map->get(x,y));
-
-            if (treeDist(rngMap)){
-                auto tree = ecs.entity()
-                    .child_of(resourcesParent)
-                    .set<Location>({x, y})
-                    .set<Resources>({0, 100, 0})
-                    .add<Nature>();
-            } else {
-                if (x > 0){
-                    // Left valid
-                    thisCell.set<GridConnected>(map->get(x-1, y), {1});
-                }
-                if (x <map_width-1){
-                    // Right valid
-                    thisCell.set<GridConnected>(map->get(x+1, y), {2});
-                }
-                if (y > 0) {
-                    // Top valid
-                    thisCell.set<GridConnected>(map->get(x, y-1), {6});
-                }
-                if (y < map_height-1){
-                    // Bottom valid
-                    thisCell.set<GridConnected>(map->get(x, y+1), {3});
-                }
-            }
-        }
-    }
-
-
-
-
-
-
-
-    
-    ecs.observer()
-        .event(flecs::OnAdd)
-        .with<PawnOccupying>(flecs::Wildcard)
-        .with<PawnPathfindingGoal>(flecs::Wildcard)
-        .each([&map, &ecs](flecs::entity e){
-            ZoneScopedN(ts_PawnPathfindingUpdate);
-            //std::cout << "Pathfinding Update: for " <<  e.name() << std::endl;
-            flecs::entity currentCell = e.target<PawnOccupying>();
-            flecs::entity targetCell = e.target<PawnPathfindingGoal>();
-            //std::cout << "\t " << currentCell.name() << " to " << targetCell.name() << std::endl;
-            // From the current cell, and the target cell, pathfind to find the next cell
-            //  First convert the entity data into x, y
-            //      Current Cell
-            auto currentStatic = currentCell.get<GridCellStatic>();
-            int x = currentStatic->x;
-            int y = currentStatic->y;
-            //      Target Cell
-            auto targetStatic = targetCell.get<GridCellStatic>();
-            int targetX = targetStatic->x;
-            int targetY = targetStatic->y;
-            if ((targetX == x) && (targetY == y)) {
-                // No need to pathfind - stay still
-                //std::cout << "\t" << e.name() << " finished!" << std::endl;
-                e.set<Velocity>({0, 0});
-            } else {
-                //  Begin Pathfinding
-                flecs::id_t nextCellId = pathfind(ecs, map, x, y, targetX, targetY);
-                flecs::entity nextCell = flecs::entity(ecs, nextCellId);
-                // Set the next cell
-                e.add<PawnNextCell>(nextCell);
-                // Calculate velocity to get to next cell
-                // TODO: This might need to be smarter if I have non-uniform cells
-                // TODO: This is assuming from middle of cell to middle of cell, not from edge to edge
-                auto nextStatic = nextCell.get<GridCellStatic>();
-                const PawnAbilityTraits *pawnAbilityTraits = e.get<PawnAbilityTraits>();
-                float speed = pawnAbilityTraits->speed;
-                float vx = (nextStatic->x - x)*speed;
-                float vy = (nextStatic->y -y)*speed;
-                //std::cout << "\t Velocity To: " << vx << ", " << vy << std::endl;
-                e.set<Velocity>({vx, vy});
-            }
-        });
-    
-
-
-
-
-
-    // Generate pawns
-    //  Randomly distribute starting & target positions
-    std::mt19937 rng;
-    rng.seed(20231104);
-    std::uniform_int_distribution<int> xDist(0, map_width-1);
-    std::uniform_int_distribution<int> yDist(0, map_height-1);
-    std::uniform_real_distribution<float> speedDist(0.1, 0.3);
-
-    constexpr int numPawns = 10;
-    for (int pawnNumber=0; pawnNumber < numPawns; pawnNumber++){
-        int targetX = xDist(rng);
-        int targetY = yDist(rng);
-        int myX = xDist(rng);
-        int myY = yDist(rng);
-        float speed = (float) speedDist(rng);
-        char pawnName[20];
-        sprintf(pawnName, "Pawn%d", pawnNumber);  // TODO: Replace with std::format
-        auto pawn = ecs.entity(pawnName)
-            .child_of(pawnsParent)
-            .set<Position>({0.5, 0.5})
-            .set<Velocity>({0, 0})
-            .set<PawnAbilityTraits>({0, speed})
-            .add<PawnOccupationWoodcutter>()
-            .add<PawnWoodcutterState>(ecs.component<PawnWoodcutterStateIdle>())
-            .add<PawnOccupying>(flecs::entity(ecs, map->get(myX,myY)))
-            .add<PawnPathfindingGoal>(flecs::entity(ecs, map->get(targetX, targetY)));
-
-        //flecs::entity_to_json_desc_t desc;
-        //desc.serialize_path = true;
-        //desc.serialize_values = true;
-        //std::cout << pawn.to_json(&desc) << "\n";
-
-    }
-    std::cout << "Pawns Created" << std::endl;
-
-
-
-
-
-
-
-
-
-    // Put systems in
-    auto move_sys = ecs.system<Position, Velocity>("System_Intra Cell Movement")
-    .tick_source(tick_pawn_behaviour)
-    .iter([](flecs::iter it, Position *p, Velocity *v){
-        for (int i: it) {
-            p[i].x += v[i].x * it.delta_system_time();
-            p[i].y += v[i].y * it.delta_system_time();
-            //std::cout << p[i].x << ", " << p[i].y << " @ " << v[i].x << ", " << v[i].y << std::endl;
-        }
-    });
-    
-    auto moveCell_sys = ecs.system<Position>("System Between Cell Movement")
-    .with<PawnNextCell>(flecs::Wildcard)
-    .tick_source(tick_pawn_behaviour)
-    .multi_threaded()
-    .iter([](flecs::iter it, Position *p){
-        ZoneScopedN("System Between Cell Movement");
-        for (int i: it){
-            //std::cout << "Checking Cell Moveover" << std::endl;
-            flecs::entity e = it.entity(i);
-            bool movedCell = false;
-            // Assume that the velocity is correct, and if we move over any boundary we're there
-            if (p[i].x > 1){
-                movedCell = true;
-                p[i].x = 0;
-            } else if (p[i].x < 0) {
-                // Moved cell left
-                movedCell = true;
-                p[i].x = 1;
-            } 
-            if (p[i].y > 1) {
-                // Moved cell up
-                movedCell = true;
-                p[i].y = 0;
-            } else if (p[i].y < 0) {
-                // Moved cell down
-                movedCell = true;
-                p[i].y = 1;
-            }
-
-            if (movedCell){
-                flecs::entity nextCell = e.target<PawnNextCell>();
-                //std::cout << " Moved To " << nextCell.name() << std::endl;
-                // Uupdate currently occupying cell
-                e.add<PawnOccupying>(nextCell);
-                // Update overall goal to force pathfinding update
-                flecs::entity goalCell = e.target<PawnPathfindingGoal>();
-                e.add<PawnPathfindingGoal>(goalCell);
-            }
-        }
-    });
-    
-
-
-    // Start some buildings!
-    auto granary = ecs.entity("Granary")
-        .child_of(buildingsParent)
-        .set<Location>({3, 8})
-        .set<BuildingUI>({3, 3, -1, 0})
-        .set<Resources>({0, 0, 0})
-        .add<Building>();
-
-
-
-
-
-
-    // State actions
-    auto blah_sys = ecs.system<>("ASDF")
-        .with<PawnWoodcutterState>(ecs.component<PawnWoodcutterStateIdle>())
-        .tick_source(tick_pawn_behaviour)
-        .multi_threaded()
-        .iter([](flecs::iter it){
-            ZoneScopedN("Pawn Woodctuter Idle State Actions");
-            for (int i: it){
-                flecs::entity e = it.entity(i);
-                // If they are idle, get them to find the nearest wood and path-find towards it
-                
-            }
-    });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    // Global
-    auto ui = ecs.entity("UI Things")
-        .add<Resources>()
-        .add<UiPawnJobs>();
-
-
-
-    // System to update resources
-    //  A system is used here because it doesn't need to update at the same
-    //  (probably faster) rate as the things are taken down
-    auto updateResourceUI_sys = ecs.system<Resources>("System_Update Resource UI")
-        .with<Building>()  // TODO: Want this to also consider the resources that pawns are carrying
-        .tick_source(tick_ui)
-        .iter([&ui](flecs::iter it, Resources *r){
-            ZoneScopedN("System_Update Resource UI");
-            Resources sum{0, 0, 0};
-            for (int i: it) {
-                // TODO: Replace with the reflection interface?
-                sum.fish += r[i].fish;
-                sum.stone += r[i].stone;
-                sum.wood += r[i].wood;
-            }
-            //std::cout << "Resources: " << std::endl;
-            //std::cout << "\t fish: "  << sum.fish << std::endl;
-            //std::cout << "\t stone: " << sum.stone << std::endl;
-            //std::cout << "\t wood: "  << sum.wood << std::endl;
-            ui.set<Resources>(sum);
-        });
-
-    // Get a count of how many pawns are doing each job
-    auto unemployedQuery = ecs.query<PawnOccupationUnemployed>();
-    auto woodcutterQuery = ecs.query<PawnOccupationWoodcutter>();
-    auto updatePopulationUI_sys = ecs.system("System_Update Pawn Jobs UI")
-        .tick_source(tick_ui)
-        .iter([&ui, &unemployedQuery, &woodcutterQuery](flecs::iter it){
-            ZoneScopedN("System_Update Pawn Jobs UI");
-            // TODO: Use the reflection interface somehow?
-            UiPawnJobs sum{unemployedQuery.count(),
-                           woodcutterQuery.count()};
-            ui.set<UiPawnJobs>(sum);
-        });
-    
 
     // Frame Markers for Tracy
     if (true) {
