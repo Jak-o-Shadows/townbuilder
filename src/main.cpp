@@ -8,7 +8,8 @@
 #include <tracy/Tracy.hpp>
 #include <perturb/perturb.hpp>
 
-
+//#include "flecs_components_graphics.h"
+#include "flecs_components_transform.h"
 
 // Tracy memory tracking
 void* operator new(std::size_t count) {
@@ -27,7 +28,7 @@ void operator delete(void* ptr) noexcept {
 #include <vector>
 #include <random>
 
-
+// Stuff to do orbit propagation using the Perturb library
 struct TLE {
     std::string line1;
     std::string line2;
@@ -36,6 +37,34 @@ struct TLE {
 struct PerturbSatellite {
     std::unique_ptr<perturb::Satellite> sat;
 };
+
+
+// Satellite Prefab
+namespace prefabs {
+    struct Satellite {};
+}
+
+
+
+
+// Stuff to make it renderable using Sokol
+
+
+
+void init_prefabs(flecs::world& ecs){
+    /*
+    ecs.prefab<prefabs::Satellite>()
+        .set<flecs::components::geometry::Box>({10, 10, 10})
+        .set<flecs::components::graphics::Rgb>({75, 100, 2500});
+    ecs
+    */
+}
+
+
+
+
+
+
 
 
 
@@ -218,9 +247,30 @@ int main(int, char *[]) {
 
 
     ecs.import<flecs::monitor>(); // Enable statistics in explorer
+    ecs.import<flecs::components::transform>();
+    //ecs.import<flecs::systems::transform>();
+
+    //ecs.import<flecs::components::graphics>();
+    //ecs.import<flecs::components::geometry>();
+    //ecs.import<flecs::components::gui>();
+    //ecs.import<flecs::components::physics>();
+    //ecs.import<flecs::components::input>();
+    //ecs.import<flecs::systems::physics>();
+    //ecs.import<flecs::game>();
+    //ecs.import<flecs::systems::sokol>();
+
 
 
     init_tles(ecs);
+    init_prefabs(ecs);
+
+    
+
+
+
+
+
+
 
 
 
@@ -350,10 +400,16 @@ int main(int, char *[]) {
             .iter([](flecs::iter& it) {
                 FrameMarkNamed("Tick UI");
         });
+        ecs.system("Flecs Update")
+            .kind(flecs::OnUpdate)
+            .iter([](flecs::iter& it) {
+                FrameMarkNamed("Flecs Update");
+            });
     }
 
-    ecs.set_threads(4);
-    while(ecs.progress(0)){
-        FrameMarkNamed("Flecs Update");
-    };
+    //ecs.set_threads(4);
+    ecs.app()
+        .enable_rest()
+        .target_fps(60)
+        .run();
 }
