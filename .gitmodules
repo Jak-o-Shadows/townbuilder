@@ -1,3 +1,33 @@
-[submodule "tpl/hfsm2"]
-	path = tpl/hfsm2
-	url = https://github.com/andrew-gresyk/HFSM2.git
+[submodule "src/flecs-hub/flecs-systems-sokol"]
+	path = src/flecs-hub/flecs-systems-sokol
+	url = https://github.com/flecs-hub/flecs-systems-sokol
+[submodule "src/flecs-hub/flecs-systems-physics"]
+	path = src/flecs-hub/flecs-systems-physics
+	url = https://github.com/flecs-hub/flecs-systems-physics
+[submodule "src/flecs-hub/flecs-components-graphics"]
+	path = src/flecs-hub/flecs-components-graphics
+	url = https://github.com/flecs-hub/flecs-components-graphics
+	branch = master
+[submodule "src/flecs-hub/flecs-systems-transform"]
+	path = src/flecs-hub/flecs-systems-transform
+	url = https://github.com/flecs-hub/flecs-systems-transform
+[submodule "src/flecs-hub/flecs-components-transform"]
+	path = src/flecs-hub/flecs-components-transform
+	url = https://github.com/flecs-hub/flecs-components-transform
+[submodule "src/flecs-hub/flecs-components-transform"]
+	path = src/flecs-hub/flecs-components-transform
+	url = https://github.com/flecs-hub/flecs-components-transform
+[submodule "src/flecs-hub/flecs-components-gui"]
+	path = src/flecs-hub/flecs-components-gui
+	url = https://github.com/flecs-hub/flecs-components-gui
+[submodule "src/flecs-hub/flecs-components-input"]
+	path = src/flecs-hub/flecs-components-input
+	url = https://github.com/flecs-hub/flecs-components-input
+[submodule "src/flecs-hub/flecs-game"]
+	path = src/flecs-hub/flecs-game
+	url = https://github.com/flecs-hub/flecs-game
+	branch = main
+[submodule "src/flecs-hub/flecs-components-cglm"]
+	path = src/flecs-hub/flecs-components-cglm
+	url = https://github.com/flecs-hub/flecs-components-cglm
+	branch = master
