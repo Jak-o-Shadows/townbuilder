@@ -7,13 +7,13 @@
 #include "componentsBuilding.hpp"
 #include "componentsUi.hpp"
 
+
 #include "tracy_zones.hpp"
 
 #include <flecs.h>
 #include <tracy/Tracy.hpp>
 
-#define HFSM2_ENABLE_STRUCTURE_REPORT
-#include <hfsm2/machine.hpp>
+
 
 
 // Tracy memory tracking
@@ -33,9 +33,14 @@ void operator delete(void* ptr) noexcept {
 #include <random>
 
 
+#define HFSM2_ENABLE_STRUCTURE_REPORT
+#include <hfsm2/machine.hpp>
+
+/*
 // State machine for Pawn
 //  Events
-struct Ev_PawnAttacked {};
+//struct Ev_PawnAttacked {};
+//struct Ev_PawnUnattacked {};
 
 // States
 using Context = flecs::id_t;
@@ -64,7 +69,7 @@ using FSM = M::Root<
 struct Alive: FSM::State {
     void enter(FullControl& control) {
         auto& context = control.context();
-        control.changeTo<Idle>;
+        //control.changeTo<Idle>;
     }
 };
 
@@ -78,9 +83,9 @@ struct Idle: FSM::State {
         // Set to not moving
     }
 
-    void react(const Ev_PawnAttacked&, FullControl& control) {
-        control.changeTo<Fleeing>();
-    }
+//    void react(const Ev_PawnAttacked&, FullControl& control) {
+//        control.changeTo<Fleeing>();
+//    }
 };
 
 struct Working: FSM::State {
@@ -89,6 +94,10 @@ struct Working: FSM::State {
 
 struct Fleeing: FSM::State {
     void enter(FullControl& control) {}
+
+//    void react(const Ev_PawnUnattacked&, FullControl& control) {
+//        control.changeTo<Working>();
+//    }
 };
 
 struct Attacking: FSM::State {
@@ -106,10 +115,41 @@ struct Labourer: FSM::State {
 
 
 
+*/
+struct Context {
+    bool on = false;
+};
+
+using Config = hfsm2::Config
+                    ::ContextT<Context&>;
+
+using M = hfsm2::MachineT<Config>;
+
+using FSM = M::PeerRoot<
+                struct Off,
+                struct On
+            >;
+
+struct Off
+    : FSM::State
+{
+    void enter(PlanControl& control) {
+        control.context().on = false;
+    }
+};
+
+struct On
+    : FSM::State
+{
+    void enter(PlanControl& control) {
+        control.context().on = true;
+    }
+};
 
 
-
-
+struct PawnFSMContainer {
+    std::unique_ptr<FSM::Instance> machine;
+};
 
 
 
@@ -212,9 +252,7 @@ int main(int, char *[]) {
 
 
 	Context context;
-
 	FSM::Instance machine{context};
-
 //	while (machine.isActive<Dead>() == false) {
 //		machine.update();
 //    }
@@ -421,6 +459,13 @@ int main(int, char *[]) {
             .add<PawnWoodcutterState>(ecs.component<PawnWoodcutterStateIdle>())
             .add<PawnOccupying>(flecs::entity(ecs, map->get(myX,myY)))
             .add<PawnPathfindingGoal>(flecs::entity(ecs, map->get(targetX, targetY)));
+        //pawn.add<PawnFSMContainer>(PawnFSM::Instance{pawn});
+
+	    //Context context;
+        //FSM::Instance machine{context};
+	    //std::unique<FSM> ptr;// = std::make_unique<FSM::Instance>(machine);
+        //pawn.add<PawnFSMContainer>(ptr);
+
 
         //flecs::entity_to_json_desc_t desc;
         //desc.serialize_path = true;
@@ -429,9 +474,6 @@ int main(int, char *[]) {
 
     }
     std::cout << "Pawns Created" << std::endl;
-
-
-
 
 
 
