@@ -316,6 +316,9 @@ int main(int, char *[]) {
     // UI Updates
     flecs::entity tick_ui = ecs.timer("Timer_UI Update")
         .rate(8, tick_100_Hz);  // 8 ticks @ 100 Hz => 12.5 Hz
+    // Render update
+    flecs::entity tick_render = ecs.timer("Timer_Render Update")
+        .rate(2, tick_100_Hz);  // 2 ticks @ 100 Hz => 50 Hz
 
 
 
@@ -402,7 +405,10 @@ int main(int, char *[]) {
                     .child_of(resourcesParent)
                     .set<Location>({x, y})
                     .set<Resources>({0, 100, 0})
-                    .add<Nature>();
+                    .add<Nature>()
+                    .set<flecs::components::transform::Position3>({(float) x, 1, (float) y})
+                    .set<flecs::components::graphics::Rgb>({0, 255, 0})
+                    .set<flecs::components::geometry::Box>({0.1, 0.5, 0.1});
             } else {
                 if (x > 0){
                     // Left valid
@@ -487,14 +493,14 @@ int main(int, char *[]) {
     std::uniform_int_distribution<int> yDist(0, map_height-1);
     std::uniform_real_distribution<float> speedDist(0.1, 0.3);
 
-    constexpr int numPawns = 10;
+    constexpr int numPawns = 20;
     for (int pawnNumber=0; pawnNumber < numPawns; pawnNumber++){
         int targetX = xDist(rng);
         int targetY = yDist(rng);
         int myX = xDist(rng);
         int myY = yDist(rng);
         float speed = (float) speedDist(rng);
-        char pawnName[20];
+        char pawnName[200];
         sprintf(pawnName, "Pawn%d", pawnNumber);  // TODO: Replace with std::format
         auto pawn = ecs.entity(pawnName)
             .child_of(pawnsParent)
@@ -504,7 +510,10 @@ int main(int, char *[]) {
             .add<PawnOccupationWoodcutter>()
             .add<PawnWoodcutterState>(ecs.component<PawnWoodcutterStateIdle>())
             .add<PawnOccupying>(flecs::entity(ecs, map->get(myX,myY)))
-            .add<PawnPathfindingGoal>(flecs::entity(ecs, map->get(targetX, targetY)));
+            .add<PawnPathfindingGoal>(flecs::entity(ecs, map->get(targetX, targetY)))
+            .set<flecs::components::transform::Position3>({(float) myX, 0.1, (float) myY})
+            .set<flecs::components::geometry::Box>({0.1, 0.8, 0.1})
+            .set<flecs::components::graphics::Rgb>({165, 42, 42});
         //pawn.add<PawnFSMContainer>(PawnFSM::Instance{pawn});
 
 	    //Context context;
@@ -577,7 +586,19 @@ int main(int, char *[]) {
             }
         }
     });
-    
+
+    auto updatePawnRenderLocation_sys = ecs.system<Position, flecs::components::transform::Position3>("Update Pawn Render Location")
+    .tick_source(tick_render)
+    .with<PawnOccupying>(flecs::Wildcard)
+    .each([](flecs::entity pawn, Position& p, flecs::components::transform::Position3& renderPos){
+        // Get cell from pawn occupying
+        flecs::entity currentCell = pawn.target<PawnOccupying>();
+        const GridCellStatic* loc = currentCell.get<GridCellStatic>();
+        renderPos.x = loc->x + p.x;
+        renderPos.z = loc->y + p.y;
+    });
+
+
 
 
     // Start some buildings!
@@ -586,7 +607,10 @@ int main(int, char *[]) {
         .set<Location>({3, 8})
         .set<BuildingUI>({3, 3, -1, 0})
         .set<Resources>({0, 0, 0})
-        .add<Building>();
+        .add<Building>()
+        .set<flecs::components::transform::Position3>({3, 0.1, 8})
+        .set<flecs::components::geometry::Box>({2, 2, 2})
+        .set<flecs::components::graphics::Rgb>({20, 0, 0});
 
 
 
@@ -723,17 +747,18 @@ int main(int, char *[]) {
     flecs::components::graphics::DirectionalLight light_data = {};
     light_data.set_direction(0.3, -1.0, 0.5);
     light_data.set_color(0.98, 0.95, 0.8);
-    light_data.intensity = 1.0;
+    light_data.intensity = 0.01;
     auto light = ecs.entity("Sun")
         .set<flecs::components::graphics::DirectionalLight>(light_data);
+    
 
     flecs::components::gui::Canvas canvas_data = {};
-    canvas_data.width = 1400;
-    canvas_data.height = 1000;
-    canvas_data.title = (char*)"Flecs Tower Defense";
+    canvas_data.width = 800;
+    canvas_data.height = 600;
+    canvas_data.title = (char*)"TownBuilder";
     canvas_data.camera = camera.id();
     canvas_data.directional_light = light.id();
-    canvas_data.ambient_light = {0.06, 0.05, 0.18};
+    canvas_data.ambient_light = {0.006, 0.005, 0.018};
     canvas_data.background_color = {0.15, 0.4, 0.6};
     canvas_data.fog_density = 1.0;
     ecs.entity()

@@ -1,6 +1,13 @@
 
 #include "gridMap.hpp"
 
+#include "flecs_components_transform.h"
+#include "flecs_components_graphics.h"
+#include "flecs_components_geometry.h"
+
+
+
+
 // Have a normal vector of the the cells of the grid.
 //  This makes it easier than having them all as entities, as otherwise
 //  would need to query all the time just to get a cell reference
@@ -18,6 +25,9 @@ grid::grid(int width, int height, flecs::world *ecs, flecs::entity &parent)
                     // The set operation finds or creates a component, and sets it.
                     // Components are automatically registered with the world.
                     .set<GridCellStatic>({x, y, 10*x + y})
+                    .set<flecs::components::geometry::Box>({1, 0, 1})
+                    .set<flecs::components::transform::Position3>({(float) x, 0, (float) y})
+                    .set<flecs::components::graphics::Rgb>({(float) x, (float) y, 55})
                     .child_of(parent);  // Need to give the map cells a parent so they show nicer in the flecs explorer
                 m_values.push_back(ecs->id(cell));
             }
