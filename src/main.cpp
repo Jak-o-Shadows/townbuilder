@@ -15,6 +15,22 @@
 
 
 
+#include "flecs_components_transform.h"
+#include "flecs_components_graphics.h"
+#include "flecs_components_geometry.h"
+#include "flecs_components_physics.h"
+#include "flecs_components_gui.h"
+#include "flecs_components_input.h"
+#include "flecs_systems_transform.h"
+#include "flecs_systems_physics.h"
+#include "flecs_systems_sokol.h"
+#include "flecs_game.h"
+
+
+
+
+
+
 
 // Tracy memory tracking
 void* operator new(std::size_t count) {
@@ -35,6 +51,22 @@ void operator delete(void* ptr) noexcept {
 
 #define HFSM2_ENABLE_STRUCTURE_REPORT
 #include <hfsm2/machine.hpp>
+
+
+struct Game {
+    flecs::entity window;
+    flecs::entity level;
+    
+    flecs::components::transform::Position3 center;
+    float size;        
+};
+
+
+
+
+
+
+
 
 /*
 // State machine for Pawn
@@ -248,6 +280,20 @@ int main(int, char *[]) {
     flecs::world ecs;
     ecs.set<flecs::Rest>({});
     ecs.import<flecs::monitor>(); // Enable statistics in explorer
+
+    
+    ecs.import<flecs::components::transform>();
+    ecs.import<flecs::components::graphics>();
+    ecs.import<flecs::components::geometry>();
+    ecs.import<flecs::components::gui>();
+    ecs.import<flecs::components::physics>();
+    ecs.import<flecs::components::input>();
+    ecs.import<flecs::systems::transform>();
+    ecs.import<flecs::systems::physics>();
+    ecs.import<flecs::game>();
+    ecs.import<flecs::systems::sokol>();
+    
+
 
 
 
@@ -650,8 +696,65 @@ int main(int, char *[]) {
         });
     }
 
+
+
+    
+    // Initialise game
+    static const float TileSize = 3.0;
+    static const float TileHeight = 0.5;
+    static const float PathHeight = 0.1;
+    static const float TileSpacing = 0.00;
+    Game *g = ecs.get_mut<Game>();
+    g->center = {0, 0, 0};//{ to_x(map_width / 2), 0, to_z(map_height / 2) };
+    g->size = map_width * (TileSize + TileSpacing) + 2;
+
+    // Init UI
+    flecs::components::graphics::Camera camera_data = {};
+    camera_data.set_up(0, 1, 0);
+    camera_data.set_fov(20);
+    camera_data.near_ = 1.0;
+    camera_data.far_ = 100.0;
+    auto camera = ecs.entity("Camera")
+        .add(flecs::game::CameraController)
+        .set<flecs::components::transform::Position3>({0, 8.0, -9.0})
+        .set<flecs::components::transform::Rotation3>({-0.5})
+        .set<flecs::components::graphics::Camera>(camera_data);
+
+    flecs::components::graphics::DirectionalLight light_data = {};
+    light_data.set_direction(0.3, -1.0, 0.5);
+    light_data.set_color(0.98, 0.95, 0.8);
+    light_data.intensity = 1.0;
+    auto light = ecs.entity("Sun")
+        .set<flecs::components::graphics::DirectionalLight>(light_data);
+
+    flecs::components::gui::Canvas canvas_data = {};
+    canvas_data.width = 1400;
+    canvas_data.height = 1000;
+    canvas_data.title = (char*)"Flecs Tower Defense";
+    canvas_data.camera = camera.id();
+    canvas_data.directional_light = light.id();
+    canvas_data.ambient_light = {0.06, 0.05, 0.18};
+    canvas_data.background_color = {0.15, 0.4, 0.6};
+    canvas_data.fog_density = 1.0;
+    ecs.entity()
+        .set<flecs::components::gui::Canvas>(canvas_data);
+
+
+
+
+
+
+
+    ecs.app()
+        .enable_rest()
+        .target_fps(60)
+        .run();
+
+
+    /*
     ecs.set_threads(4);
     while(ecs.progress(0)){
         FrameMarkNamed("Flecs Update");
     };
+    */
 }
