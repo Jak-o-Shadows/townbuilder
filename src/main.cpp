@@ -6,6 +6,7 @@
 #include "componentsMap.hpp"
 #include "componentsBuilding.hpp"
 #include "componentsUi.hpp"
+#include "logicPawn2.hpp"
 
 
 #include "tracy_zones.hpp"
@@ -66,88 +67,121 @@ struct Game {
 
 
 
+////////////////////////////////////////////////////////////////////////////////
+
+// top-level region in the hierarchy
+struct Alive
+	: FSM::State // necessary boilerplate!
+{
+	// called on state entry
+	void enter(Control& control) {
+		//control.context().cycleCount = 0;
+		std::cout << "Alive" << std::endl;
+	}
+};
+
+//------------------------------------------------------------------------------
+
+// sub-states
+struct Idle
+	: FSM::State
+{
+	void enter(Control& control) {
+		//++control.context().cycleCount;
+		std::cout << "  Idle" << std::endl;
+	}
+
+	// state can initiate transitions to _any_ other state
+	void update(FullControl& control) {
+		// multiple transitions can be initiated, can be useful in a hierarchy
+		//if (control.context().cycleCount > 3)
+		//	control.changeTo<Off>();
+		//else
+			control.changeTo<Working>();
+	}
+};
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+struct Working
+	: FSM::State
+{
+	void enter(Control&) {
+		std::cout << "    Yellow v" << std::endl;
+	}
+
+	void update(FullControl& control) {
+		control.changeTo<Fleeing>();
+	}
+};
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+struct Combat
+	: FSM::State
+{
+	void enter(Control&) {
+		std::cout << "    Yellow ^" << std::endl;
+	}
+
+	void update(FullControl& control) {
+		control.changeTo<Idle>();
+	}
+};
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+struct Fleeing
+	: FSM::State
+{
+	void enter(Control&) {
+		std::cout << "      Fleeing" << std::endl;
+	}
+
+	void update(FullControl& control) {
+		control.changeTo<Idle>();
+	}
+};
+
+//------------------------------------------------------------------------------
+
+// another top-level state
+struct Dead
+	: FSM::State
+{
+	void enter(Control&) {
+		std::cout << "Dead" << std::endl;
+	}
+};
+
+////////////////////////////////////////////////////////////////////////////////
+/*
+int main() {
+	// shared data storage instance
+	Context context;
+
+	FSM::Instance machine{context};
+
+	while (machine.isActive<Off>() == false)
+		machine.update();
+
+	return 0;
+}
+*/
+
 
 
 /*
-// State machine for Pawn
-//  Events
-//struct Ev_PawnAttacked {};
-//struct Ev_PawnUnattacked {};
-
-// States
-using Context = flecs::id_t;
-using M = hfsm2::MachineT<hfsm2::Config::ContextT<Context>>;
-// Magic to define the FSM?
-#define S(s) struct s
-using FSM = M::Root<
-                    M::Composite<
-                        S(Alive),
-                        M::Orthogonal<
-                            S(Idle),
-                            S(Working),
-                            S(Fleeing),
-                            S(Attacking)
-                        >,
-                        M::Orthogonal<
-                            S(Woodcutter),
-                            S(Labourer)
-                        >
-                    >,
-                    S(Dead)
-                >;
-#undef S
-
-// Start defining the states
-struct Alive: FSM::State {
-    void enter(FullControl& control) {
-        auto& context = control.context();
-        //control.changeTo<Idle>;
-    }
-};
+void Alive::FSM::State::enter(FullControl &control) {
+    // pass
+}
 
 struct Dead: FSM::State {
     void enter(FullControl& control){}
 };
-
-struct Idle: FSM::State {
-    void enter(FullControl& control) {
-        auto& context = control.context();
-        // Set to not moving
-    }
-
-//    void react(const Ev_PawnAttacked&, FullControl& control) {
-//        control.changeTo<Fleeing>();
-//    }
-};
-
-struct Working: FSM::State {
-    void enter(FullControl& control) {}
-};
-
-struct Fleeing: FSM::State {
-    void enter(FullControl& control) {}
-
-//    void react(const Ev_PawnUnattacked&, FullControl& control) {
-//        control.changeTo<Working>();
-//    }
-};
-
-struct Attacking: FSM::State {
-    void enter(FullControl& control) {}
-};
-
-struct Woodcutter: FSM::State {
-    void enter(FullControl& control) {}
-};
-
-struct Labourer: FSM::State {
-    void enter(FullControl& control) {}
-};
-
-
-
-
 */
+
+/*
 struct Context {
     bool on = false;
 };
@@ -177,7 +211,7 @@ struct On
         control.context().on = true;
     }
 };
-
+*/
 
 struct PawnFSMContainer {
     std::unique_ptr<FSM::Instance> machine;

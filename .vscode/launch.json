@@ -16,9 +16,9 @@
             "program": "Z:/Hayden/programming/projects/townbuilder/build/Debug/townbuilder.exe",
             "args": [],
             "stopAtEntry": false,
-            "cwd": "${fileDirname}",
+            "cwd": "Z:/Hayden/programming/projects/townbuilder/build/Debug/",
             "environment": [],
-            "console": "externalTerminal"
+            "console": "internalConsole"
         }
 
     ]
