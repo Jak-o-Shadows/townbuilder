@@ -10,34 +10,78 @@
 
 //------------------------------------------------------------------------------
 
+namespace LogicPawn {
+
+struct Context {
+	flecs::id_t id;
+	flecs::world& ecs;
+};
+
 // data shared between FSM states and outside code
-//struct Context {
-//	unsigned cycleCount = 0;
-//};
-using Context = flecs::id_t;
 
-// convenience typedef
-using M = hfsm2::MachineT<hfsm2::Config::ContextT<Context>>;
+	// convenience typedef
+	using M = hfsm2::MachineT<hfsm2::Config::ContextT<Context>>;
 
 
 
-// states need to be forward declared to be used in FSM struct declaration.
-//    This also allows them to be used as tags in flecs
-struct Alive;
-struct Idle;
-struct Working;
-struct Fleeing;
-struct Combat;
-struct Dead;
+	// states need to be forward declared to be used in FSM struct declaration.
+	//    This also allows them to be used as tags in flecs
+	struct Alive;
+	struct Idle;
+	struct Working;
+	struct Fleeing;
+	struct Combat;
+	struct Dead;
 
-using FSM = M::PeerRoot<
-				// sub-machine ..
-				M::Composite<Alive,
-					// .. with 4 sub-states
-					Idle,
-					Working,
-					Fleeing,
-					Combat
-				>,
-				Dead
-			>;
+	using PawnFSM = M::PeerRoot<
+					// sub-machine ..
+					M::Composite<Alive,
+						// .. with 4 sub-states
+						Idle,
+						Working,
+						Fleeing,
+						Combat
+					>,
+					Dead
+				>;
+
+	struct Alive:PawnFSM::State {
+		void enter(Control& control);
+		void exit(Control& control);
+	};
+
+	struct Idle:PawnFSM::State {
+		void enter(Control& control);
+		void exit(Control& control);
+		void update(FullControl& control);
+	};
+
+	struct Working:PawnFSM::State {
+		void enter(Control& control);
+		void exit(Control& control);
+		void update(FullControl& control);
+	};
+
+	struct Combat:PawnFSM::State {
+		void enter(Control& control);
+		void exit(Control& control);
+		void update(FullControl& control);
+	};
+
+	struct Fleeing:PawnFSM::State {
+		void enter(Control& control);
+		void exit(Control& control);
+		void update(FullControl& control);
+	};
+
+	struct Dead:PawnFSM::State{
+		void enter(Control& control);
+		void exit(Control& control);
+	};
+
+
+struct module {
+    module(flecs::world& ecs);
+};
+
+}

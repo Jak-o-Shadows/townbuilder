@@ -63,97 +63,6 @@ struct Game {
 };
 
 
-
-
-
-
-////////////////////////////////////////////////////////////////////////////////
-
-// top-level region in the hierarchy
-struct Alive
-	: FSM::State // necessary boilerplate!
-{
-	// called on state entry
-	void enter(Control& control) {
-		//control.context().cycleCount = 0;
-		std::cout << "Alive" << std::endl;
-	}
-};
-
-//------------------------------------------------------------------------------
-
-// sub-states
-struct Idle
-	: FSM::State
-{
-	void enter(Control& control) {
-		//++control.context().cycleCount;
-		std::cout << "  Idle" << std::endl;
-	}
-
-	// state can initiate transitions to _any_ other state
-	void update(FullControl& control) {
-		// multiple transitions can be initiated, can be useful in a hierarchy
-		//if (control.context().cycleCount > 3)
-		//	control.changeTo<Off>();
-		//else
-			control.changeTo<Working>();
-	}
-};
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-struct Working
-	: FSM::State
-{
-	void enter(Control&) {
-		std::cout << "    Yellow v" << std::endl;
-	}
-
-	void update(FullControl& control) {
-		control.changeTo<Fleeing>();
-	}
-};
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-struct Combat
-	: FSM::State
-{
-	void enter(Control&) {
-		std::cout << "    Yellow ^" << std::endl;
-	}
-
-	void update(FullControl& control) {
-		control.changeTo<Idle>();
-	}
-};
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-struct Fleeing
-	: FSM::State
-{
-	void enter(Control&) {
-		std::cout << "      Fleeing" << std::endl;
-	}
-
-	void update(FullControl& control) {
-		control.changeTo<Idle>();
-	}
-};
-
-//------------------------------------------------------------------------------
-
-// another top-level state
-struct Dead
-	: FSM::State
-{
-	void enter(Control&) {
-		std::cout << "Dead" << std::endl;
-	}
-};
-
 ////////////////////////////////////////////////////////////////////////////////
 /*
 int main() {
@@ -171,50 +80,10 @@ int main() {
 
 
 
-/*
-void Alive::FSM::State::enter(FullControl &control) {
-    // pass
-}
 
-struct Dead: FSM::State {
-    void enter(FullControl& control){}
-};
-*/
-
-/*
-struct Context {
-    bool on = false;
-};
-
-using Config = hfsm2::Config
-                    ::ContextT<Context&>;
-
-using M = hfsm2::MachineT<Config>;
-
-using FSM = M::PeerRoot<
-                struct Off,
-                struct On
-            >;
-
-struct Off
-    : FSM::State
-{
-    void enter(PlanControl& control) {
-        control.context().on = false;
-    }
-};
-
-struct On
-    : FSM::State
-{
-    void enter(PlanControl& control) {
-        control.context().on = true;
-    }
-};
-*/
 
 struct PawnFSMContainer {
-    std::unique_ptr<FSM::Instance> machine;
+    std::unique_ptr<LogicPawn::PawnFSM::Instance> machine;
 };
 
 
@@ -327,15 +196,7 @@ int main(int, char *[]) {
     ecs.import<flecs::game>();
     ecs.import<flecs::systems::sokol>();
     
-
-
-
-
-	Context context;
-	FSM::Instance machine{context};
-//	while (machine.isActive<Dead>() == false) {
-//		machine.update();
-//    }
+    ecs.import<LogicPawn::module>();
 
 
 
@@ -548,12 +409,15 @@ int main(int, char *[]) {
             .set<flecs::components::transform::Position3>({(float) myX, 0.1, (float) myY})
             .set<flecs::components::geometry::Box>({0.1, 0.8, 0.1})
             .set<flecs::components::graphics::Rgb>({165, 42, 42});
-        //pawn.add<PawnFSMContainer>(PawnFSM::Instance{pawn});
+        //pawn.add<PawnFSMContainer>({PawnFSM::Instance{pawn.id()}});
 
-	    //Context context;
-        //FSM::Instance machine{context};
-	    //std::unique<FSM> ptr;// = std::make_unique<FSM::Instance>(machine);
-        //pawn.add<PawnFSMContainer>(ptr);
+
+        //PawnFSM::Instance machine{blah};
+        //pawn.set<PawnFSMContainer>({PawnFSM::Instance{blah}});
+        //std::unique_ptr<PawnFSM::Instance> ptr(new PawnFSM::Instance(blah));// = std::make_unique<PawnFSM::Instance>(machine);
+        pawn.set<PawnFSMContainer>({std::unique_ptr<LogicPawn::PawnFSM::Instance>(new LogicPawn::PawnFSM::Instance{LogicPawn::Context{pawn.id(), ecs}})});
+
+
 
 
         //flecs::entity_to_json_desc_t desc;
