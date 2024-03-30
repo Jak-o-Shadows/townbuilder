@@ -48,7 +48,7 @@ struct Likes { };
 
 
 struct PawnFSMContainer {
-    std::unique_ptr<LogicPawn::PawnFSM::Instance> machine;
+    std::shared_ptr<LogicPawn::PawnFSM::Instance> machine;
 };
 
 

@@ -66,6 +66,10 @@ module::module(flecs::world& ecs) {
                 // No need to pathfind - stay still
                 //std::cout << "\t" << e.name() << " finished!" << std::endl;
                 e.set<Velocity>({0, 0});
+                std::shared_ptr<LogicPawn::PawnFSM::Instance> machine = e.get<PawnFSMContainer>()->machine;
+                LogicPawn::Arrived_Event ev;
+                machine->react(ev);
+
             } else {
                 //  Begin Pathfinding
                 flecs::id_t nextCellId = pathfind(ecs, map, x, y, targetX, targetY);
@@ -92,7 +96,7 @@ module::module(flecs::world& ecs) {
     rng.seed(20231104);
     std::uniform_int_distribution<int> xDist(0, map->m_width-1);
     std::uniform_int_distribution<int> yDist(0, map->m_height-1);
-    std::uniform_real_distribution<float> speedDist(0.1, 0.3);
+    std::uniform_real_distribution<float> speedDist(0.7, 0.9);
 
     constexpr int numPawns = 20;
     for (int pawnNumber=0; pawnNumber < numPawns; pawnNumber++){
@@ -118,11 +122,14 @@ module::module(flecs::world& ecs) {
         //PawnFSM::Instance machine{blah};
         //pawn.set<PawnFSMContainer>({PawnFSM::Instance{blah}});
         //std::unique_ptr<PawnFSM::Instance> ptr(new PawnFSM::Instance(blah));// = std::make_unique<PawnFSM::Instance>(machine);
-        pawn.set<PawnFSMContainer>({std::unique_ptr<LogicPawn::PawnFSM::Instance>(new LogicPawn::PawnFSM::Instance{LogicPawn::Context{pawn.id(), ecs}})});
+        pawn.set<PawnFSMContainer>({std::shared_ptr<LogicPawn::PawnFSM::Instance>(new LogicPawn::PawnFSM::Instance{LogicPawn::Context{pawn.id(), ecs}})});
         //flecs::entity_to_json_desc_t desc;
         //desc.serialize_path = true;
         //desc.serialize_values = true;
         //std::cout << pawn.to_json(&desc) << "\n";
+        std::shared_ptr<LogicPawn::PawnFSM::Instance> machine = pawn.get<PawnFSMContainer>()->machine;
+        machine->changeTo<LogicPawn::Walking>();
+        machine->update();
 
     }
 

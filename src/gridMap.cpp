@@ -5,6 +5,7 @@
 #include "flecs_components_graphics.h"
 #include "flecs_components_geometry.h"
 
+#include <random>
 
 
 
@@ -15,6 +16,11 @@ grid::grid(int width, int height, flecs::world *ecs, flecs::entity &parent)
         : m_width(width)
         , m_height(height) 
     { 
+
+        std::mt19937 rngMapColour;
+        rngMapColour.seed(641331);
+        std::uniform_real_distribution<float> colourDist(0, 50);
+
         for (int y = 0; y < height; y ++) {
             for (int x = 0; x < width; x ++) {
                 // TODO: Name them better
@@ -27,7 +33,7 @@ grid::grid(int width, int height, flecs::world *ecs, flecs::entity &parent)
                     .set<GridCellStatic>({x, y, 10*x + y})
                     .set<flecs::components::geometry::Box>({1, 0, 1})
                     .set<flecs::components::transform::Position3>({(float) x, 0, (float) y})
-                    .set<flecs::components::graphics::Rgb>({(float) x, (float) y, 55})
+                    .set<flecs::components::graphics::Rgb>({colourDist(rngMapColour), colourDist(rngMapColour), colourDist(rngMapColour)})
                     .child_of(parent);  // Need to give the map cells a parent so they show nicer in the flecs explorer
                 m_values.push_back(ecs->id(cell));
             }

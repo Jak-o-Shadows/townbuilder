@@ -1,5 +1,11 @@
 #include "logicPawn2.hpp"
 
+#include <tracy/Tracy.hpp>
+
+#include "gridMap.hpp"
+#include "componentsPawn.hpp"
+
+
 namespace LogicPawn {
 
 module::module(flecs::world& ecs) {
@@ -30,6 +36,9 @@ module::module(flecs::world& ecs) {
 // top-level region in the hierarchy
 void Alive::enter(Control& control) {
     flecs::entity e = flecs::entity(control.context().ecs, control.context().id);
+    char msg[100];
+    sprintf(&msg[0], "%s(%i) -> Alive", (char*) &e.name(), (int) e.id());
+    TracyMessage(msg, 100);
     e.add<Alive>();
 }
 void Alive::exit(Control& control) {
@@ -48,6 +57,7 @@ void Idle::exit(Control& control) {
 }
 
 // state can initiate transitions to _any_ other state
+/*
 void Idle::update(FullControl& control) {
     // multiple transitions can be initiated, can be useful in a hierarchy
     //if (control.context().cycleCount > 3)
@@ -55,11 +65,15 @@ void Idle::update(FullControl& control) {
     //else
         control.changeTo<Working>();
 }
+*/
 
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 void Working::enter(Control& control) {
     flecs::entity e = flecs::entity(control.context().ecs, control.context().id);
+    char msg[100];
+    sprintf(&msg[0], "%s(%i) -> Working", (char*) &e.name(), (int) e.id());
+    TracyMessage(msg, 100);
     e.add<Working>();
 }
 void Working::exit(Control& control) {
@@ -67,12 +81,15 @@ void Working::exit(Control& control) {
     e.remove<Working>();
 }
 
-void Working::update(FullControl& control) {
-    control.changeTo<Fleeing>();
-}
+//void Working::update(FullControl& control) {
+//    control.changeTo<Fleeing>();
+//}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 void Walking::enter(Control& control) {
     flecs::entity e = flecs::entity(control.context().ecs, control.context().id);
+    char msg[100];
+    sprintf(&msg[0], "%s(%i) -> Walking", (char*) &e.name(), (int) e.id());
+    TracyMessage(msg, 100);
     e.add<Walking>();
 }
 
@@ -83,10 +100,20 @@ void Walking::exit(Control& control) {
 
 void Walking::react(const Arrived_Event&, FullControl& control){
     flecs::entity e = flecs::entity(control.context().ecs, control.context().id);
+    flecs::world& ecs = control.context().ecs;
     // Randomly generate a new place
     int targetX = 5;
     int targetY = 5;
-    //e.add<PawnPathfindingGoal>(flecs::entity(ecs, map->get(targetX, targetY)))
+
+    flecs::entity mapEntity = ecs.lookup("map");
+    //  Each cell of the map is an entity
+    const int map_width = 20;
+    const int map_height = 20;
+    // Stored in a vector for each access
+    std::shared_ptr<grid> map = mapEntity.get<MapContainer>()->map;
+
+    e.add<Pawn::PawnPathfindingGoal>(flecs::entity(ecs, map->get(targetX, targetY)));
+    std::cout << e.name() << "(" << e.id() << ")" << " Arrived" << std::endl;
     control.changeTo<Walking>();
 }
 

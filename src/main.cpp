@@ -26,6 +26,13 @@
 #include "flecs_systems_sokol.h"
 #include "flecs_game.h"
 
+#include <iostream>
+#include <vector>
+#include <random>
+
+
+#define HFSM2_ENABLE_STRUCTURE_REPORT
+#include <hfsm2/machine.hpp>
 
 // Tracy memory tracking
 void* operator new(std::size_t count) {
@@ -39,13 +46,7 @@ void operator delete(void* ptr) noexcept {
 }
 
 
-#include <iostream>
-#include <vector>
-#include <random>
 
-
-#define HFSM2_ENABLE_STRUCTURE_REPORT
-#include <hfsm2/machine.hpp>
 
 
 struct Game {
@@ -148,7 +149,9 @@ int main(int, char *[]) {
         .member<int>("unemployed")
         .member<int>("woodcutter");
 
-
+    ecs.component<Pawn::Position>()
+        .member<double>("x")
+        .member<double>("y");
 
 
     
@@ -301,7 +304,7 @@ int main(int, char *[]) {
     g->center = {0, 0, 0};//{ to_x(map_width / 2), 0, to_z(map_height / 2) };
     g->size = map_width * (TileSize + TileSpacing) + 2;
     
-
+    // Cannot figure out how to move these to render - so stuff it
     // Init UI
     flecs::components::graphics::Camera camera_data = {};
     camera_data.set_up(0, 1, 0);
@@ -320,7 +323,6 @@ int main(int, char *[]) {
     light_data.intensity = 0.01;
     auto light = ecs.entity("Sun")
         .set<flecs::components::graphics::DirectionalLight>(light_data);
-    
 
     flecs::components::gui::Canvas canvas_data = {};
     canvas_data.width = 800;
@@ -335,6 +337,10 @@ int main(int, char *[]) {
         .set<flecs::components::gui::Canvas>(canvas_data);
 
 
+    
+
+
+
 
 
 
@@ -347,7 +353,7 @@ int main(int, char *[]) {
 
     ecs.app()
         .enable_rest()
-        .target_fps(60)
+        .threads(4)
         .run();
 
 }

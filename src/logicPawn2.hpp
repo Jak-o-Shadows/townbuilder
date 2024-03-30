@@ -60,13 +60,13 @@ struct Context {
 	struct Idle:PawnFSM::State {
 		void enter(Control& control);
 		void exit(Control& control);
-		void update(FullControl& control);
+		//void update(FullControl& control);
 	};
 
 	struct Working:PawnFSM::State {
 		void enter(Control& control);
 		void exit(Control& control);
-		void update(FullControl& control);
+		//void update(FullControl& control);
 	};
 
 	struct Walking:PawnFSM::State {
