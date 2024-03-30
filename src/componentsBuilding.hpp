@@ -1,5 +1,17 @@
 #pragma once
 
+#include <flecs.h>
+
+
+namespace Building{
+
+struct module {
+    module(flecs::world& ecs);
+};
+
+extern flecs::entity buildingsParent;
+
+
 struct Location {
     int x;
     int y;
@@ -19,5 +31,7 @@ struct BuildingUI {
     int doorY;
 };
 
-struct Building {};
-struct Nature {};
+struct BuildingType {};
+struct NatureType {};
+
+}

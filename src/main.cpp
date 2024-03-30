@@ -8,7 +8,7 @@
 #include "componentsUi.hpp"
 #include "logicPawn2.hpp"
 #include "ticks.hpp"
-//#include "render.hpp"
+#include "render.hpp"
 
 #include "tracy_zones.hpp"
 
@@ -123,6 +123,7 @@ int main(int, char *[]) {
     ecs.import<LogicPawn::module>();
     ecs.import<Pawn::module>();
     ecs.import<Ticks::module>();
+    ecs.import<Building::module>();
 
 
 
@@ -132,13 +133,12 @@ int main(int, char *[]) {
 
     // Need to give the entities a parent so they show nicer in the flecs explorer
     flecs::entity resourcesParent = ecs.entity("resources");
-    flecs::entity buildingsParent = ecs.entity("buildings");
 
 
 
 
     // Register components with reflection data
-    ecs.component<Resources>()
+    ecs.component<Building::Resources>()
         .member<int>("fish")
         .member<int>("stone")
         .member<int>("wood");
@@ -172,13 +172,13 @@ int main(int, char *[]) {
             if (treeDist(rngMap)){
                 auto tree = ecs.entity()
                     .child_of(resourcesParent)
-                    .set<Location>({x, y})
-                    .set<Resources>({0, 100, 0})
-                    .add<Nature>()
-                    ;//
-                    //.set<flecs::components::transform::Position3>({(float) x, 1, (float) y})
-                    //.set<flecs::components::graphics::Rgb>({0, 255, 0})
-                    //.set<flecs::components::geometry::Box>({0.1, 0.5, 0.1});
+                    .set<Building::Location>({x, y})
+                    .set<Building::Resources>({0, 100, 0})
+                    .add<Building::NatureType>()
+                    // TODO: Move this Rendering stuff to `render.cpp`
+                    .set<flecs::components::transform::Position3>({(float) x, 1, (float) y})
+                    .set<flecs::components::graphics::Rgb>({0, 255, 0})
+                    .set<flecs::components::geometry::Box>({0.1, 0.5, 0.1});
             }
         }
     }
@@ -210,17 +210,7 @@ int main(int, char *[]) {
 
 
 
-    // Start some buildings!
-    auto granary = ecs.entity("Granary")
-        .child_of(buildingsParent)
-        .set<Location>({3, 8})
-        .set<BuildingUI>({3, 3, -1, 0})
-        .set<Resources>({0, 0, 0})
-        .add<Building>()
-        ;
-//        .set<flecs::components::transform::Position3>({3, 0.1, 8})
-//        .set<flecs::components::geometry::Box>({2, 2, 2})
-//        .set<flecs::components::graphics::Rgb>({20, 0, 0});
+
 
 
 
@@ -255,7 +245,7 @@ int main(int, char *[]) {
 
     // Global
     auto ui = ecs.entity("UI Things")
-        .add<Resources>()
+        .add<Building::Resources>()
         .add<UiPawnJobs>();
 
 
@@ -263,12 +253,12 @@ int main(int, char *[]) {
     // System to update resources
     //  A system is used here because it doesn't need to update at the same
     //  (probably faster) rate as the things are taken down
-    auto updateResourceUI_sys = ecs.system<Resources>("System_Update Resource UI")
-        .with<Building>()  // TODO: Want this to also consider the resources that pawns are carrying
+    auto updateResourceUI_sys = ecs.system<Building::Resources>("System_Update Resource UI")
+        .with<Building::BuildingType>()  // TODO: Want this to also consider the resources that pawns are carrying
         .tick_source(Ticks::tick_ui)
-        .iter([&ui](flecs::iter it, Resources *r){
+        .iter([&ui](flecs::iter it, Building::Resources *r){
             ZoneScopedN("System_Update Resource UI");
-            Resources sum{0, 0, 0};
+            Building::Resources sum{0, 0, 0};
             for (int i: it) {
                 // TODO: Replace with the reflection interface?
                 sum.fish += r[i].fish;
@@ -279,7 +269,7 @@ int main(int, char *[]) {
             //std::cout << "\t fish: "  << sum.fish << std::endl;
             //std::cout << "\t stone: " << sum.stone << std::endl;
             //std::cout << "\t wood: "  << sum.wood << std::endl;
-            ui.set<Resources>(sum);
+            ui.set<Building::Resources>(sum);
         });
 
     // Get a count of how many pawns are doing each job
@@ -345,26 +335,13 @@ int main(int, char *[]) {
         .set<flecs::components::gui::Canvas>(canvas_data);
 
 
-    // Add rendering components to Pawns
-    //  As iterating, must defer
-    // TODO: This should be an observer looking for when new pawns are added to the pawnsParent
-    ecs.defer_begin();
-    Pawn::pawnsParent.children([](flecs::entity pawn) {
-            // Get the location
-            flecs::entity currentCell = pawn.target<Pawn::PawnOccupying>();
-            const GridCellStatic* loc = currentCell.get<GridCellStatic>();
-            // Then set renderable components
-            pawn.set<flecs::components::transform::Position3>({(float) loc->x, 0.1, (float) loc->y});
-            pawn.set<flecs::components::geometry::Box>({0.1, 0.8, 0.1});
-            pawn.set<flecs::components::graphics::Rgb>({165, 42, 42});
-        });
-    ecs.defer_end();
 
 
 
 
 
-    //ecs.import<Render::module>();
+
+    ecs.import<Render::module>();
 
 
 

@@ -12,6 +12,7 @@ target_sources(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/gridMap.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/componentsPawn.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ticks.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/render.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/componentsBuilding.cpp
     ${DIR_DEPS}/flecs_components_cglm.c
     ${DIR_DEPS}/flecs_components_geometry.c
     ${DIR_DEPS}/flecs_components_graphics.c
