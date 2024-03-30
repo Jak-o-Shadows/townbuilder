@@ -10,6 +10,8 @@
 
 
 
+
+
 // Have a normal vector of the the cells of the grid.
 //  This makes it easier than having them all as entities, as otherwise
 //  would need to query all the time just to get a cell reference
@@ -27,4 +29,8 @@ private:
 };
 
 // Main pathfinding function. Gives the next cell to move towards
-flecs::id_t pathfind(flecs::world &ecs, grid* map, int currentX, int currentY, int targetX, int targetY);
+flecs::id_t pathfind(flecs::world &ecs, std::shared_ptr<grid> map, int currentX, int currentY, int targetX, int targetY);
+
+struct MapContainer {
+    std::shared_ptr<grid> map;
+};

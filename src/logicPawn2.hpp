@@ -23,12 +23,18 @@ struct Context {
 	using M = hfsm2::MachineT<hfsm2::Config::ContextT<Context>>;
 
 
+	// Events
+	struct Arrived_Event {};
+	//struct SecondaryEvent { int payload; };
+
+
 
 	// states need to be forward declared to be used in FSM struct declaration.
 	//    This also allows them to be used as tags in flecs
 	struct Alive;
 	struct Idle;
 	struct Working;
+	struct Walking;
 	struct Fleeing;
 	struct Combat;
 	struct Dead;
@@ -39,6 +45,7 @@ struct Context {
 						// .. with 4 sub-states
 						Idle,
 						Working,
+						Walking,
 						Fleeing,
 						Combat
 					>,
@@ -60,6 +67,12 @@ struct Context {
 		void enter(Control& control);
 		void exit(Control& control);
 		void update(FullControl& control);
+	};
+
+	struct Walking:PawnFSM::State {
+		void enter(Control& control);
+		void exit(Control& control);
+		void react(const Arrived_Event&, FullControl& control);
 	};
 
 	struct Combat:PawnFSM::State {

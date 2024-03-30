@@ -79,7 +79,7 @@ public:
 
 
 
-flecs::id_t pathfind(flecs::world &ecs, grid* map, int currentX, int currentY, int targetX, int targetY){
+flecs::id_t pathfind(flecs::world &ecs, std::shared_ptr<grid> map, int currentX, int currentY, int targetX, int targetY){
 
 
     int x = currentX;
@@ -172,8 +172,8 @@ flecs::id_t pathfind(flecs::world &ecs, grid* map, int currentX, int currentY, i
     // Work backwards from the target cell to get the path
     x = targetX;
     y = targetY;
-    auto thisSpot = map->get(x, y);
-    auto prevSpot = thisSpot;  // Handle final case where there is just one link
+    flecs::id_t thisSpot = map->get(x, y);
+    flecs::id_t prevSpot = thisSpot;  // Handle final case where there is just one link
     for (int i = 0; i <= maxIter; i++) { // Theoretically the path could use all cells
         thisSpot = prevGrid.get(x, y);
         //std::cout << x << ", " << y << " of id" << thisSpot << std::endl;

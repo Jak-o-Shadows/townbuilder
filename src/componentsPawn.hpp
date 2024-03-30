@@ -1,5 +1,22 @@
 #pragma once
 
+#include <flecs.h>
+#include <tracy/Tracy.hpp>
+
+#include "tracy_zones.hpp"
+
+#include "gridMap.hpp"
+#include "logicPawn2.hpp"
+
+namespace Pawn{
+
+struct module {
+    module(flecs::world& ecs);
+};
+
+extern flecs::entity pawnsParent;
+
+
 struct PawnLifeTraits {
     float hunger;
     float thirst;
@@ -29,7 +46,11 @@ struct Velocity {
 
 struct Likes { };
 
-struct Walking { };
+
+struct PawnFSMContainer {
+    std::unique_ptr<LogicPawn::PawnFSM::Instance> machine;
+};
+
 
 
 // Pawn Occupations
@@ -45,3 +66,6 @@ struct PawnWoodcutterStateIdle {};
 struct PawnWoodcutterStateWalkingTo {};
 struct PawnWoodcutterStateReturning {};
 struct PawnWoodcutterStateChopping {};
+
+
+}

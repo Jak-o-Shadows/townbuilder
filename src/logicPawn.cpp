@@ -8,6 +8,23 @@ module::module(flecs::world& ecs) {
     ecs.module<module>();
 
 
+    // State actions
+    /*
+    auto blah_sys = ecs.system<>("ASDF")
+        .with<PawnWoodcutterState>(ecs.component<PawnWoodcutterStateIdle>())
+        .tick_source(tick_pawn_behaviour)
+        .multi_threaded()
+        .iter([](flecs::iter it){
+            ZoneScopedN("Pawn Woodctuter Idle State Actions");
+            for (int i: it){
+                flecs::entity e = it.entity(i);
+                // If they are idle, get them to find the nearest wood and path-find towards it
+                
+            }
+    });
+    */
+
+
 };
 
 // top-level region in the hierarchy
@@ -52,6 +69,25 @@ void Working::exit(Control& control) {
 
 void Working::update(FullControl& control) {
     control.changeTo<Fleeing>();
+}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+void Walking::enter(Control& control) {
+    flecs::entity e = flecs::entity(control.context().ecs, control.context().id);
+    e.add<Walking>();
+}
+
+void Walking::exit(Control& control) {
+    flecs::entity e = flecs::entity(control.context().ecs, control.context().id);
+    e.remove<Walking>();
+}
+
+void Walking::react(const Arrived_Event&, FullControl& control){
+    flecs::entity e = flecs::entity(control.context().ecs, control.context().id);
+    // Randomly generate a new place
+    int targetX = 5;
+    int targetY = 5;
+    //e.add<PawnPathfindingGoal>(flecs::entity(ecs, map->get(targetX, targetY)))
+    control.changeTo<Walking>();
 }
 
 

@@ -9,6 +9,9 @@ add_executable(${PROJECT_NAME} src/main.cpp)
 message("deps " ${DIR_DEPS})
 target_sources(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/gridMap.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/logicPawn.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/componentsPawn.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/ticks.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/render.cpp
     ${DIR_DEPS}/flecs_components_cglm.c
     ${DIR_DEPS}/flecs_components_geometry.c
     ${DIR_DEPS}/flecs_components_graphics.c
