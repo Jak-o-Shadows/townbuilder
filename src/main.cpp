@@ -149,9 +149,7 @@ int main(int, char *[]) {
         .member<int>("unemployed")
         .member<int>("woodcutter");
 
-    ecs.component<Pawn::Position>()
-        .member<double>("x")
-        .member<double>("y");
+
 
 
     

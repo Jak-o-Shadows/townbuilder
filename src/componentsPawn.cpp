@@ -25,7 +25,8 @@ module::module(flecs::world& ecs) {
     // Each pawn can only have a single next cell, so make exclusive
     ecs.component<PawnNextCell>().add(flecs::Exclusive);
 
-    // Register components with reflection data
+    // Register components with reflection data & doc
+
     ecs.component<PawnLifeTraits>()
         .member<float>("hunger")
         .member<float>("thirst")
@@ -34,7 +35,10 @@ module::module(flecs::world& ecs) {
     ecs.component<PawnAbilityTraits>()
         .member<float>("strength")
         .member<float>("speed");
-
+    ecs.component<Pawn::Position>()
+        .member<double>("x")
+        .member<double>("y")
+        .set_doc_brief("Location within the grid cell. Limited to [-1, 1]");
 
     // Need to give the entities a parent so they show nicer in the flecs explorer
     pawnsParent = ecs.entity("pawns");
@@ -63,8 +67,12 @@ module::module(flecs::world& ecs) {
             int targetX = targetStatic->x;
             int targetY = targetStatic->y;
             if ((targetX == x) && (targetY == y)) {
-                // No need to pathfind - stay still
+                // No need to pathfind - just move to the centre of the cell
+                //  Jump to it - realistically the next level logic would take over and move to the right place
+                Position* p = e.get_mut<Position>();
                 //std::cout << "\t" << e.name() << " finished!" << std::endl;
+                p->x = 0;
+                p->y = 0;
                 e.set<Velocity>({0, 0});
                 std::shared_ptr<LogicPawn::PawnFSM::Instance> machine = e.get<PawnFSMContainer>()->machine;
                 LogicPawn::Arrived_Event ev;
@@ -79,9 +87,9 @@ module::module(flecs::world& ecs) {
                 // Calculate velocity to get to next cell
                 // TODO: This might need to be smarter if I have non-uniform cells
                 // TODO: This is assuming from middle of cell to middle of cell, not from edge to edge
-                auto nextStatic = nextCell.get<GridCellStatic>();
                 const PawnAbilityTraits *pawnAbilityTraits = e.get<PawnAbilityTraits>();
                 float speed = pawnAbilityTraits->speed;
+                auto nextStatic = nextCell.get<GridCellStatic>();
                 float vx = (nextStatic->x - x)*speed;
                 float vy = (nextStatic->y -y)*speed;
                 //std::cout << "\t Velocity To: " << vx << ", " << vy << std::endl;
@@ -158,8 +166,8 @@ module::module(flecs::world& ecs) {
             // Assume that the velocity is correct, and if we move over any boundary we're there
             if (p[i].x > 1){
                 movedCell = true;
-                p[i].x = 0;
-            } else if (p[i].x < 0) {
+                p[i].x = -1;
+            } else if (p[i].x < -1) {
                 // Moved cell left
                 movedCell = true;
                 p[i].x = 1;
@@ -167,8 +175,8 @@ module::module(flecs::world& ecs) {
             if (p[i].y > 1) {
                 // Moved cell up
                 movedCell = true;
-                p[i].y = 0;
-            } else if (p[i].y < 0) {
+                p[i].y = -1;
+            } else if (p[i].y < -1) {
                 // Moved cell down
                 movedCell = true;
                 p[i].y = 1;

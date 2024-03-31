@@ -96,8 +96,8 @@ module::module(flecs::world& ecs) {
         // Get cell from pawn occupying
         flecs::entity currentCell = pawn.target<Pawn::PawnOccupying>();
         const GridCellStatic* loc = currentCell.get<GridCellStatic>();
-        renderPos.x = loc->x + p.x;
-        renderPos.z = loc->y + p.y;
+        renderPos.x = loc->x + p.x/2;
+        renderPos.z = loc->y + p.y/2;
     });
 
 
