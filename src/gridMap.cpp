@@ -5,10 +5,125 @@
 #include "flecs_components_graphics.h"
 #include "flecs_components_geometry.h"
 
+#include "componentsBuilding.hpp"
+
 #include <random>
 
 
+namespace Map{
 
+// Handle extern entities
+flecs::entity mapEntity;
+flecs::entity resourcesParent;
+
+
+
+void setCellRelationship(flecs::world& ecs, std::shared_ptr<grid> map, int x, int y, int second_x, int second_y, float weight) {
+    flecs::entity thisCell = flecs::entity(ecs, map->get(x,y));
+    thisCell.set<GridConnected>(map->get(second_x, second_y), {weight});
+}
+
+
+void setCellConnectivity(flecs::world& ecs, std::shared_ptr<grid> map, int x, int y, float left, float right, float up, float down) {
+
+    if (x-1 >= 0) {
+        setCellRelationship(ecs, map, x, y, x-1, y, left);
+    }
+    if (x+1 <= map->m_width-1) {
+        setCellRelationship(ecs, map, x, y, x+1, y, right);
+    }
+    if (y-1 >= 0) {
+        setCellRelationship(ecs, map, x, y, x, y-1, up);
+    }
+    if (y+1 <= map->m_height-1) {
+        setCellRelationship(ecs, map, x, y, x, y+1, down);
+    }
+}
+
+
+
+
+
+
+module::module(flecs::world& ecs) {
+    // Register module with world. The module entity will be created with the
+    // same hierarchy as the C++ namespaces (e.g. simple::module)
+    ecs.module<module>();
+
+    ecs.import<Building::module>();
+
+    // Define the map
+    //  This is defined early because it isn't properly in the ECS, so initialisation order matters mroe
+    // Have a base entity - lets the map class be accssible from the ECS, and is a parent,
+    //   making it show nicer in the explorer
+    mapEntity = ecs.entity("map");
+    //  Each cell of the map is an entity
+    const int map_width = 20;
+    const int map_height = 20;
+    // Stored in a vector for each access
+    std::shared_ptr<grid> map = std::make_shared<grid>(grid(map_width, map_height, &ecs, mapEntity));
+    // Add the map pointer to the map entity
+    mapEntity.set<MapContainer>({map});
+    //  Initially, fully connected
+    for (int x = 0; x<map_width; x++){
+        for (int y = 0; y<map_height; y++){
+            flecs::entity thisCell = flecs::entity(ecs, map->get(x,y));
+            if (x > 0){
+                // Left valid
+                thisCell.set<GridConnected>(map->get(x-1, y), {1});
+            }
+            if (x <map_width-1){
+                // Right valid
+                thisCell.set<GridConnected>(map->get(x+1, y), {2});
+            }
+            if (y > 0) {
+                // Top valid
+                thisCell.set<GridConnected>(map->get(x, y-1), {6});
+            }
+            if (y < map_height-1){
+                // Bottom valid
+                thisCell.set<GridConnected>(map->get(x, y+1), {3});
+            }
+        }
+    }
+
+
+    // Need to give the entities a parent so they show nicer in the flecs explorer
+    resourcesParent = ecs.entity("resources");
+
+
+    // Map random-generation is VERY VERY primitive right now
+    std::mt19937 rngMap;
+    rngMap.seed(641331);
+    std::bernoulli_distribution treeDist(0.2);
+
+    // Define trees
+    for (int x = 0; x<map_width; x++){
+        for (int y = 0; y<map_height; y++){
+            // Rectangular grid is simply connected if no trees
+                // TODO: This currently lets you go onto tree-cells, but not out. Is that smart?
+            flecs::entity thisCell = flecs::entity(ecs, map->get(x,y));
+            if (treeDist(rngMap)){
+                auto tree = ecs.entity()
+                    .child_of(resourcesParent)
+                    .set<Building::Location>({x, y})
+                    .set<Building::Resources>({0, 100, 0})
+                    .add<Building::NatureType>()
+                    // TODO: Move this Rendering stuff to `render.cpp`
+                    .set<flecs::components::transform::Position3>({(float) x, 1, (float) y})
+                    .set<flecs::components::graphics::Rgb>({0, 255, 0})
+                    .set<flecs::components::geometry::Box>({0.1, 0.5, 0.1});
+            }
+        }
+    }
+
+
+
+
+
+
+
+}
 // Have a normal vector of the the cells of the grid.
 //  This makes it easier than having them all as entities, as otherwise
 //  would need to query all the time just to get a cell reference
@@ -51,6 +166,7 @@ flecs::id_t grid::operator()(int32_t x, int32_t y) {
 flecs::id_t grid::get(int32_t x, int32_t y) {  // TODO: just use an operator as above
     return m_values[y * m_width + x];
 }
+
 
 
 
@@ -196,3 +312,4 @@ flecs::id_t pathfind(flecs::world &ecs, std::shared_ptr<grid> map, int currentX,
 
 }
 
+}

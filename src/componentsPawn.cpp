@@ -43,8 +43,7 @@ module::module(flecs::world& ecs) {
     // Need to give the entities a parent so they show nicer in the flecs explorer
     pawnsParent = ecs.entity("pawns");
 
-    flecs::entity mapEntity = ecs.lookup("map");
-    std::shared_ptr<grid> map = mapEntity.get<MapContainer>()->map;
+    std::shared_ptr<Map::grid> map = Map::mapEntity.get<Map::MapContainer>()->map;
 
     ecs.observer()
         .event(flecs::OnAdd)

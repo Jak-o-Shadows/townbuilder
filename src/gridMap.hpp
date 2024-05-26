@@ -9,8 +9,14 @@
 #include <iostream>
 
 
+namespace Map{
 
+struct module {
+    module(flecs::world& ecs);
+};
 
+extern flecs::entity mapEntity;
+extern flecs::entity resourcesParent;
 
 // Have a normal vector of the the cells of the grid.
 //  This makes it easier than having them all as entities, as otherwise
@@ -34,3 +40,5 @@ flecs::id_t pathfind(flecs::world &ecs, std::shared_ptr<grid> map, int currentX,
 struct MapContainer {
     std::shared_ptr<grid> map;
 };
+
+}

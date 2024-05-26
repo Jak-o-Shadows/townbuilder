@@ -14,6 +14,13 @@ module::module(flecs::world& ecs) {
     buildingsParent = ecs.entity("buildings");
 
 
+    // Register components with reflection data
+    ecs.component<Building::Resources>()
+        .member<int>("fish")
+        .member<int>("stone")
+        .member<int>("wood");
+
+
     // Start some buildings!
     auto granary = ecs.entity("Granary")
         .child_of(buildingsParent)
