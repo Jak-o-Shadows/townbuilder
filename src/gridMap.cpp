@@ -18,25 +18,34 @@ flecs::entity resourcesParent;
 
 
 
-void setCellRelationship(flecs::world& ecs, std::shared_ptr<grid> map, int x, int y, int second_x, int second_y, float weight) {
+void setCellRelationship(flecs::world& ecs, std::shared_ptr<grid> map, int x, int y, int second_x, int second_y, float weight, bool reversible) {
+    std::cout << "Setting (" << x << ", " << y << ") --> ()" << second_x << ", " << second_y << ") to " << weight << std::endl;
     flecs::entity thisCell = flecs::entity(ecs, map->get(x,y));
-    thisCell.set<GridConnected>(map->get(second_x, second_y), {weight});
+    flecs::entity secondCell = flecs::entity(ecs, map->get(second_x, second_y));
+    thisCell.set<GridConnected>(secondCell.id(), {weight});
+    if (reversible) {
+        secondCell.set<GridConnected>(thisCell.id(), {weight});
+    }
 }
 
 
-void setCellConnectivity(flecs::world& ecs, std::shared_ptr<grid> map, int x, int y, float left, float right, float up, float down) {
+void setCellConnectivity(flecs::world& ecs, std::shared_ptr<grid> map, int x, int y, float left, float right, float up, float down, bool reversible) {
 
-    if (x-1 >= 0) {
-        setCellRelationship(ecs, map, x, y, x-1, y, left);
+    if (x > 0) {
+        // Left valid
+        setCellRelationship(ecs, map, x, y, x-1, y, left, reversible);
     }
-    if (x+1 <= map->m_width-1) {
-        setCellRelationship(ecs, map, x, y, x+1, y, right);
+    if (x < map->m_width-1) {
+        // Right valid
+        setCellRelationship(ecs, map, x, y, x+1, y, right, reversible);
     }
-    if (y-1 >= 0) {
-        setCellRelationship(ecs, map, x, y, x, y-1, up);
+    if (y > 0) {
+        // Up valid
+        setCellRelationship(ecs, map, x, y, x, y-1, up, reversible);
     }
-    if (y+1 <= map->m_height-1) {
-        setCellRelationship(ecs, map, x, y, x, y+1, down);
+    if (y < map->m_height-1) {
+        // Down valid
+        setCellRelationship(ecs, map, x, y, x, y+1, down, reversible);
     }
 }
 
@@ -67,23 +76,7 @@ module::module(flecs::world& ecs) {
     //  Initially, fully connected
     for (int x = 0; x<map_width; x++){
         for (int y = 0; y<map_height; y++){
-            flecs::entity thisCell = flecs::entity(ecs, map->get(x,y));
-            if (x > 0){
-                // Left valid
-                thisCell.set<GridConnected>(map->get(x-1, y), {1});
-            }
-            if (x <map_width-1){
-                // Right valid
-                thisCell.set<GridConnected>(map->get(x+1, y), {2});
-            }
-            if (y > 0) {
-                // Top valid
-                thisCell.set<GridConnected>(map->get(x, y-1), {6});
-            }
-            if (y < map_height-1){
-                // Bottom valid
-                thisCell.set<GridConnected>(map->get(x, y+1), {3});
-            }
+            setCellConnectivity(ecs, map, x, y, 1, 2, 6, 3, false);
         }
     }
 
@@ -94,7 +87,7 @@ module::module(flecs::world& ecs) {
 
     // Map random-generation is VERY VERY primitive right now
     std::mt19937 rngMap;
-    rngMap.seed(641331);
+    rngMap.seed(11223344);
     std::bernoulli_distribution treeDist(0.2);
 
     // Define trees
@@ -118,7 +111,16 @@ module::module(flecs::world& ecs) {
     }
 
 
-
+    // Update the map by making the cells unaccessible
+    //  TODO: This should be an observer on the children 
+    //  TODO: Not really markign as inaccessible because the pathfinding currently will break
+    /*resourcesParent.children([&ecs, map](flecs::entity resource){
+        // Get location
+        const Building::Location* loc = resource.get<Building::Location>();
+        float weight = 9999999999;
+        setCellConnectivity(ecs, map, loc->x, loc->y, weight, weight, weight, weight, true);
+    });*/
+    
 
 
 
