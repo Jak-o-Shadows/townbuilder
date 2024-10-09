@@ -34,28 +34,28 @@ module::module(flecs::world& ecs) {
     if (true) {
 
         ecs.system("raw")
-            .iter([](flecs::iter it){
+            .run([](flecs::iter it){
                 FrameMarkNamed("EverFrame");
         });
 
         ecs.system("Tracy 100 Hz Frame")
             .kind(flecs::OnUpdate)
             .tick_source(tick_100_Hz)
-            .iter([](flecs::iter& it) {
+            .run([](flecs::iter& it) {
                 FrameMarkNamed("100 Hz");
         });
 
         ecs.system("Tracy Pawn Behaviour Frame")
             .kind(flecs::OnUpdate)
             .tick_source(tick_pawn_behaviour)
-            .iter([](flecs::iter& it) {
+            .run([](flecs::iter& it) {
                 FrameMarkNamed("Pawn Behaviour");
         });
 
         ecs.system("Tracy UI Frame")
             .kind(flecs::OnUpdate)
             .tick_source(tick_ui)
-            .iter([](flecs::iter& it) {
+            .run([](flecs::iter& it) {
                 FrameMarkNamed("Tick UI");
         });
     }

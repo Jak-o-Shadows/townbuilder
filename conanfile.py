@@ -14,7 +14,7 @@ class FlecsOrbitSimConan(ConanFile):
     generators = "CMakeToolchain", "CMakeDeps"
 
     def requirements(self):
-        self.requires("flecs/3.2.8")
+        self.requires("flecs/4.0.0")
         self.requires("tracy/0.9.1")
         self.requires("cglm/0.9.1")
     

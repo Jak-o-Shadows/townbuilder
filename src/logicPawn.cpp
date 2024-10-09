@@ -108,13 +108,18 @@ void Walking::react(const Arrived_Event&, FullControl& control){
     //  Each cell of the map is an entity
 
     // Stored in a vector for each access
-    std::shared_ptr<Map::grid> map = Map::mapEntity.get<Map::MapContainer>()->map;
+    const Map::Grid* map = Map::mapEntity.get<Map::Grid>();
     int map_width = map->m_width;
     int map_height = map->m_height;
 
-    e.add<Pawn::PawnPathfindingGoal>(flecs::entity(ecs, map->get(targetX, targetY)));
+    /*
+    flecs::id_t id2 = map->get(targetX, targetY);
+    flecs::entity e2 = flecs::entity(ecs, id2);
+    //e.add<Pawn::PawnPathfindingGoal>(flecs::entity(ecs, map->get(targetX, targetY)));
+    e.add<Pawn::PawnPathfindingGoal>(e2);
     std::cout << e.name() << "(" << e.id() << ")" << " Arrived" << std::endl;
     control.changeTo<Walking>();
+    */
 }
 
 

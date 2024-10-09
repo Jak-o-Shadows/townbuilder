@@ -60,7 +60,7 @@ module::module(flecs::world& ecs) {
         const Building::BuildingUI* size = building.get<Building::BuildingUI>();
         building.set<flecs::components::transform::Position3>({(float) loc->x, 0.1, (float) loc->y});
         building.set<flecs::components::geometry::Box>({(float) size->sizeX, 2, (float) size->sizeY});
-        building.set<flecs::components::graphics::Rgb>({20, 0, 0});
+        building.set<flecs::components::graphics::Color>({20, 0, 0});
     });
     ecs.defer_end();
 
@@ -80,7 +80,7 @@ module::module(flecs::world& ecs) {
             // Then set renderable components
             pawn.set<flecs::components::transform::Position3>({(float) loc->x, 0.1, (float) loc->y});
             pawn.set<flecs::components::geometry::Box>({0.1, 0.8, 0.1});
-            pawn.set<flecs::components::graphics::Rgb>({165, 42, 42});
+            pawn.set<flecs::components::graphics::Color>({165, 42, 42});
         });
     ecs.defer_end();
 

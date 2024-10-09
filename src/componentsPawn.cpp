@@ -46,7 +46,7 @@ module::module(flecs::world& ecs) {
     // Need to give the entities a parent so they show nicer in the flecs explorer
     pawnsParent = ecs.entity("pawns");
 
-    std::shared_ptr<Map::grid> map = Map::mapEntity.get<Map::MapContainer>()->map;
+    const Map::Grid* map = Map::mapEntity.get<Map::Grid>();
 
     ecs.observer()
         .event(flecs::OnAdd)
@@ -123,10 +123,9 @@ module::module(flecs::world& ecs) {
             .set<Velocity>({0, 0})
             .set<PawnAbilityTraits>({0, speed})
             .add<PawnOccupationWoodcutter>()
-            .add<PawnWoodcutterState>(ecs.component<PawnWoodcutterStateIdle>())
-            .add<PawnOccupying>(flecs::entity(ecs, map->get(myX,myY)))
-            .add<PawnPathfindingGoal>(flecs::entity(ecs, map->get(targetX, targetY)));
-        //pawn.add<PawnFSMContainer>({PawnFSM::Instance{pawn.id()}});
+            .add<PawnWoodcutterState>(ecs.component<PawnWoodcutterStateIdle>());
+            //.add<PawnOccupying>(flecs::entity(ecs, map->get(myX,myY)))
+            //.add<PawnPathfindingGoal>(flecs::entity(ecs, map->get(targetX, targetY)));
 
 
         //PawnFSM::Instance machine{blah};
@@ -153,11 +152,15 @@ module::module(flecs::world& ecs) {
     // Put systems in
     auto move_sys = ecs.system<Position, Velocity>("System_Intra Cell Movement")
     .tick_source(Ticks::tick_pawn_behaviour)
-    .iter([](flecs::iter it, Position *p, Velocity *v){
-        for (int i: it) {
-            p[i].x += v[i].x * it.delta_system_time();
-            p[i].y += v[i].y * it.delta_system_time();
-            //std::cout << p[i].x << ", " << p[i].y << " @ " << v[i].x << ", " << v[i].y << std::endl;
+    .run([](flecs::iter& it){
+        while (it.next()){
+            auto p = it.field<Position>(0);
+            auto v = it.field<Velocity>(0);
+            for (auto i: it){
+                p[i].x += v[i].x * it.delta_system_time();
+                p[i].y += v[i].y * it.delta_system_time();
+                //std::cout << p[i].x << ", " << p[i].y << " @ " << v[i].x << ", " << v[i].y << std::endl;
+            }
         }
     });
     
@@ -165,40 +168,37 @@ module::module(flecs::world& ecs) {
     .with<PawnNextCell>(flecs::Wildcard)
     .tick_source(Ticks::tick_pawn_behaviour)
     .multi_threaded()
-    .iter([](flecs::iter it, Position *p){
+    .each([](flecs::entity e, Position& p){
         ZoneScopedN("System Between Cell Movement");
-        for (int i: it){
-            //std::cout << "Checking Cell Moveover" << std::endl;
-            flecs::entity e = it.entity(i);
-            bool movedCell = false;
-            // Assume that the velocity is correct, and if we move over any boundary we're there
-            if (p[i].x > 1){
-                movedCell = true;
-                p[i].x = -1;
-            } else if (p[i].x < -1) {
-                // Moved cell left
-                movedCell = true;
-                p[i].x = 1;
-            } 
-            if (p[i].y > 1) {
-                // Moved cell up
-                movedCell = true;
-                p[i].y = -1;
-            } else if (p[i].y < -1) {
-                // Moved cell down
-                movedCell = true;
-                p[i].y = 1;
-            }
+        //std::cout << "Checking Cell Moveover" << std::endl;
+        bool movedCell = false;
+        // Assume that the velocity is correct, and if we move over any boundary we're there
+        if (p.x > 1){
+            movedCell = true;
+            p.x = -1;
+        } else if (p.x < -1) {
+            // Moved cell left
+            movedCell = true;
+            p.x = 1;
+        } 
+        if (p.y > 1) {
+            // Moved cell up
+            movedCell = true;
+            p.y = -1;
+        } else if (p.y < -1) {
+            // Moved cell down
+            movedCell = true;
+            p.y = 1;
+        }
 
-            if (movedCell){
-                flecs::entity nextCell = e.target<PawnNextCell>();
-                //std::cout << " Moved To " << nextCell.name() << std::endl;
-                // Uupdate currently occupying cell
-                e.add<PawnOccupying>(nextCell);
-                // Update overall goal to force pathfinding update
-                flecs::entity goalCell = e.target<PawnPathfindingGoal>();
-                e.add<PawnPathfindingGoal>(goalCell);
-            }
+        if (movedCell){
+            flecs::entity nextCell = e.target<PawnNextCell>();
+            //std::cout << " Moved To " << nextCell.name() << std::endl;
+            // Uupdate currently occupying cell
+            e.add<PawnOccupying>(nextCell);
+            // Update overall goal to force pathfinding update
+            flecs::entity goalCell = e.target<PawnPathfindingGoal>();
+            e.add<PawnPathfindingGoal>(goalCell);
         }
     }).disable();
 

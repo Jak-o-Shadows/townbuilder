@@ -21,12 +21,12 @@ extern flecs::entity resourcesParent;
 // Have a normal vector of the the cells of the grid.
 //  This makes it easier than having them all as entities, as otherwise
 //  would need to query all the time just to get a cell reference
-class grid {
+struct Grid {
 public:
-    grid(int width, int height, flecs::world *ecs, flecs::entity &parent);
+    Grid(int width, int height, flecs::world *ecs, flecs::entity &parent);
     void set(int32_t x, int32_t y, flecs::id_t value);
-    flecs::id_t operator()(int32_t x, int32_t y);
-    flecs::id_t get(int32_t x, int32_t y);  // TODO: just use an operator as above
+    flecs::id_t operator()(int32_t x, int32_t y) const;
+    flecs::id_t get(int32_t x, int32_t y) const;  // TODO: just use an operator as above
 
     int m_width;
     int m_height;
@@ -35,10 +35,6 @@ private:
 };
 
 // Main pathfinding function. Gives the next cell to move towards
-flecs::id_t pathfind(flecs::world &ecs, std::shared_ptr<grid> map, int currentX, int currentY, int targetX, int targetY);
-
-struct MapContainer {
-    std::shared_ptr<grid> map;
-};
+flecs::id_t pathfind(flecs::world &ecs, const Grid* map, int currentX, int currentY, int targetX, int targetY);
 
 }

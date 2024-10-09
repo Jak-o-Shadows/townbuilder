@@ -18,18 +18,20 @@ flecs::entity resourcesParent;
 
 
 
-void setCellRelationship(flecs::world& ecs, std::shared_ptr<grid> map, int x, int y, int second_x, int second_y, float weight, bool reversible) {
+void setCellRelationship(flecs::world& ecs, const Grid* map, int x, int y, int second_x, int second_y, float weight, bool reversible) {
     //std::cout << "Setting (" << x << ", " << y << ") --> ()" << second_x << ", " << second_y << ") to " << weight << std::endl;
-    flecs::entity thisCell = flecs::entity(ecs, map->get(x,y));
-    flecs::entity secondCell = flecs::entity(ecs, map->get(second_x, second_y));
+    /*
+    flecs::entity thisCell = flecs::entity(ecs, map.get(x,y));
+    flecs::entity secondCell = flecs::entity(ecs, map.get(second_x, second_y));
     thisCell.set<GridConnected>(secondCell.id(), {weight});
     if (reversible) {
         secondCell.set<GridConnected>(thisCell.id(), {weight});
     }
+    */
 }
 
 
-void setCellConnectivity(flecs::world& ecs, std::shared_ptr<grid> map, int x, int y, float left, float right, float up, float down, bool reversible) {
+void setCellConnectivity(flecs::world& ecs, const Grid* map, int x, int y, float left, float right, float up, float down, bool reversible) {
 
     if (x > 0) {
         // Left valid
@@ -70,9 +72,8 @@ module::module(flecs::world& ecs) {
     const int map_width = 20;
     const int map_height = 20;
     // Stored in a vector for each access
-    std::shared_ptr<grid> map = std::make_shared<grid>(grid(map_width, map_height, &ecs, mapEntity));
-    // Add the map pointer to the map entity
-    mapEntity.set<MapContainer>({map});
+    mapEntity.emplace<Grid>(map_width, map_height, &ecs, mapEntity);
+    const Grid* map = mapEntity.get<Grid>();
     //  Initially, fully connected
     for (int x = 0; x<map_width; x++){
         for (int y = 0; y<map_height; y++){
@@ -95,7 +96,7 @@ module::module(flecs::world& ecs) {
         for (int y = 0; y<map_height; y++){
             // Rectangular grid is simply connected if no trees
                 // TODO: This currently lets you go onto tree-cells, but not out. Is that smart?
-            flecs::entity thisCell = flecs::entity(ecs, map->get(x,y));
+            //flecs::entity thisCell = flecs::entity(ecs, map.get(x,y));
             if (treeDist(rngMap)){
                 auto tree = ecs.entity()
                     .child_of(resourcesParent)
@@ -104,7 +105,7 @@ module::module(flecs::world& ecs) {
                     .add<Building::NatureType>()
                     // TODO: Move this Rendering stuff to `render.cpp`
                     .set<flecs::components::transform::Position3>({(float) x, 1, (float) y})
-                    .set<flecs::components::graphics::Rgb>({0, 255, 0})
+                    .set<flecs::components::graphics::Color>({0, 255, 0})
                     .set<flecs::components::geometry::Box>({0.1, 0.5, 0.1});
             }
         }
@@ -129,7 +130,7 @@ module::module(flecs::world& ecs) {
 // Have a normal vector of the the cells of the grid.
 //  This makes it easier than having them all as entities, as otherwise
 //  would need to query all the time just to get a cell reference
-grid::grid(int width, int height, flecs::world *ecs, flecs::entity &parent)
+Grid::Grid(int width, int height, flecs::world *ecs, flecs::entity &parent)
         : m_width(width)
         , m_height(height) 
     { 
@@ -150,22 +151,22 @@ grid::grid(int width, int height, flecs::world *ecs, flecs::entity &parent)
                     .set<GridCellStatic>({x, y, 10*x + y})
                     .set<flecs::components::geometry::Box>({1, 0, 1})
                     .set<flecs::components::transform::Position3>({(float) x, 0, (float) y})
-                    .set<flecs::components::graphics::Rgb>({colourDist(rngMapColour), colourDist(rngMapColour), colourDist(rngMapColour)})
+                    .set<flecs::components::graphics::Color>({colourDist(rngMapColour), colourDist(rngMapColour), colourDist(rngMapColour)})
                     .child_of(parent);  // Need to give the map cells a parent so they show nicer in the flecs explorer
                 m_values.push_back(ecs->id(cell));
             }
         }
     }
 
-void grid::set(int32_t x, int32_t y, flecs::id_t value) {
+void Grid::set(int32_t x, int32_t y, flecs::id_t value) {
     m_values[y * m_width + x] = value;
 }
 
-flecs::id_t grid::operator()(int32_t x, int32_t y) {
+flecs::id_t Grid::operator()(int32_t x, int32_t y) const {
     return m_values[y * m_width + x];
 }
 
-flecs::id_t grid::get(int32_t x, int32_t y) {  // TODO: just use an operator as above
+flecs::id_t Grid::get(int32_t x, int32_t y) const {  // TODO: just use an operator as above
     return m_values[y * m_width + x];
 }
 
@@ -203,7 +204,7 @@ public:
 
 
 
-flecs::id_t pathfind(flecs::world &ecs, std::shared_ptr<grid> map, int currentX, int currentY, int targetX, int targetY){
+flecs::id_t pathfind(flecs::world &ecs, const Grid* map, int currentX, int currentY, int targetX, int targetY){
 
 
     int x = currentX;
@@ -230,6 +231,7 @@ flecs::id_t pathfind(flecs::world &ecs, std::shared_ptr<grid> map, int currentX,
     }
 
     // Start performing Dijkstra's Algorithm
+    /*
     auto thisCell = flecs::entity(ecs, map->get(x,y));
     costGrid.set(x, y, 0);  // First cell has zero cost
     for (int i=0; i<maxIter; i++){
@@ -240,6 +242,9 @@ flecs::id_t pathfind(flecs::world &ecs, std::shared_ptr<grid> map, int currentX,
         //std::cout << "\tVisited 8, 7? " << visitedGrid.get(8, 7) << std::endl;
 
         // Get the the links from the current cell. Use a filter because it doesn't need to last
+        // TODO: Fix this
+        std::cout << "FIX BROKEN FLECS 4.0 Upgrade" << std::endl;
+        
        auto queryTest = ecs.filter_builder<GridConnected, GridCellStatic>("Getting next cell query")
             .term_at(1).second(thisCell)  // Change first argument to (PawnOccupying, *)
             .build();
@@ -285,15 +290,18 @@ flecs::id_t pathfind(flecs::world &ecs, std::shared_ptr<grid> map, int currentX,
         if (minCost != 9999999999) {
             x = minCostX;
             y = minCostY;
-            thisCell = flecs::entity(ecs, map->get(x,y));
+            thisCell = flecs::entity(ecs, map.get(x,y));
         } else {
             // No remaining cells
             break;
         }
+        
     }
+    */
     //std::cout << "Dijkstra's Completed for start cell (" << currentX << ", " << currentY << ")" << std::endl;
 
     // Work backwards from the target cell to get the path
+    /*
     x = targetX;
     y = targetY;
     flecs::id_t thisSpot = map->get(x, y);
@@ -311,6 +319,8 @@ flecs::id_t pathfind(flecs::world &ecs, std::shared_ptr<grid> map, int currentX,
     }
     //std::cout << prevSpot << flecs::entity(ecs, prevSpot).name() << std::endl;
     return prevSpot;
+    */
+   return flecs::id_t(33);
 
 }
 

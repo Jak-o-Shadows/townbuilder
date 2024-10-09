@@ -68,7 +68,7 @@ int main(int, char *[]) {
 
     flecs::world ecs;
     ecs.set<flecs::Rest>({});
-    ecs.import<flecs::monitor>(); // Enable statistics in explorer
+    ecs.import<flecs::stats>(); // Enable statistics in explorer
 
     ecs.import<flecs::components::transform>();
     ecs.import<flecs::components::graphics>();
@@ -96,7 +96,6 @@ int main(int, char *[]) {
 
 
 
-
     
     // Register UI components so I can see them in the flecs explorer
     ecs.component<UiPawnJobs>()
@@ -117,20 +116,23 @@ int main(int, char *[]) {
     auto updateResourceUI_sys = ecs.system<Building::Resources>("System_Update Resource UI")
         .with<Building::BuildingType>()  // TODO: Want this to also consider the resources that pawns are carrying
         .tick_source(Ticks::tick_ui)
-        .iter([&ui](flecs::iter it, Building::Resources *r){
+        .run([&ui](flecs::iter it){
             ZoneScopedN("System_Update Resource UI");
-            Building::Resources sum{0, 0, 0};
-            for (int i: it) {
-                // TODO: Replace with the reflection interface?
-                sum.fish += r[i].fish;
-                sum.stone += r[i].stone;
-                sum.wood += r[i].wood;
+            while (it.next()){
+                auto r = it.field<Building::Resources>(0);
+                Building::Resources sum{0, 0, 0};
+                for (int i: it) {
+                    // TODO: Replace with the reflection interface?
+                    sum.fish += r[i].fish;
+                    sum.stone += r[i].stone;
+                    sum.wood += r[i].wood;
+                }
+                //std::cout << "Resources: " << std::endl;
+                //std::cout << "\t fish: "  << sum.fish << std::endl;
+                //std::cout << "\t stone: " << sum.stone << std::endl;
+                //std::cout << "\t wood: "  << sum.wood << std::endl;
+                ui.set<Building::Resources>(sum);
             }
-            //std::cout << "Resources: " << std::endl;
-            //std::cout << "\t fish: "  << sum.fish << std::endl;
-            //std::cout << "\t stone: " << sum.stone << std::endl;
-            //std::cout << "\t wood: "  << sum.wood << std::endl;
-            ui.set<Building::Resources>(sum);
         });
 
     // Get a count of how many pawns are doing each job
@@ -138,7 +140,7 @@ int main(int, char *[]) {
     auto woodcutterQuery = ecs.query<Pawn::PawnOccupationWoodcutter>();
     auto updatePopulationUI_sys = ecs.system("System_Update Pawn Jobs UI")
         .tick_source(Ticks::tick_ui)
-        .iter([&ui, &unemployedQuery, &woodcutterQuery](flecs::iter it){
+        .run([&ui, &unemployedQuery, &woodcutterQuery](flecs::iter it){
             ZoneScopedN("System_Update Pawn Jobs UI");
             // TODO: Use the reflection interface somehow?
             UiPawnJobs sum{unemployedQuery.count(),
@@ -150,7 +152,7 @@ int main(int, char *[]) {
     ecs.system("SaveWorld")
         .tick_source(Ticks::tick_100_Hz)
         .rate(100)
-        .iter([&ecs](flecs::iter it){
+        .run([&ecs](flecs::iter it){
             ZoneScopedN("SaveWorld");
             flecs::string json = ecs.to_json();
 
@@ -174,10 +176,12 @@ int main(int, char *[]) {
     Game *g = ecs.get_mut<Game>();
     g->center = {0, 0, 0};//{ to_x(map_width / 2), 0, to_z(map_height / 2) };
     // Get the map entity back out for working with for the moment
-    std::shared_ptr<Map::grid> map = Map::mapEntity.get<Map::MapContainer>()->map;
+    const Map::Grid* map = Map::mapEntity.get<Map::Grid>();
     int map_width = map->m_width;
     int map_height = map->m_height;
     g->size = map_width * (TileSize + TileSpacing) + 2;
+
+    flecs::id_t id2 = map->get(3, 3);
     
     // Cannot figure out how to move these to render - so stuff it
     // Init UI
