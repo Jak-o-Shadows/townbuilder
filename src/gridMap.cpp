@@ -20,14 +20,13 @@ flecs::entity resourcesParent;
 
 void setCellRelationship(flecs::world& ecs, const Grid* map, int x, int y, int second_x, int second_y, float weight, bool reversible) {
     //std::cout << "Setting (" << x << ", " << y << ") --> ()" << second_x << ", " << second_y << ") to " << weight << std::endl;
-    /*
-    flecs::entity thisCell = flecs::entity(ecs, map.get(x,y));
-    flecs::entity secondCell = flecs::entity(ecs, map.get(second_x, second_y));
+    flecs::entity thisCell = flecs::entity(ecs, map->get(x,y));
+    flecs::entity secondCell = flecs::entity(ecs, map->get(second_x, second_y));
     thisCell.set<GridConnected>(secondCell.id(), {weight});
     if (reversible) {
         secondCell.set<GridConnected>(thisCell.id(), {weight});
     }
-    */
+    
 }
 
 
@@ -114,7 +113,7 @@ module::module(flecs::world& ecs) {
 
     // Update the map by making the cells unaccessible
     //  TODO: This should be an observer on the children 
-    //  TODO: Not really markign as inaccessible because the pathfinding currently will break
+    //  TODO: Not really marking as inaccessible because the pathfinding currently will break
     /*resourcesParent.children([&ecs, map](flecs::entity resource){
         // Get location
         const Building::Location* loc = resource.get<Building::Location>();
@@ -205,7 +204,7 @@ public:
 
 
 flecs::id_t pathfind(flecs::world &ecs, const Grid* map, int currentX, int currentY, int targetX, int targetY){
-
+    ZoneScopedN("Function_Pathfind");
 
     int x = currentX;
     int y = currentY;
@@ -231,7 +230,7 @@ flecs::id_t pathfind(flecs::world &ecs, const Grid* map, int currentX, int curre
     }
 
     // Start performing Dijkstra's Algorithm
-    /*
+    
     auto thisCell = flecs::entity(ecs, map->get(x,y));
     costGrid.set(x, y, 0);  // First cell has zero cost
     for (int i=0; i<maxIter; i++){
@@ -245,12 +244,15 @@ flecs::id_t pathfind(flecs::world &ecs, const Grid* map, int currentX, int curre
         // TODO: Fix this
         std::cout << "FIX BROKEN FLECS 4.0 Upgrade" << std::endl;
         
-       auto queryTest = ecs.filter_builder<GridConnected, GridCellStatic>("Getting next cell query")
-            .term_at(1).second(thisCell)  // Change first argument to (PawnOccupying, *)
+       auto queryTest = ecs.query_builder<GridConnected, GridCellStatic>("Getting next cell query")
+            .term_at(0).second(flecs::Wildcard)
             .build();
-        queryTest.each([&map, &ecs, &costGrid, &visitedGrid, &prevGrid, &thisCell, &x, &y](flecs::iter& it, size_t index, GridConnected& conn, GridCellStatic& nextCellStatic) {
+        queryTest.each([&map, &ecs, &costGrid, &visitedGrid, &prevGrid, &thisCell, &x, &y](flecs::iter& it, size_t index,
+                GridConnected& conn,
+                GridCellStatic& nextCellStatic) {
+    
             auto e = it.entity(index);
-            auto thisCell = it.pair(1).second();
+            auto thisCell = it.pair(0).second();
 
             //std::cout << "\t" << nextCellStatic.x << ", " << nextCellStatic.y << std::endl;
             //std::cout << "\t" << conn.weight << std::endl;
@@ -290,18 +292,18 @@ flecs::id_t pathfind(flecs::world &ecs, const Grid* map, int currentX, int curre
         if (minCost != 9999999999) {
             x = minCostX;
             y = minCostY;
-            thisCell = flecs::entity(ecs, map.get(x,y));
+            thisCell = flecs::entity(ecs, map->get(x,y));
         } else {
             // No remaining cells
             break;
         }
         
     }
-    */
+    
     //std::cout << "Dijkstra's Completed for start cell (" << currentX << ", " << currentY << ")" << std::endl;
 
     // Work backwards from the target cell to get the path
-    /*
+    
     x = targetX;
     y = targetY;
     flecs::id_t thisSpot = map->get(x, y);
@@ -319,9 +321,6 @@ flecs::id_t pathfind(flecs::world &ecs, const Grid* map, int currentX, int curre
     }
     //std::cout << prevSpot << flecs::entity(ecs, prevSpot).name() << std::endl;
     return prevSpot;
-    */
-   return flecs::id_t(33);
-
 }
 
 }

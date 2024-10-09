@@ -15,6 +15,7 @@ module::module(flecs::world& ecs) {
     ecs.module<module>();
     
     ecs.import<Ticks::module>();
+    ecs.import<Map::module>();
 
     
     // Modify pathfinding components
@@ -97,7 +98,7 @@ module::module(flecs::world& ecs) {
                 //std::cout << "\t Velocity To: " << vx << ", " << vy << std::endl;
                 e.set<Velocity>({vx, vy});
             }
-        }).disable();
+        });
     
 
     // Generate pawns
@@ -123,9 +124,8 @@ module::module(flecs::world& ecs) {
             .set<Velocity>({0, 0})
             .set<PawnAbilityTraits>({0, speed})
             .add<PawnOccupationWoodcutter>()
-            .add<PawnWoodcutterState>(ecs.component<PawnWoodcutterStateIdle>());
-            //.add<PawnOccupying>(flecs::entity(ecs, map->get(myX,myY)))
-            //.add<PawnPathfindingGoal>(flecs::entity(ecs, map->get(targetX, targetY)));
+            .add<PawnWoodcutterState>(ecs.component<PawnWoodcutterStateIdle>())
+            .add<PawnOccupying>(flecs::entity(ecs, map->get(myX,myY)));
 
 
         //PawnFSM::Instance machine{blah};
@@ -150,9 +150,10 @@ module::module(flecs::world& ecs) {
 
 
     // Put systems in
-    auto move_sys = ecs.system<Position, Velocity>("System_Intra Cell Movement")
+    auto move_sys = ecs.system<Position, Velocity>("System_IntraCellMovement")
     .tick_source(Ticks::tick_pawn_behaviour)
     .run([](flecs::iter& it){
+        ZoneScopedN("System_IntraCellMovement");
         while (it.next()){
             auto p = it.field<Position>(0);
             auto v = it.field<Velocity>(1);
@@ -164,12 +165,12 @@ module::module(flecs::world& ecs) {
         }
     });
     
-    auto moveCell_sys = ecs.system<Position>("System Between Cell Movement")
+    auto moveCell_sys = ecs.system<Position>("System_BetweenCellMovement")
     .with<PawnNextCell>(flecs::Wildcard)
     .tick_source(Ticks::tick_pawn_behaviour)
     .multi_threaded()
     .each([](flecs::entity e, Position& p){
-        ZoneScopedN("System Between Cell Movement");
+        ZoneScopedN("System_BetweenCellMovement");
         //std::cout << "Checking Cell Moveover" << std::endl;
         bool movedCell = false;
         // Assume that the velocity is correct, and if we move over any boundary we're there
@@ -200,7 +201,7 @@ module::module(flecs::world& ecs) {
             flecs::entity goalCell = e.target<PawnPathfindingGoal>();
             e.add<PawnPathfindingGoal>(goalCell);
         }
-    }).disable();
+    });
 
 
 

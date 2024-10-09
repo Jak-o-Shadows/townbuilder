@@ -86,11 +86,12 @@ int main(int, char *[]) {
 
 
 
+    ecs.import<Render::module>();
 
 
     ecs.import<Map::module>();
-    ecs.import<LogicPawn::module>();
     ecs.import<Pawn::module>();
+    ecs.import<LogicPawn::module>();
     ecs.import<Ticks::module>();
     ecs.import<Building::module>();
 
@@ -187,12 +188,6 @@ int main(int, char *[]) {
     g.size = map_width * (TileSize + TileSpacing) + 2;
     std::cout << "map GUI setup" << std::endl;
 
-    std::cout << "Map Tests...";
-    flecs::id_t id2 = map->get(3, 3);
-    std::cout << id2 << std::endl;
-    flecs::entity e = flecs::entity(ecs, id2);
-    std::cout << e.name() << std::endl;
-    std::cout << "Done" << std::endl;
     
     // Cannot figure out how to move these to render - so stuff it
     // Init UI
@@ -231,13 +226,26 @@ int main(int, char *[]) {
 
 
 
+    ecs.defer_begin();
+    std::mt19937 rng;
+    rng.seed(20231104);
+    std::uniform_int_distribution<int> xDist(0, map->m_width-1);
+    std::uniform_int_distribution<int> yDist(0, map->m_height-1);
+    Pawn::pawnsParent.children([&ecs, map, &rng, &xDist, &yDist](flecs::entity pawn) {
+        ZoneScopedN("Code_settingPawnTarget");
+        int targetX = xDist(rng);
+        int targetY = yDist(rng);
+        pawn.add<Pawn::PawnPathfindingGoal>(flecs::entity(ecs, map->get(targetX, targetY)));
+        });
+    ecs.defer_end();
+    
+
+            
 
 
 
 
 
-
-    ecs.import<Render::module>();
 
 
 

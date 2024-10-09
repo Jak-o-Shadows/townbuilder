@@ -52,36 +52,36 @@ module::module(flecs::world& ecs) {
 
     // Add GUI components to granary
     // TODO: By using a PreFab, should be able to do this to all buildings of type
-    // TODO: This should be an observer looking for when new pawns are added to the buildingsParent
-    ecs.defer_begin();
-
-    Building::buildingsParent.children([](flecs::entity building) {
-        const Building::Location* loc = building.get<Building::Location>();
-        const Building::BuildingUI* size = building.get<Building::BuildingUI>();
-        building.set<flecs::components::transform::Position3>({(float) loc->x, 0.1, (float) loc->y});
-        building.set<flecs::components::geometry::Box>({(float) size->sizeX, 2, (float) size->sizeY});
-        building.set<flecs::components::graphics::Color>({20, 0, 0});
-    });
-    ecs.defer_end();
-
-
-
     /*
-    ecs.observer<flecs::ChildOf>("Observer_PawnCreate")
-        .term_at(0).second(Pawn::pawnsParent)
+    ecs.observer<flecs::ChildOf>("Observer_BuildingCreate")
+        .term_at(0).second(Building::buildingsParent)
+        .event(flecs::OnAdd)
+        .each([](flecs::entity building){
+            ZoneScopedN("Observer_BuildingCreate");
+            const Building::Location* loc = building.get<Building::Location>();
+            const Building::BuildingUI* size = building.get<Building::BuildingUI>();
+            building.set<flecs::components::transform::Position3>({(float) loc->x, 0.1, (float) loc->y});
+            building.set<flecs::components::geometry::Box>({(float) size->sizeX, 2, (float) size->sizeY});
+            building.set<flecs::components::graphics::Color>({20, 0, 0});
+        });
+    */
+
+
+
+    ecs.observer("Observer_PawnCreate")
+        .with(flecs::ChildOf, flecs::Wildcard)
         .event(flecs::OnAdd)
         .each([](flecs::entity pawn){
-            std::cout << "Pawn Creation Observer" << std::endl;
-            
+            ZoneScopedN("Observer_PawnCreate");
+            std::cout << "Pawn Creation Observer " << pawn.name() << std::endl;
             // Get the location
-            flecs::entity currentCell = pawn.target<Pawn::PawnOccupying>();
-            const GridCellStatic* loc = currentCell.get<GridCellStatic>();
+//            flecs::entity currentCell = pawn.target<Pawn::PawnOccupying>();
+//            const GridCellStatic* loc = currentCell.get<GridCellStatic>();
             // Then set renderable components
-            pawn.set<flecs::components::transform::Position3>({(float) loc->x, 0.1, (float) loc->y});
-            pawn.set<flecs::components::geometry::Box>({0.1, 0.8, 0.1});
-            pawn.set<flecs::components::graphics::Color>({165, 42, 42});
-            
-        });*/
+//            pawn.set<flecs::components::transform::Position3>({(float) loc->x, 0.1, (float) loc->y});
+//            pawn.set<flecs::components::geometry::Box>({0.1, 0.8, 0.1});
+//            pawn.set<flecs::components::graphics::Color>({165, 42, 42});          
+        });
 
 
     /*
@@ -94,7 +94,6 @@ module::module(flecs::world& ecs) {
         });
     ecs.defer_end();
     */
-
 
 
 
