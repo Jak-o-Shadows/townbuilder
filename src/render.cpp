@@ -66,14 +66,13 @@ module::module(flecs::world& ecs) {
 
 
 
-
-
-
-    // Add rendering components to Pawns
-    //  As iterating, must defer
-    // TODO: This should be an observer looking for when new pawns are added to the pawnsParent
-    ecs.defer_begin();
-    Pawn::pawnsParent.children([](flecs::entity pawn) {
+    /*
+    ecs.observer<flecs::ChildOf>("Observer_PawnCreate")
+        .term_at(0).second(Pawn::pawnsParent)
+        .event(flecs::OnAdd)
+        .each([](flecs::entity pawn){
+            std::cout << "Pawn Creation Observer" << std::endl;
+            
             // Get the location
             flecs::entity currentCell = pawn.target<Pawn::PawnOccupying>();
             const GridCellStatic* loc = currentCell.get<GridCellStatic>();
@@ -81,9 +80,20 @@ module::module(flecs::world& ecs) {
             pawn.set<flecs::components::transform::Position3>({(float) loc->x, 0.1, (float) loc->y});
             pawn.set<flecs::components::geometry::Box>({0.1, 0.8, 0.1});
             pawn.set<flecs::components::graphics::Color>({165, 42, 42});
+            
+        });*/
+
+
+    /*
+    // Add rendering components to Pawns
+    //  As iterating, must defer
+    // TODO: This should be an observer looking for when new pawns are added to the pawnsParent
+    ecs.defer_begin();
+    Pawn::pawnsParent.children([](flecs::entity pawn) {
+
         });
     ecs.defer_end();
-
+    */
 
 
 

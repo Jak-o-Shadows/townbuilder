@@ -71,10 +71,10 @@ module::module(flecs::world& ecs) {
             if ((targetX == x) && (targetY == y)) {
                 // No need to pathfind - just move to the centre of the cell
                 //  Jump to it - realistically the next level logic would take over and move to the right place
-                Position* p = e.get_mut<Position>();
+                Position& p = e.ensure<Position>();
                 //std::cout << "\t" << e.name() << " finished!" << std::endl;
-                p->x = 0;
-                p->y = 0;
+                p.x = 0;
+                p.y = 0;
                 e.set<Velocity>({0, 0});
                 std::shared_ptr<LogicPawn::PawnFSM::Instance> machine = e.get<PawnFSMContainer>()->machine;
                 LogicPawn::Arrived_Event ev;
@@ -155,7 +155,7 @@ module::module(flecs::world& ecs) {
     .run([](flecs::iter& it){
         while (it.next()){
             auto p = it.field<Position>(0);
-            auto v = it.field<Velocity>(0);
+            auto v = it.field<Velocity>(1);
             for (auto i: it){
                 p[i].x += v[i].x * it.delta_system_time();
                 p[i].y += v[i].y * it.delta_system_time();

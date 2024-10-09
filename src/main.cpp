@@ -94,7 +94,7 @@ int main(int, char *[]) {
     ecs.import<Ticks::module>();
     ecs.import<Building::module>();
 
-
+    std::cout << "Imported Modules" << std::endl;
 
     
     // Register UI components so I can see them in the flecs explorer
@@ -149,6 +149,7 @@ int main(int, char *[]) {
         });
     
 
+    /*
     ecs.system("SaveWorld")
         .tick_source(Ticks::tick_100_Hz)
         .rate(100)
@@ -165,7 +166,10 @@ int main(int, char *[]) {
                 outfile.close();
             }
         });
+    */
 
+
+    std::cout << "Systems in main.cpp defined" << std::endl;
 
     
     // Initialise game
@@ -173,15 +177,22 @@ int main(int, char *[]) {
     const float TileHeight = 0.5;
     const float PathHeight = 0.1;
     const float TileSpacing = 0.00;
-    Game *g = ecs.get_mut<Game>();
-    g->center = {0, 0, 0};//{ to_x(map_width / 2), 0, to_z(map_height / 2) };
+    Game& g = ecs.ensure<Game>();
+    g.center = {0, 0, 0};//{ to_x(map_width / 2), 0, to_z(map_height / 2) };
     // Get the map entity back out for working with for the moment
     const Map::Grid* map = Map::mapEntity.get<Map::Grid>();
+    std::cout << "Map Object gotten" << std::endl;
     int map_width = map->m_width;
     int map_height = map->m_height;
-    g->size = map_width * (TileSize + TileSpacing) + 2;
+    g.size = map_width * (TileSize + TileSpacing) + 2;
+    std::cout << "map GUI setup" << std::endl;
 
+    std::cout << "Map Tests...";
     flecs::id_t id2 = map->get(3, 3);
+    std::cout << id2 << std::endl;
+    flecs::entity e = flecs::entity(ecs, id2);
+    std::cout << e.name() << std::endl;
+    std::cout << "Done" << std::endl;
     
     // Cannot figure out how to move these to render - so stuff it
     // Init UI
