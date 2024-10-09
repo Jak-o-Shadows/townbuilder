@@ -39,6 +39,9 @@ module::module(flecs::world& ecs) {
         .member<double>("x")
         .member<double>("y")
         .set_doc_brief("Location within the grid cell. Limited to [-1, 1]");
+    ecs.component<Pawn::Velocity>()
+        .member<double>("x")
+        .member<double>("y");
 
     // Need to give the entities a parent so they show nicer in the flecs explorer
     pawnsParent = ecs.entity("pawns");
@@ -94,7 +97,7 @@ module::module(flecs::world& ecs) {
                 //std::cout << "\t Velocity To: " << vx << ", " << vy << std::endl;
                 e.set<Velocity>({vx, vy});
             }
-        });
+        }).disable();
     
 
     // Generate pawns
@@ -129,7 +132,13 @@ module::module(flecs::world& ecs) {
         //PawnFSM::Instance machine{blah};
         //pawn.set<PawnFSMContainer>({PawnFSM::Instance{blah}});
         //std::unique_ptr<PawnFSM::Instance> ptr(new PawnFSM::Instance(blah));// = std::make_unique<PawnFSM::Instance>(machine);
-        pawn.set<PawnFSMContainer>({std::shared_ptr<LogicPawn::PawnFSM::Instance>(new LogicPawn::PawnFSM::Instance{LogicPawn::Context{pawn.id(), ecs}})});
+
+        // Create the FSM
+        LogicPawn::Context blah{pawn.id(), ecs};
+        LogicPawn::PawnFSM::Instance test{blah};
+        std::shared_ptr<LogicPawn::PawnFSM::Instance> ptr(&test);
+        pawn.set<PawnFSMContainer>({ptr});
+
         //flecs::entity_to_json_desc_t desc;
         //desc.serialize_path = true;
         //desc.serialize_values = true;
@@ -191,7 +200,7 @@ module::module(flecs::world& ecs) {
                 e.add<PawnPathfindingGoal>(goalCell);
             }
         }
-    });
+    }).disable();
 
 
 

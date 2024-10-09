@@ -37,7 +37,7 @@ module::module(flecs::world& ecs) {
 void Alive::enter(Control& control) {
     flecs::entity e = flecs::entity(control.context().ecs, control.context().id);
     char msg[100];
-    sprintf(&msg[0], "%s(%i) -> Alive", (char*) &e.name(), (int) e.id());
+    sprintf(&msg[0], "%s(%i) -> Alive", e.name().c_str(), (int) e.id());
     TracyMessage(msg, 100);
     e.add<Alive>();
 }
@@ -72,7 +72,7 @@ void Idle::update(FullControl& control) {
 void Working::enter(Control& control) {
     flecs::entity e = flecs::entity(control.context().ecs, control.context().id);
     char msg[100];
-    sprintf(&msg[0], "%s(%i) -> Working", (char*) &e.name(), (int) e.id());
+    sprintf(&msg[0], "%s(%i) -> Working", e.name().c_str(), (int) e.id());
     TracyMessage(msg, 100);
     e.add<Working>();
 }
@@ -88,7 +88,7 @@ void Working::exit(Control& control) {
 void Walking::enter(Control& control) {
     flecs::entity e = flecs::entity(control.context().ecs, control.context().id);
     char msg[100];
-    sprintf(&msg[0], "%s(%i) -> Walking", (char*) &e.name(), (int) e.id());
+    sprintf(&msg[0], "%s(%i) -> Walking", e.name().c_str(), (int) e.id());
     TracyMessage(msg, 100);
     e.add<Walking>();
 }

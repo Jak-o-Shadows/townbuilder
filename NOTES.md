@@ -48,6 +48,8 @@ Secondary traits
   * Isometric
  * Golbulation 2
   * https://globulation2.org/wiki/Main_Page
+ * Tiny Glade
+   * ♥♥ Tilt Shift ♥♥
   
 
 

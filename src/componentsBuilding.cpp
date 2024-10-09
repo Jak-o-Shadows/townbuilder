@@ -15,10 +15,18 @@ module::module(flecs::world& ecs) {
 
 
     // Register components with reflection data
+    ecs.component<Building::Location>()
+        .member<int>("x")
+        .member<int>("y");
     ecs.component<Building::Resources>()
         .member<int>("fish")
         .member<int>("stone")
         .member<int>("wood");
+    ecs.component<Building::BuildingUI>()
+        .member<int>("sizeX")
+        .member<int>("sizeY")
+        .member<int>("doorX")
+        .member<int>("doorY");
 
 
     // Start some buildings!

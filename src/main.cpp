@@ -27,6 +27,8 @@
 #include "flecs_game.h"
 
 #include <iostream>
+#include <fstream>
+#include <format>
 #include <vector>
 #include <random>
 
@@ -145,8 +147,22 @@ int main(int, char *[]) {
         });
     
 
+    ecs.system("SaveWorld")
+        .tick_source(Ticks::tick_100_Hz)
+        .rate(100)
+        .iter([&ecs](flecs::iter it){
+            ZoneScopedN("SaveWorld");
+            flecs::string json = ecs.to_json();
 
-
+            std::ofstream outfile(std::format("world_{}.json", it.world().get_info()->world_time_total));
+            // Check if the file is open
+            if (!outfile.is_open()) {
+                std::cout << "Failed to open file for writing." << std::endl;
+            } else {
+                outfile << json;
+                outfile.close();
+            }
+        });
 
 
     
@@ -213,6 +229,7 @@ int main(int, char *[]) {
     ecs.app()
         .enable_rest()
         .threads(4)
+        .delta_time(1.0/200.0)  // Setting a fixed framerate causes the internal clock to make sense
         .run();
 
 }

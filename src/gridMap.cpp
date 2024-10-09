@@ -19,7 +19,7 @@ flecs::entity resourcesParent;
 
 
 void setCellRelationship(flecs::world& ecs, std::shared_ptr<grid> map, int x, int y, int second_x, int second_y, float weight, bool reversible) {
-    std::cout << "Setting (" << x << ", " << y << ") --> ()" << second_x << ", " << second_y << ") to " << weight << std::endl;
+    //std::cout << "Setting (" << x << ", " << y << ") --> ()" << second_x << ", " << second_y << ") to " << weight << std::endl;
     flecs::entity thisCell = flecs::entity(ecs, map->get(x,y));
     flecs::entity secondCell = flecs::entity(ecs, map->get(second_x, second_y));
     thisCell.set<GridConnected>(secondCell.id(), {weight});
