@@ -13,6 +13,7 @@ target_sources(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/gridMap.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ticks.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/render.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/componentsBuilding.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/msgLogging.cpp
     ${DIR_DEPS}/flecs_components_cglm.c
     ${DIR_DEPS}/flecs_components_geometry.c
     ${DIR_DEPS}/flecs_components_graphics.c
@@ -43,6 +44,10 @@ target_link_libraries(${PROJECT_NAME} flecs::flecs_static)
 # Tracy
 find_package(Tracy REQUIRED)
 target_link_libraries(${PROJECT_NAME} Tracy::TracyClient)
+
+# Spdlog
+find_package(spdlog REQUIRED)
+target_link_libraries(${PROJECT_NAME} spdlog::spdlog)
 
 
 find_package(cglm REQUIRED CONFIG)

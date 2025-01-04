@@ -1,5 +1,7 @@
 #include "ticks.hpp"
 
+#include "msgLogging.hpp"
+
 #include <tracy/Tracy.hpp>
 
 
@@ -11,10 +13,15 @@ flecs::entity tick_ui;
 flecs::entity tick_render;
 
 
-module::module(flecs::world& ecs) {
+module::module(flecs::world& ecs, spdlog::level::level_enum level, std::shared_ptr<spdlog::sinks::sink> sink) {
     // Register module with world. The module entity will be created with the
     // same hierarchy as the C++ namespaces (e.g. simple::module)
-    ecs.module<module>();
+    flecs::entity m = ecs.module<module>();
+
+    m.set<Logging::Logger>({});
+    Logging::Logger* lg = m.get_mut<Logging::Logger>();
+    lg->init(std::string(m.path()), level, sink);
+    lg->logger->trace("logger created");
 
     // Create basic timers
     // 1000 Hz should be enough for anybody
@@ -29,6 +36,8 @@ module::module(flecs::world& ecs) {
     // Render update
     tick_render = ecs.timer("Timer_Render Update")
         .rate(2, tick_100_Hz);  // 2 ticks @ 100 Hz => 50 Hz
+    lg->logger->trace("timers created");
+
 
     // Frame Markers for Tracy
     if (true) {
@@ -58,10 +67,12 @@ module::module(flecs::world& ecs) {
             .run([](flecs::iter& it) {
                 FrameMarkNamed("Tick UI");
         });
+
+        lg->logger->trace("tracy markers created");
+
     }
 
-
-
+    lg->logger->trace("module setup");
     };
 }
 

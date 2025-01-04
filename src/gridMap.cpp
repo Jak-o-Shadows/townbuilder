@@ -206,6 +206,8 @@ public:
 flecs::id_t pathfind(flecs::world &ecs, const Grid* map, int currentX, int currentY, int targetX, int targetY){
     ZoneScopedN("Function_Pathfind");
 
+    return map->get(targetX, targetY);
+
     int x = currentX;
     int y = currentY;
 

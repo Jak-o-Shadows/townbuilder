@@ -9,6 +9,7 @@
 #include "logicPawn2.hpp"
 #include "ticks.hpp"
 #include "render.hpp"
+#include "msgLogging.hpp"
 
 #include "tracy_zones.hpp"
 
@@ -64,6 +65,12 @@ struct Game {
 ////////////////////////////////////////////////////////////////////////////////
 
 
+template <typename T>
+flecs::entity_t registerModule(flecs::world& ecs, std::string full_module_name, spdlog::level::level_enum level, std::shared_ptr<spdlog::sinks::sink> sink) {
+    return ecs.entity(full_module_name.c_str())
+        .set<T>({ecs, level, sink});
+}
+
 int main(int, char *[]) {
 
     flecs::world ecs;
@@ -79,21 +86,23 @@ int main(int, char *[]) {
     ecs.import<flecs::systems::transform>();
     ecs.import<flecs::systems::physics>();
     ecs.import<flecs::game>();
-    ecs.import<flecs::systems::sokol>();
+    //ecs.import<flecs::systems::sokol>();
 
 
     
+    // Logger imported first as the other modules use it on their import
+    ecs.import<Logging::module>();
+    std::shared_ptr<spdlog::sinks::sink> file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>("logs.log", true);
 
+    registerModule<Logging::testmodule>(ecs, "::Logging::testmodule", spdlog::level::trace, file_sink);
+    registerModule<Ticks::module>(ecs, "::Ticks::module", spdlog::level::trace, file_sink);
 
+    //ecs.import<Render::module>();
+    //ecs.import<Map::module>();
+    //ecs.import<Pawn::module>();
+    //ecs.import<LogicPawn::module>();
+    //ecs.import<Building::module>();
 
-    ecs.import<Render::module>();
-
-
-    ecs.import<Map::module>();
-    ecs.import<Pawn::module>();
-    ecs.import<LogicPawn::module>();
-    ecs.import<Ticks::module>();
-    ecs.import<Building::module>();
 
     std::cout << "Imported Modules" << std::endl;
 
@@ -114,6 +123,7 @@ int main(int, char *[]) {
     // System to update resources
     //  A system is used here because it doesn't need to update at the same
     //  (probably faster) rate as the things are taken down
+    /*
     auto updateResourceUI_sys = ecs.system<Building::Resources>("System_Update Resource UI")
         .with<Building::BuildingType>()  // TODO: Want this to also consider the resources that pawns are carrying
         .tick_source(Ticks::tick_ui)
@@ -135,8 +145,10 @@ int main(int, char *[]) {
                 ui.set<Building::Resources>(sum);
             }
         });
+    */
 
     // Get a count of how many pawns are doing each job
+    /*
     auto unemployedQuery = ecs.query<Pawn::PawnOccupationUnemployed>();
     auto woodcutterQuery = ecs.query<Pawn::PawnOccupationWoodcutter>();
     auto updatePopulationUI_sys = ecs.system("System_Update Pawn Jobs UI")
@@ -148,6 +160,7 @@ int main(int, char *[]) {
                            woodcutterQuery.count()};
             ui.set<UiPawnJobs>(sum);
         });
+    */
     
 
     /*
@@ -169,10 +182,18 @@ int main(int, char *[]) {
         });
     */
 
+    ecs.system("PrintTime")
+        .tick_source(Ticks::tick_100_Hz)
+        .rate(100)
+        .run([&ecs](flecs::iter it){
+            ZoneScopedN("PrintTime");
+            std::cout << "Time: " << it.world().get_info()->world_time_total << std::endl;
+        });
+
 
     std::cout << "Systems in main.cpp defined" << std::endl;
 
-    
+    /*
     // Initialise game
     const float TileSize = 3.0;
     const float TileHeight = 0.5;
@@ -240,7 +261,7 @@ int main(int, char *[]) {
     ecs.defer_end();
     
 
-            
+    */
 
 
 
@@ -248,11 +269,12 @@ int main(int, char *[]) {
 
 
 
-
+    std::cout << "Just before run" << std::endl;
     ecs.app()
-        .enable_rest()
         .threads(4)
         .delta_time(1.0/200.0)  // Setting a fixed framerate causes the internal clock to make sense
+        .enable_rest()
+        .enable_stats()
         .run();
 
 }

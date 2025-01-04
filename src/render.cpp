@@ -42,7 +42,7 @@ module::module(flecs::world& ecs) {
 
     ecs.import<Pawn::module>();
     ecs.import<Building::module>();
-    ecs.import<Ticks::module>();
+    //ecs.import<Ticks::module>();
 
 
 
@@ -67,20 +67,19 @@ module::module(flecs::world& ecs) {
     */
 
 
-
     ecs.observer("Observer_PawnCreate")
-        .with(flecs::ChildOf, flecs::Wildcard)
+        .with(flecs::ChildOf, Pawn::pawnsParent)
         .event(flecs::OnAdd)
         .each([](flecs::entity pawn){
             ZoneScopedN("Observer_PawnCreate");
             std::cout << "Pawn Creation Observer " << pawn.name() << std::endl;
             // Get the location
-//            flecs::entity currentCell = pawn.target<Pawn::PawnOccupying>();
-//            const GridCellStatic* loc = currentCell.get<GridCellStatic>();
+            flecs::entity currentCell = pawn.target<Pawn::PawnOccupying>();
+            const GridCellStatic* loc = currentCell.get<GridCellStatic>();
             // Then set renderable components
-//            pawn.set<flecs::components::transform::Position3>({(float) loc->x, 0.1, (float) loc->y});
-//            pawn.set<flecs::components::geometry::Box>({0.1, 0.8, 0.1});
-//            pawn.set<flecs::components::graphics::Color>({165, 42, 42});          
+            pawn.set<flecs::components::transform::Position3>({(float) loc->x, 0.1, (float) loc->y});
+            pawn.set<flecs::components::geometry::Box>({0.1, 0.8, 0.1});
+            pawn.set<flecs::components::graphics::Color>({165, 42, 42});          
         });
 
 

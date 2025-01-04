@@ -14,7 +14,7 @@ module::module(flecs::world& ecs) {
     // same hierarchy as the C++ namespaces (e.g. simple::module)
     ecs.module<module>();
     
-    ecs.import<Ticks::module>();
+    //ecs.import<Ticks::module>();  // TODO: Need to more registerModule out
     ecs.import<Map::module>();
 
     
