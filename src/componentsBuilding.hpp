@@ -2,11 +2,14 @@
 
 #include <flecs.h>
 
+#include "msgLogging.hpp"
+
 
 namespace Building{
 
 struct module {
-    module(flecs::world& ecs);
+    module() = default;
+    module(flecs::world& ecs, spdlog::level::level_enum level, std::shared_ptr<spdlog::sinks::sink> sink);
 };
 
 extern flecs::entity buildingsParent;

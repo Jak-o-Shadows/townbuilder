@@ -60,7 +60,7 @@ module::module(flecs::world& ecs) {
     // same hierarchy as the C++ namespaces (e.g. simple::module)
     ecs.module<module>();
 
-    ecs.import<Building::module>();
+    //ecs.import<Building::module>();
 
     // Define the map
     //  This is defined early because it isn't properly in the ECS, so initialisation order matters mroe

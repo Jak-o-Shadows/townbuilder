@@ -4,6 +4,8 @@
 
 #include <tracy/Tracy.hpp>
 
+#include <iostream>
+
 
 namespace Ticks{
 
@@ -17,11 +19,9 @@ module::module(flecs::world& ecs, spdlog::level::level_enum level, std::shared_p
     // Register module with world. The module entity will be created with the
     // same hierarchy as the C++ namespaces (e.g. simple::module)
     flecs::entity m = ecs.module<module>();
-
-    m.set<Logging::Logger>({});
-    Logging::Logger* lg = m.get_mut<Logging::Logger>();
-    lg->init(std::string(m.path()), level, sink);
-    lg->logger->trace("logger created");
+    flecs::id_t module_id = m.id();
+    Logging::Logger* lg = Logging::init_module_logger(m, level, sink);
+    std::cout << "logger done" << std::endl;
 
     // Create basic timers
     // 1000 Hz should be enough for anybody
@@ -43,8 +43,15 @@ module::module(flecs::world& ecs, spdlog::level::level_enum level, std::shared_p
     if (true) {
 
         ecs.system("raw")
-            .run([](flecs::iter it){
-                FrameMarkNamed("EverFrame");
+            .run([module_id](flecs::iter it){
+                FrameMarkNamed("EveryFrame");
+                flecs::entity m = it.world().entity(module_id);
+                std::cout << m.name() << std::endl;
+                Logging::Logger* lg = m.get_mut<Logging::Logger>();
+                std::cout << "Every Frame Marker";
+                std::cout << lg << std::endl;
+                lg->logger->trace("Every Frame Mark");
+                std::cout << "  logged" << std::endl;
         });
 
         ecs.system("Tracy 100 Hz Frame")

@@ -40,10 +40,6 @@ module::module(flecs::world& ecs) {
 //    ecs.import<flecs::systems::physics>();
 //    ecs.import<flecs::systems::sokol>();
 
-    ecs.import<Pawn::module>();
-    ecs.import<Building::module>();
-    //ecs.import<Ticks::module>();
-
 
 
 

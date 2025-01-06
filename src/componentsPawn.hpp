@@ -7,12 +7,13 @@
 
 #include "gridMap.hpp"
 #include "logicPawn2.hpp"
+#include "msgLogging.hpp"
 
 namespace Pawn{
 
 struct module {
-    module(flecs::world& ecs);
-};
+    module() = default;
+    module(flecs::world& ecs, spdlog::level::level_enum level, std::shared_ptr<spdlog::sinks::sink> sink);};
 
 extern flecs::entity pawnsParent;
 

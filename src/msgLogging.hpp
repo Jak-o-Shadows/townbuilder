@@ -8,6 +8,14 @@
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/basic_file_sink.h>
 
+
+template <typename T>
+flecs::entity_t registerModule(flecs::world& ecs, std::string full_module_name, spdlog::level::level_enum level, std::shared_ptr<spdlog::sinks::sink> sink) {
+    return ecs.entity(full_module_name.c_str())
+        .set<T>({ecs, level, sink});
+}
+
+
 namespace Logging {
 
 struct Logger {
@@ -27,13 +35,15 @@ struct Logger {
 
 };
 
+Logger* init_module_logger(flecs::entity& module, spdlog::level::level_enum level, std::shared_ptr<spdlog::sinks::sink> sink);
+
 struct module {
     module(flecs::world& ecs);
 };
 
-struct testmodule {
-    testmodule() = default;
-    testmodule(flecs::world& ecs, spdlog::level::level_enum level, std::shared_ptr<spdlog::sinks::sink> sink);
+struct examplemodule {
+    examplemodule() = default;
+    examplemodule(flecs::world& ecs, spdlog::level::level_enum level, std::shared_ptr<spdlog::sinks::sink> sink);
 };
 
 

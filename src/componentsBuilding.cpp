@@ -6,15 +6,17 @@ namespace Building{
 flecs::entity buildingsParent;
 
 
-module::module(flecs::world& ecs) {
+module::module(flecs::world& ecs, spdlog::level::level_enum level, std::shared_ptr<spdlog::sinks::sink> sink) {
     // Register module with world. The module entity will be created with the
     // same hierarchy as the C++ namespaces (e.g. simple::module)
-    ecs.module<module>();
+    flecs::entity m = ecs.module<module>();
+    Logging::Logger* lg = Logging::init_module_logger(m, level, sink);
     
-    buildingsParent = ecs.entity("buildings");
+    //buildingsParent = ecs.entity("buildings");
 
 
     // Register components with reflection data
+    /*
     ecs.component<Building::Location>()
         .member<int>("x")
         .member<int>("y");
@@ -27,9 +29,11 @@ module::module(flecs::world& ecs) {
         .member<int>("sizeY")
         .member<int>("doorX")
         .member<int>("doorY");
-
+    lg->logger->trace("Components Registered");
+    */
 
     // Start some buildings!
+    /*
     auto granary = ecs.entity("Granary")
         .child_of(buildingsParent)
         .set<Location>({3, 8})
@@ -37,6 +41,7 @@ module::module(flecs::world& ecs) {
         .set<Resources>({0, 0, 0})
         .add<BuildingType>()
         ;
+    */
 //        .set<flecs::components::transform::Position3>({3, 0.1, 8})
 //        .set<flecs::components::geometry::Box>({2, 2, 2})
 //        .set<flecs::components::graphics::Rgb>({20, 0, 0});
@@ -44,7 +49,7 @@ module::module(flecs::world& ecs) {
 
 
 
-
+    lg->logger->trace("Module Setup Complete");
 };
 
 
