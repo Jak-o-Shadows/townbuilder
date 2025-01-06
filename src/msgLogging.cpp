@@ -32,7 +32,7 @@ module::module(flecs::world& ecs) {
     ecs.set<LoggerSink>({std::make_shared<spdlog::sinks::basic_file_sink_mt>("logs.log", true)});
     std::cout << "Logger Sink Created" << std::endl;
 
-    ecs.observer<LoggerControls>()
+    ecs.observer<LoggerControls>("UpdateLogLevel")
         .event(flecs::OnSet)
         .each([](flecs::entity e, LoggerControls& c){
             const Logger *lg = e.get<Logger>();
