@@ -88,19 +88,18 @@ int main(int, char *[]) {
     
     // Logger imported first as the other modules use it on their import
     ecs.import<Logging::module>();
-    std::shared_ptr<spdlog::sinks::sink> file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>("logs.log", true);
     spdlog::flush_every(std::chrono::seconds(1));
 
-    registerModule<Logging::examplemodule>(ecs, "::Logging::examplemodule", spdlog::level::trace, file_sink);
+    ecs.import<Logging::examplemodule>();
     std::cout << "examplemodule" << std::endl;
-    registerModule<Ticks::module>(ecs, "::Ticks::module", spdlog::level::trace, file_sink);
+    ecs.import<Ticks::module>();
     std::cout << "Ticks::module" << std::endl;
     //registerModule<Render::module>(ecs, "::Render::module", spdlog::level::trace, file_sink);
     //registerModule<Map::module>(ecs, "::Map::module", spdlog::level::trace, file_sink);
-    registerModule<Pawn::module>(ecs, "::Pawn::module", spdlog::level::trace, file_sink);
+    ecs.import<Pawn::module>();
     std::cout << "Pawn::module" << std::endl;
     //registerModule<LogicPawn::module>(ecs, "::LogicPawn::module", spdlog::level::trace, file_sink);
-    registerModule<Building::module>(ecs, "::Building::module", spdlog::level::trace, file_sink);
+    ecs.import<Building::module>();
     std::cout << "Building::module" << std::endl;
 
 

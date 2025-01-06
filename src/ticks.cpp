@@ -16,12 +16,14 @@ flecs::entity tick_ui;
 flecs::entity tick_render;
 std::shared_ptr<spdlog::logger> logger;
 
-module::module(flecs::world& ecs, spdlog::level::level_enum level, std::shared_ptr<spdlog::sinks::sink> sink) {
+module::module(flecs::world& ecs) {
     // Register module with world. The module entity will be created with the
     // same hierarchy as the C++ namespaces (e.g. simple::module)
     flecs::entity m = ecs.module<module>();
-    logger = Logging::init_module_logger(m, level, sink);
-    std::cout << "logger done" << std::endl;
+    logger = Logging::init_module_logger(m, ecs.get<Logging::LoggerSink>()->sink);
+    // Before using logger, must set the level so the observer can handle it
+    m.set<Logging::LoggerControls>({spdlog::level::trace});  // TODO: Replace this with flecs script
+    logger->trace("Module Created");
 
     // Create basic timers
     // 1000 Hz should be enough for anybody

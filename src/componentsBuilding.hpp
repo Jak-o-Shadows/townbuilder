@@ -8,8 +8,7 @@
 namespace Building{
 
 struct module {
-    module() = default;
-    module(flecs::world& ecs, spdlog::level::level_enum level, std::shared_ptr<spdlog::sinks::sink> sink);
+    module(flecs::world& ecs);
 };
 
 extern flecs::entity buildingsParent;
