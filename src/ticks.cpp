@@ -3,6 +3,7 @@
 #include "msgLogging.hpp"
 
 #include <tracy/Tracy.hpp>
+#include <spdlog/spdlog.h>
 
 #include <iostream>
 
@@ -13,14 +14,13 @@ flecs::entity tick_100_Hz;
 flecs::entity tick_pawn_behaviour;
 flecs::entity tick_ui;
 flecs::entity tick_render;
-
+std::shared_ptr<spdlog::logger> logger;
 
 module::module(flecs::world& ecs, spdlog::level::level_enum level, std::shared_ptr<spdlog::sinks::sink> sink) {
     // Register module with world. The module entity will be created with the
     // same hierarchy as the C++ namespaces (e.g. simple::module)
     flecs::entity m = ecs.module<module>();
-    flecs::id_t module_id = m.id();
-    Logging::Logger* lg = Logging::init_module_logger(m, level, sink);
+    logger = Logging::init_module_logger(m, level, sink);
     std::cout << "logger done" << std::endl;
 
     // Create basic timers
@@ -36,22 +36,15 @@ module::module(flecs::world& ecs, spdlog::level::level_enum level, std::shared_p
     // Render update
     tick_render = ecs.timer("Timer_Render Update")
         .rate(2, tick_100_Hz);  // 2 ticks @ 100 Hz => 50 Hz
-    lg->logger->trace("timers created");
+    logger->trace("timers created");
 
 
     // Frame Markers for Tracy
     if (true) {
 
         ecs.system("raw")
-            .run([module_id](flecs::iter it){
+            .run([](flecs::iter it){
                 FrameMarkNamed("EveryFrame");
-                flecs::entity m = it.world().entity(module_id);
-                std::cout << m.name() << std::endl;
-                Logging::Logger* lg = m.get_mut<Logging::Logger>();
-                std::cout << "Every Frame Marker";
-                std::cout << lg << std::endl;
-                lg->logger->trace("Every Frame Mark");
-                std::cout << "  logged" << std::endl;
         });
 
         ecs.system("Tracy 100 Hz Frame")
@@ -75,11 +68,11 @@ module::module(flecs::world& ecs, spdlog::level::level_enum level, std::shared_p
                 FrameMarkNamed("Tick UI");
         });
 
-        lg->logger->trace("tracy markers created");
+        logger->trace("tracy markers created");
 
     }
 
-    lg->logger->trace("module setup");
+    logger->trace("module setup");
     };
 }
 

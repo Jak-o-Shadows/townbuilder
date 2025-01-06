@@ -4,19 +4,20 @@ namespace Building{
 
 // Handle extern entities
 flecs::entity buildingsParent;
+std::shared_ptr<spdlog::logger> logger;
 
 
 module::module(flecs::world& ecs, spdlog::level::level_enum level, std::shared_ptr<spdlog::sinks::sink> sink) {
     // Register module with world. The module entity will be created with the
     // same hierarchy as the C++ namespaces (e.g. simple::module)
     flecs::entity m = ecs.module<module>();
-    Logging::Logger* lg = Logging::init_module_logger(m, level, sink);
+    logger = Logging::init_module_logger(m, level, sink);
     
     //buildingsParent = ecs.entity("buildings");
 
 
     // Register components with reflection data
-    /*
+    
     ecs.component<Building::Location>()
         .member<int>("x")
         .member<int>("y");
@@ -29,8 +30,8 @@ module::module(flecs::world& ecs, spdlog::level::level_enum level, std::shared_p
         .member<int>("sizeY")
         .member<int>("doorX")
         .member<int>("doorY");
-    lg->logger->trace("Components Registered");
-    */
+    logger->trace("Components Registered");
+    
 
     // Start some buildings!
     /*
@@ -49,7 +50,7 @@ module::module(flecs::world& ecs, spdlog::level::level_enum level, std::shared_p
 
 
 
-    lg->logger->trace("Module Setup Complete");
+    logger->trace("Module Setup Complete");
 };
 
 

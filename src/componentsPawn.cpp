@@ -7,13 +7,14 @@ namespace Pawn {
 
 // Handle extern entities
 flecs::entity pawnsParent;
+std::shared_ptr<spdlog::logger> logger;
 
 
 module::module(flecs::world& ecs, spdlog::level::level_enum level, std::shared_ptr<spdlog::sinks::sink> sink) {
     // Register module with world. The module entity will be created with the
     // same hierarchy as the C++ namespaces (e.g. simple::module)
     flecs::entity m = ecs.module<module>();
-    Logging::Logger* lg = Logging::init_module_logger(m, level, sink);
+    logger = Logging::init_module_logger(m, level, sink);
     std::cout << "componentsPawn::module logger done" << std::endl;
     
     //ecs.import<Ticks::module>();  // TODO: Need to more registerModule out
@@ -203,6 +204,7 @@ module::module(flecs::world& ecs, spdlog::level::level_enum level, std::shared_p
         }
 
         if (movedCell){
+            logger->trace("Pawn {} moved cell from {} to {}", e.name().c_str(), e.target<PawnOccupying>().name().c_str(), e.target<PawnNextCell>().name().c_str());
             flecs::entity nextCell = e.target<PawnNextCell>();
             //std::cout << " Moved To " << nextCell.name() << std::endl;
             // Uupdate currently occupying cell
@@ -219,7 +221,7 @@ module::module(flecs::world& ecs, spdlog::level::level_enum level, std::shared_p
 
 
 
-    lg->logger->trace("Module Setup Complete");
+    logger->trace("Module Setup Complete");
 };
 
 
