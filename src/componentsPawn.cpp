@@ -49,10 +49,8 @@ module::module(flecs::world& ecs) {
     ecs.component<Pawn::Velocity>()
         .member<double>("x")
         .member<double>("y");
-    lg->logger->trace("Components Registered");
-    std::cout << "Components Registered" << std::endl;
+    logger->trace("Components Registered");
     */
-   std::cout << "asdfasdf" << std::endl;
     // Need to give the entities a parent so they show nicer in the flecs explorer
     /*
     pawnsParent = ecs.entity("pawns");
@@ -161,7 +159,6 @@ module::module(flecs::world& ecs) {
 
     }
     */
-   std::cout << "adf" << std::endl;
     // Put systems in
     auto move_sys = ecs.system<Position, Velocity>("System_IntraCellMovement")
     .tick_source(Ticks::tick_pawn_behaviour)

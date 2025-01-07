@@ -34,6 +34,8 @@
 #include <random>
 
 
+
+
 #define HFSM2_ENABLE_STRUCTURE_REPORT
 #include <hfsm2/machine.hpp>
 
@@ -64,10 +66,8 @@ struct Game {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-
-
-
 int main(int, char *[]) {
+
 
     flecs::world ecs;
     ecs.set<flecs::Rest>({});
@@ -91,19 +91,14 @@ int main(int, char *[]) {
     spdlog::flush_every(std::chrono::seconds(1));
 
     ecs.import<Logging::examplemodule>();
-    std::cout << "examplemodule" << std::endl;
     ecs.import<Ticks::module>();
-    std::cout << "Ticks::module" << std::endl;
-    //registerModule<Render::module>(ecs, "::Render::module", spdlog::level::trace, file_sink);
-    //registerModule<Map::module>(ecs, "::Map::module", spdlog::level::trace, file_sink);
+    //ecs.import<Render::module>();
+    ecs.import<Map::module>();
     ecs.import<Pawn::module>();
-    std::cout << "Pawn::module" << std::endl;
-    //registerModule<LogicPawn::module>(ecs, "::LogicPawn::module", spdlog::level::trace, file_sink);
+    //ecs.import<LogicPawn::module>();
     ecs.import<Building::module>();
-    std::cout << "Building::module" << std::endl;
 
 
-    std::cout << "Imported Modules" << std::endl;
 
     
     // Register UI components so I can see them in the flecs explorer

@@ -10,6 +10,7 @@
 
 namespace Logging {
 
+// Flecs Components
 struct LoggerSink{
     std::shared_ptr<spdlog::sinks::sink> sink;
 };
@@ -21,6 +22,8 @@ struct LoggerControls {
 struct Logger {
     std::shared_ptr<spdlog::logger> logger;
 };
+
+
 
 std::shared_ptr<spdlog::logger> init_module_logger(flecs::entity& module, std::shared_ptr<spdlog::sinks::sink> sink);
 
