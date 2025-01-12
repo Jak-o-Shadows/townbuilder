@@ -16,16 +16,16 @@
 #include <flecs.h>
 #include <tracy/Tracy.hpp>
 
-#include "flecs_components_transform.h"
-#include "flecs_components_graphics.h"
-#include "flecs_components_geometry.h"
-#include "flecs_components_physics.h"
-#include "flecs_components_gui.h"
-#include "flecs_components_input.h"
-#include "flecs_systems_transform.h"
-#include "flecs_systems_physics.h"
-#include "flecs_systems_sokol.h"
-#include "flecs_game.h"
+//#include "flecs_components_transform.h"
+//#include "flecs_components_graphics.h"
+//#include "flecs_components_geometry.h"
+//#include "flecs_components_physics.h"
+//#include "flecs_components_gui.h"
+//#include "flecs_components_input.h"
+//#include "flecs_systems_transform.h"
+//#include "flecs_systems_physics.h"
+//#include "flecs_systems_sokol.h"
+//#include "flecs_game.h"
 
 #include <iostream>
 #include <fstream>
@@ -54,13 +54,7 @@ void operator delete(void* ptr) noexcept {
 
 
 
-struct Game {
-    flecs::entity window;
-    flecs::entity level;
-    
-    flecs::components::transform::Position3 center;
-    float size;        
-};
+
 
 
 
@@ -73,22 +67,21 @@ int main(int, char *[]) {
     ecs.set<flecs::Rest>({});
     ecs.import<flecs::stats>(); // Enable statistics in explorer
 
-    ecs.import<flecs::components::transform>();
-    ecs.import<flecs::components::graphics>();
-    ecs.import<flecs::components::geometry>();
-    ecs.import<flecs::components::gui>();
-    ecs.import<flecs::components::physics>();
-    ecs.import<flecs::components::input>();
-    ecs.import<flecs::systems::transform>();
-    ecs.import<flecs::systems::physics>();
-    ecs.import<flecs::game>();
-    ecs.import<flecs::systems::sokol>();
+    //ecs.import<flecs::components::transform>();
+    //ecs.import<flecs::components::graphics>();
+    //ecs.import<flecs::components::geometry>();
+    //ecs.import<flecs::components::gui>();
+    //ecs.import<flecs::components::physics>();
+    //ecs.import<flecs::components::input>();
+    //ecs.import<flecs::systems::transform>();
+    //ecs.import<flecs::systems::physics>();
+    //ecs.import<flecs::game>();
+    //ecs.import<flecs::systems::sokol>();
 
 
     
     // Logger imported first as the other modules use it on their import
     ecs.import<Logging::module>();
-    spdlog::flush_every(std::chrono::seconds(1));
 
     ecs.import<Logging::examplemodule>();
     ecs.import<Ticks::module>();
@@ -98,6 +91,9 @@ int main(int, char *[]) {
     //ecs.import<LogicPawn::module>();
     ecs.import<Building::module>();
 
+    // TODO: Determine if this is required to be done after the loggers created
+    spdlog::flush_on(spdlog::level::trace);
+    spdlog::flush_every(std::chrono::seconds(1));
 
 
     
@@ -188,56 +184,6 @@ int main(int, char *[]) {
     std::cout << "Systems in main.cpp defined" << std::endl;
 
     
-    // Initialise game
-    const float TileSize = 3.0;
-    const float TileHeight = 0.5;
-    const float PathHeight = 0.1;
-    const float TileSpacing = 0.00;
-    Game& g = ecs.ensure<Game>();
-    g.center = {0, 0, 0};//{ to_x(map_width / 2), 0, to_z(map_height / 2) };
-    // Get the map entity back out for working with for the moment
-    /*
-    const Map::Grid* map = Map::mapEntity.get<Map::Grid>();
-    std::cout << "Map Object gotten" << std::endl;
-    int map_width = map->m_width;
-    int map_height = map->m_height;
-    g.size = map_width * (TileSize + TileSpacing) + 2;
-    std::cout << "map GUI setup" << std::endl;
-    */
-
-    
-    // Cannot figure out how to move these to render - so stuff it
-    // Init UI
-    flecs::components::graphics::Camera camera_data = {};
-    camera_data.set_up(0, 1, 0);
-    camera_data.set_fov(20);
-    camera_data.near_ = 1.0;
-    camera_data.far_ = 100.0;
-    auto camera = ecs.entity("Camera")
-        .add(flecs::game::CameraController)
-        .set<flecs::components::transform::Position3>({0, 8.0, -9.0})
-        .set<flecs::components::transform::Rotation3>({-0.5})
-        .set<flecs::components::graphics::Camera>(camera_data);
-
-    flecs::components::graphics::DirectionalLight light_data = {};
-    light_data.set_direction(0.3, -1.0, 0.5);
-    light_data.set_color(0.98, 0.95, 0.8);
-    light_data.intensity = 0.01;
-    auto light = ecs.entity("Sun")
-        .set<flecs::components::graphics::DirectionalLight>(light_data);
-
-    flecs::components::gui::Canvas canvas_data = {};
-    canvas_data.width = 800;
-    canvas_data.height = 600;
-    canvas_data.title = (char*)"TownBuilder";
-    canvas_data.camera = camera.id();
-    canvas_data.directional_light = light.id();
-    canvas_data.ambient_light = {0.006, 0.005, 0.018};
-    canvas_data.background_color = {0.15, 0.4, 0.6};
-    canvas_data.fog_density = 1.0;
-    ecs.entity()
-        .set<flecs::components::gui::Canvas>(canvas_data);
-
 
     
 
