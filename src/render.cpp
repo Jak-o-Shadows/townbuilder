@@ -1,11 +1,11 @@
 #include "render.hpp"
 
 #include <tracy/Tracy.hpp>
+#include <spdlog/spdlog.h>
 
-
-#include "flecs_components_transform.h"
-#include "flecs_components_graphics.h"
-#include "flecs_components_geometry.h"
+//#include "flecs_components_transform.h"
+//#include "flecs_components_graphics.h"
+//#include "flecs_components_geometry.h"
 //#include "flecs_components_physics.h"
 //#include "flecs_components_gui.h"
 //#include "flecs_components_input.h"
@@ -19,6 +19,7 @@
 
 namespace Render{
 
+std::shared_ptr<spdlog::logger> logger;
 
 
 
@@ -27,18 +28,21 @@ namespace Render{
 module::module(flecs::world& ecs) {
     // Register module with world. The module entity will be created with the
     // same hierarchy as the C++ namespaces (e.g. simple::module)
-    ecs.module<module>();
+    flecs::entity m = ecs.module<module>();
+    logger = Logging::init_module_logger(m, ecs.get<Logging::LoggerSink>()->sink);
+    // Before using logger, must set the level so the observer can handle it
+    m.set<Logging::LoggerControls>({spdlog::level::trace});  // TODO: Replace this with flecs script
+    logger->trace("Module Created");
 
-
-    ecs.import<flecs::components::transform>();
-    ecs.import<flecs::components::graphics>();
-    ecs.import<flecs::components::geometry>();
-//    ecs.import<flecs::components::gui>();
-//    ecs.import<flecs::components::physics>();
-//    ecs.import<flecs::components::input>();
-//    ecs.import<flecs::systems::transform>();
-//    ecs.import<flecs::systems::physics>();
-//    ecs.import<flecs::systems::sokol>();
+    //ecs.import<flecs::components::transform>();
+    //ecs.import<flecs::components::graphics>();
+    //ecs.import<flecs::components::geometry>();
+    //ecs.import<flecs::components::gui>();
+    //ecs.import<flecs::components::physics>();
+    //ecs.import<flecs::components::input>();
+    //ecs.import<flecs::systems::transform>();
+    //ecs.import<flecs::systems::physics>();
+    //ecs.import<flecs::systems::sokol>();
 
 
 
@@ -62,7 +66,7 @@ module::module(flecs::world& ecs) {
         });
     */
 
-
+   /*
     ecs.observer("Observer_PawnCreate")
         .with(flecs::ChildOf, Pawn::pawnsParent)
         .event(flecs::OnAdd)
@@ -77,7 +81,7 @@ module::module(flecs::world& ecs) {
             pawn.set<flecs::components::geometry::Box>({0.1, 0.8, 0.1});
             pawn.set<flecs::components::graphics::Color>({165, 42, 42});          
         });
-
+    */
 
     /*
     // Add rendering components to Pawns
@@ -92,7 +96,7 @@ module::module(flecs::world& ecs) {
 
 
 
-
+    /*
     auto updatePawnRenderLocation_sys = ecs.system<Pawn::Position, flecs::components::transform::Position3>("Update Pawn Render Location")
     .tick_source(Ticks::tick_render)
     .with<Pawn::PawnOccupying>(flecs::Wildcard)
@@ -103,7 +107,7 @@ module::module(flecs::world& ecs) {
         renderPos.x = loc->x + p.x/2;
         renderPos.z = loc->y + p.y/2;
     });
-
+    */
 
 
 

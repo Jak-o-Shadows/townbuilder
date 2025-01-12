@@ -82,7 +82,7 @@ int main(int, char *[]) {
     ecs.import<flecs::systems::transform>();
     ecs.import<flecs::systems::physics>();
     ecs.import<flecs::game>();
-    //ecs.import<flecs::systems::sokol>();
+    ecs.import<flecs::systems::sokol>();
 
 
     
@@ -92,7 +92,7 @@ int main(int, char *[]) {
 
     ecs.import<Logging::examplemodule>();
     ecs.import<Ticks::module>();
-    //ecs.import<Render::module>();
+    ecs.import<Render::module>();
     ecs.import<Map::module>();
     ecs.import<Pawn::module>();
     //ecs.import<LogicPawn::module>();
@@ -187,7 +187,7 @@ int main(int, char *[]) {
 
     std::cout << "Systems in main.cpp defined" << std::endl;
 
-    /*
+    
     // Initialise game
     const float TileSize = 3.0;
     const float TileHeight = 0.5;
@@ -196,12 +196,14 @@ int main(int, char *[]) {
     Game& g = ecs.ensure<Game>();
     g.center = {0, 0, 0};//{ to_x(map_width / 2), 0, to_z(map_height / 2) };
     // Get the map entity back out for working with for the moment
+    /*
     const Map::Grid* map = Map::mapEntity.get<Map::Grid>();
     std::cout << "Map Object gotten" << std::endl;
     int map_width = map->m_width;
     int map_height = map->m_height;
     g.size = map_width * (TileSize + TileSpacing) + 2;
     std::cout << "map GUI setup" << std::endl;
+    */
 
     
     // Cannot figure out how to move these to render - so stuff it
@@ -240,7 +242,7 @@ int main(int, char *[]) {
     
 
 
-
+    /*
     ecs.defer_begin();
     std::mt19937 rng;
     rng.seed(20231104);
@@ -253,8 +255,6 @@ int main(int, char *[]) {
         pawn.add<Pawn::PawnPathfindingGoal>(flecs::entity(ecs, map->get(targetX, targetY)));
         });
     ecs.defer_end();
-    
-
     */
 
 
