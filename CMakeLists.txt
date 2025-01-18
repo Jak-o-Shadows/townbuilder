@@ -21,9 +21,7 @@ target_sources(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/gridMap.c
     ${DIR_DEPS}/flecs_components_input.c
     ${DIR_DEPS}/flecs_components_physics.c
     ${DIR_DEPS}/flecs_components_transform.c
-    ${DIR_DEPS}/flecs_game.c
     ${DIR_DEPS}/flecs_systems_physics.c
-    ${DIR_DEPS}/flecs_systems_sokol.c
     ${DIR_DEPS}/flecs_systems_transform.c
 )# "$<$<CONFIG:Release>:${CMAKE_CURRENT_SOURCE_DIR}/src/gridMap.cpp>")
 target_include_directories(${PROJECT_NAME} PRIVATE ${DIR_DEPS})
@@ -48,6 +46,26 @@ target_link_libraries(${PROJECT_NAME} Tracy::TracyClient)
 # Spdlog
 find_package(spdlog REQUIRED)
 target_link_libraries(${PROJECT_NAME} spdlog::spdlog)
+
+
+# Dear IMGUI
+find_package(imgui REQUIRED)
+find_package(glfw3 REQUIRED)
+find_package(glew REQUIRED)
+add_custom_command(TARGET ${PROJECT_NAME}
+    POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy ${PROJECT_SOURCE_DIR}/assets/simple-shader.vs $<TARGET_FILE_DIR:${PROJECT_NAME}>
+    COMMAND ${CMAKE_COMMAND} -E copy ${PROJECT_SOURCE_DIR}/assets/simple-shader.fs $<TARGET_FILE_DIR:${PROJECT_NAME}>
+)
+target_sources(${PROJECT_NAME} PRIVATE
+    bindings/imgui_impl_glfw.cpp
+    bindings/imgui_impl_opengl3.cpp
+)
+target_compile_definitions(${PROJECT_NAME} PUBLIC IMGUI_IMPL_OPENGL_LOADER_GLEW)
+target_link_libraries(${PROJECT_NAME} imgui::imgui GLEW::GLEW glfw)
+
+
+
 
 
 find_package(cglm REQUIRED CONFIG)

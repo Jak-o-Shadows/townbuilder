@@ -2,6 +2,7 @@
 
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/basic_file_sink.h>
+#include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/pattern_formatter.h>
 #include <flecs.h>
 
@@ -50,7 +51,8 @@ module::module(flecs::world& ecs) {
     ecs.module<module>();
 
     // Set up the logger sink for all loggers as a singleton
-    std::shared_ptr<spdlog::sinks::sink> sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>("logs.log", true);
+    //std::shared_ptr<spdlog::sinks::sink> sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>("logs.log", true);
+    std::shared_ptr<spdlog::sinks::sink> sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
     ecs.set<LoggerSink>({sink});
 
     // Register and use the custom formatter

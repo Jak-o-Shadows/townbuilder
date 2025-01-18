@@ -61,6 +61,8 @@ module::module(flecs::world& ecs) {
     ecs.module<module>();
 
     //ecs.import<Building::module>();
+    ecs.import<flecs::components::graphics>();
+    ecs.import<flecs::components::geometry>();
 
     // Define the map
     //  This is defined early because it isn't properly in the ECS, so initialisation order matters mroe
@@ -148,9 +150,9 @@ Grid::Grid(int width, int height, flecs::world *ecs, flecs::entity &parent)
                     // The set operation finds or creates a component, and sets it.
                     // Components are automatically registered with the world.
                     .set<GridCellStatic>({x, y, 10*x + y})
-                    .set<flecs::components::geometry::Box>({1, 0, 1})
-                    .set<flecs::components::transform::Position3>({(float) x, 0, (float) y})
-                    .set<flecs::components::graphics::Color>({colourDist(rngMapColour), colourDist(rngMapColour), colourDist(rngMapColour)})
+                    //.set<flecs::components::geometry::Box>({1, 0, 1})
+                    //.set<flecs::components::transform::Position3>({(float) x, 0, (float) y})
+                    //.set<flecs::components::graphics::Color>({colourDist(rngMapColour), colourDist(rngMapColour), colourDist(rngMapColour)})
                     .child_of(parent);  // Need to give the map cells a parent so they show nicer in the flecs explorer
                 m_values.push_back(ecs->id(cell));
             }

@@ -11,8 +11,7 @@
 #include "flecs_components_input.h"
 #include "flecs_systems_transform.h"
 #include "flecs_systems_physics.h"
-#include "flecs_systems_sokol.h"
-#include "flecs_game.h"
+
 
 
 #include "componentsPawn.hpp"
@@ -43,21 +42,12 @@ module::module(flecs::world& ecs) {
     logger->trace("Module Created");
     std::cout << "Render Module Created" << std::endl;
 
-    ecs.import<flecs::components::transform>();
-    ecs.import<flecs::components::graphics>();
-    ecs.import<flecs::components::geometry>();
-    ecs.import<flecs::components::gui>();
-    ecs.import<flecs::components::physics>();
-    ecs.import<flecs::components::input>();
-    ecs.import<flecs::systems::transform>();
-    ecs.import<flecs::systems::physics>();
-    ecs.import<flecs::game>();  // Must be before flecs:systems:sokol
-    ecs.import<flecs::systems::sokol>();
-    logger->trace("Modules Imported");
-    std::cout << "Modules Imported" << std::endl;
+
+    //logger->trace("Modules Imported");
+    //std::cout << "Modules Imported" << std::endl;
 
 
-
+    /*
     // Initialise game
     const float TileSize = 3.0;
     const float TileHeight = 0.5;
@@ -74,6 +64,7 @@ module::module(flecs::world& ecs) {
     g.size = map_width * (TileSize + TileSpacing) + 2;
     std::cout << "map GUI setup" << std::endl;
     */
+   /*
    logger->trace("Map Gui Setup");
    std::cout << "Map Gui Setup" << std::endl;
 

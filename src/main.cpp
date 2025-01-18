@@ -16,17 +16,6 @@
 #include <flecs.h>
 #include <tracy/Tracy.hpp>
 
-//#include "flecs_components_transform.h"
-//#include "flecs_components_graphics.h"
-//#include "flecs_components_geometry.h"
-//#include "flecs_components_physics.h"
-//#include "flecs_components_gui.h"
-//#include "flecs_components_input.h"
-//#include "flecs_systems_transform.h"
-//#include "flecs_systems_physics.h"
-//#include "flecs_systems_sokol.h"
-//#include "flecs_game.h"
-
 #include <iostream>
 #include <fstream>
 #include <format>
@@ -67,17 +56,6 @@ int main(int, char *[]) {
     ecs.set<flecs::Rest>({});
     ecs.import<flecs::stats>(); // Enable statistics in explorer
 
-    //ecs.import<flecs::components::transform>();
-    //ecs.import<flecs::components::graphics>();
-    //ecs.import<flecs::components::geometry>();
-    //ecs.import<flecs::components::gui>();
-    //ecs.import<flecs::components::physics>();
-    //ecs.import<flecs::components::input>();
-    //ecs.import<flecs::systems::transform>();
-    //ecs.import<flecs::systems::physics>();
-    //ecs.import<flecs::game>();
-    //ecs.import<flecs::systems::sokol>();
-
 
     
     // Logger imported first as the other modules use it on their import
@@ -85,11 +63,11 @@ int main(int, char *[]) {
 
     ecs.import<Logging::examplemodule>();
     ecs.import<Ticks::module>();
-    ecs.import<Render::module>();
     ecs.import<Map::module>();
     ecs.import<Pawn::module>();
     //ecs.import<LogicPawn::module>();
     ecs.import<Building::module>();
+    ecs.import<Render::module>();  // Must be after building & other modules for observers to work
 
     // TODO: Determine if this is required to be done after the loggers created
     spdlog::flush_on(spdlog::level::trace);

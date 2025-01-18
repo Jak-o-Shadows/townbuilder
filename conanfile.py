@@ -2,6 +2,7 @@ import os
 
 from conan import ConanFile
 from conan.tools.cmake import CMake, cmake_layout
+from conan.tools.files import copy
 
 
 class FlecsOrbitSimConan(ConanFile):
@@ -16,8 +17,19 @@ class FlecsOrbitSimConan(ConanFile):
     def requirements(self):
         self.requires("flecs/4.0.0")
         self.requires("tracy/0.9.1")
+
+        self.requires("imgui/1.91.3")
+        self.requires("glfw/3.3.8")
+        self.requires("glew/2.2.0")
+
         self.requires("cglm/0.9.1")
         self.requires("spdlog/1.15.0")
+
+    def generate(self):
+        copy(self, "*glfw*", os.path.join(self.dependencies["imgui"].package_folder,
+             "res", "bindings"), os.path.join(self.source_folder, "bindings"))
+        copy(self, "*opengl3*", os.path.join(self.dependencies["imgui"].package_folder,
+             "res", "bindings"), os.path.join(self.source_folder, "bindings"))
 
     def layout(self):
         cmake_layout(self)
