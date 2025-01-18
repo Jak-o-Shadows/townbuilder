@@ -131,7 +131,7 @@ int main(int, char *[]) {
     */
     
 
-    /*
+    
     ecs.system("SaveWorld")
         .tick_source(Ticks::tick_100_Hz)
         .rate(100)
@@ -148,7 +148,7 @@ int main(int, char *[]) {
                 outfile.close();
             }
         });
-    */
+    
 
     ecs.system("PrintTime")
         .tick_source(Ticks::tick_100_Hz)
@@ -182,17 +182,16 @@ int main(int, char *[]) {
     */
 
 
-
-
+    ecs_script_run_file(ecs, "../../src/config.flecs");
 
 
 
     std::cout << "Just before run" << std::endl;
-    ecs.app()
-        .threads(4)
-        .delta_time(1.0/200.0)  // Setting a fixed framerate causes the internal clock to make sense
-        .enable_rest()
-        .enable_stats()
-        .run();
+    // set the debug level so i can see the system order
+    while (true) {
+        ecs.progress();
+        FrameMarkNamed("Frame");
+    }
+
 
 }

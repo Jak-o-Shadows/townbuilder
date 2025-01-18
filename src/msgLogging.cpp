@@ -50,6 +50,18 @@ module::module(flecs::world& ecs) {
     // same hierarchy as the C++ namespaces (e.g. simple::module)
     ecs.module<module>();
 
+    ecs.component<spdlog::level::level_enum>()
+        .constant("trace",      spdlog::level::trace)
+        .constant("debug",      spdlog::level::debug)
+        .constant("info",       spdlog::level::info)
+        .constant("warn",       spdlog::level::warn)
+        .constant("err",        spdlog::level::err)
+        .constant("critical",   spdlog::level::critical)
+        .constant("off",        spdlog::level::off);
+
+    ecs.component<LoggerControls>()
+        .member<spdlog::level::level_enum>("level");
+
     // Set up the logger sink for all loggers as a singleton
     //std::shared_ptr<spdlog::sinks::sink> sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>("logs.log", true);
     std::shared_ptr<spdlog::sinks::sink> sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
@@ -84,7 +96,7 @@ examplemodule::examplemodule(flecs::world& ecs) {
     flecs::entity m = ecs.module<examplemodule>();
     logger = Logging::init_module_logger(m, ecs.get<Logging::LoggerSink>()->sink);
     // Before using logger, must set the level so the observer can handle it
-    m.set<Logging::LoggerControls>({spdlog::level::trace});
+    m.set<Logging::LoggerControls>({spdlog::level::err});
     logger->trace("Module Created");
 }
 

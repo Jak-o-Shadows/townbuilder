@@ -13,7 +13,7 @@ module::module(flecs::world& ecs) {
     flecs::entity m = ecs.module<module>();
     logger = Logging::init_module_logger(m, ecs.get<Logging::LoggerSink>()->sink);
     // Before using logger, must set the level so the observer can handle it
-    m.set<Logging::LoggerControls>({spdlog::level::trace});  // TODO: Replace this with flecs script
+    m.set<Logging::LoggerControls>({spdlog::level::err});
     logger->trace("Module Created");
     
     //buildingsParent = ecs.entity("buildings");

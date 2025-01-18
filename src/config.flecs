@@ -1,0 +1,20 @@
+
+Render.module  {
+    Logging.module.LoggerControls: {"warn"}
+}
+
+Building.module {
+    Logging.module.LoggerControls: {"trace"}
+}
+
+Pawn.module {
+    Logging.module.LoggerControls: {"trace"}
+}
+
+Logging.examplemodule {
+    Logging.module.LoggerControls: {"trace"}
+}
+
+Ticks.module{
+    Logging.module.LoggerControls: {"trace"}
+}
