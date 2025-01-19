@@ -22,10 +22,10 @@ Ticks.module{
 
 // Buildings
 
-Granary1: Building.module.buildings.Granary_Prefab {
+Building.module.buildings.Granary1: Building.module.buildings.Granary_Prefab {
     Building.Location: {3, 8}
 }
 
-Granary2: Building.module.buildings.Granary_Prefab {
+Building.module.buildings.Granary2: Building.module.buildings.Granary_Prefab {
     Building.Location: {5, 10}
 }

@@ -18,6 +18,10 @@ struct module {
 extern flecs::entity mapEntity;
 extern flecs::entity resourcesParent;
 
+struct GridCell_Prefab {};
+
+struct Tree_Prefab {};
+
 // Have a normal vector of the the cells of the grid.
 //  This makes it easier than having them all as entities, as otherwise
 //  would need to query all the time just to get a cell reference

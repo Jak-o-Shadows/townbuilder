@@ -20,6 +20,7 @@
 
 #include "componentsPawn.hpp"
 #include "componentsBuilding.hpp"
+#include "componentsMap.hpp"
 #include "ticks.hpp"
 
 namespace Render{
@@ -58,7 +59,7 @@ module::module(flecs::world& ecs) {
     flecs::entity m = ecs.module<module>();
     logger = Logging::init_module_logger(m, ecs.get<Logging::LoggerSink>()->sink);
     // Before using logger, must set the level so the observer can handle it
-    m.set<Logging::LoggerControls>({spdlog::level::err});
+    m.set<Logging::LoggerControls>({spdlog::level::trace});
     logger->trace("Module Created");
     std::cout << "Render Module Created" << std::endl;
 
@@ -77,6 +78,10 @@ module::module(flecs::world& ecs) {
         .member<float>("width")
         .member<float>("height")
         .member<float>("depth");
+    ecs.component<flecs::components::transform::Position3>()  // TODO: We shouldn't have to be registering this. Am I jsut not importing it?
+        .member<float>("x")
+        .member<float>("y")
+        .member<float>("z");
 
     logger->trace("Components Registered");
 
@@ -217,11 +222,12 @@ module::module(flecs::world& ecs) {
 
                 for (auto i : it) {
                     flecs::entity e = it.entity(i);
-                    ImVec2 corner1 = ImVec2(screenpos.x + (p[i].x - box[i].width/2), screenpos.y + (p[i].y - box[i].height/2));
-                    ImVec2 corner2 = ImVec2(screenpos.x + (p[i].x - box[i].width/2), screenpos.y + (p[i].y + box[i].height/2));
-                    ImVec2 corner3 = ImVec2(screenpos.x + (p[i].x + box[i].width/2), screenpos.y + (p[i].y + box[i].height/2));
-                    ImVec2 corner4 = ImVec2(screenpos.x + (p[i].x + box[i].width/2), screenpos.y + (p[i].y - box[i].height/2));
+                    ImVec2 corner1 = ImVec2(50+screenpos.x + (p[i].x - box[i].width/2), 50+screenpos.y + (p[i].y - box[i].height/2));
+                    ImVec2 corner2 = ImVec2(50+screenpos.x + (p[i].x - box[i].width/2), 50+screenpos.y + (p[i].y + box[i].height/2));
+                    ImVec2 corner3 = ImVec2(50+screenpos.x + (p[i].x + box[i].width/2), 50+screenpos.y + (p[i].y + box[i].height/2));
+                    ImVec2 corner4 = ImVec2(50+screenpos.x + (p[i].x + box[i].width/2), 50+screenpos.y + (p[i].y - box[i].height/2));
                     draw_list->AddQuadFilled(corner1, corner2, corner3, corner4, c[i]);
+                    draw_list->AddQuad(corner1, corner2, corner3, corner4, ImColor(ImVec4(0, 0, 0, 1.0)), 1.0);
                     logger->trace("Rendered {} of: {}, {}, {}, {}", std::string(e.path()), corner1.x, corner1.y, corner3.x, corner3.y);
                 }
                 
@@ -333,20 +339,62 @@ module::module(flecs::world& ecs) {
         });
     
 
-    // Update building render position based on the location
-    ecs.observer<const Building::Location,
+    ecs.observer<>("Tree_CreateAddRenderComponents")
+        .event(flecs::OnAdd)
+        .with(flecs::IsA).second<Map::Tree_Prefab>()
+        .each([](flecs::entity e){
+            ZoneScopedN("Tree_CreateAddRenderComponents");
+            e.set<flecs::components::transform::Position3>({0, 0, 0});
+            e.set<Box>({7, 7, 0});
+            e.set<ImColor>(ImColor(ImVec4(0.0 / 255.0, 255.0 / 255.0, 0.0 / 255.0, 1.0f)));
+            logger->debug("Added Render Components to Tree {}", std::string(e.path()));
+        });
+
+    
+    ecs.observer<const Map::GridCellStatic>("GridCell_CreateAddRenderComponents")
+        .event(flecs::OnSet)
+        .with(flecs::IsA).second<Map::GridCell_Prefab>()
+        .each([](flecs::entity e, const Map::GridCellStatic pos){
+            ZoneScopedN("GridCell_CreateAddRenderComponents");
+            // cells are centered at their coord
+            float scale = 20;
+            float x = scale*(static_cast<float>(pos.x) - 0.5);
+            float y = scale*(static_cast<float>(pos.y) - 0.5);
+            e.set<flecs::components::transform::Position3>({x, y, 0});
+            e.set<Box>({scale, scale, 0});
+            e.set<ImColor>(ImColor(ImVec4(255/ 255.0, 0.0 / 255.0, 0.0 / 255.0, 1.0f)));
+            logger->debug("Added Render Components to GridCell {}", std::string(e.path()));
+        });
+        
+    
+
+
+    // Update render position based on the location
+    // TODO: Not sure why this can't be an observer for OnSet
+    //ecs.observer<
+    ecs.system<
+        const Building::Location,
         flecs::components::transform::Position3>("UpdateRenderPosition")
         .term_at(0).in()
         .term_at(1).out()
-        .event(flecs::OnSet)
+        //.event(flecs::OnSet)
         .each([](flecs::entity, const Building::Location& loc,flecs::components::transform::Position3& pos){
             ZoneScopedN("UpdateRenderPosition");
             float scale = 20;
-            pos.x = scale * loc.x;
-            pos.y = scale * loc.y;
+            pos.x = scale * (static_cast<float>(loc.x)-0.5);
+            pos.y = scale * (static_cast<float>(loc.y)-0.5);
             pos.z = 0;
         });
 
+    // Update the position of the granary's over time 
+    ecs.system<Building::Location>("MoveGranaryPosition")
+        .term_at(0).inout()
+        .with(flecs::IsA).second<Building::Granary_Prefab>()
+        .tick_source(Ticks::tick_ui)
+        .each([](flecs::entity e, Building::Location& loc){
+            ZoneScopedN("UpdateGranaryPosition");
+            loc.x = (loc.x + 1) % 10;
+        });
 
 
 
