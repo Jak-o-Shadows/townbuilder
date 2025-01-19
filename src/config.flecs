@@ -1,6 +1,6 @@
 
 Render.module  {
-    Logging.module.LoggerControls: {"warn"}
+    Logging.module.LoggerControls: {"debug"}
 }
 
 Building.module {
@@ -17,4 +17,15 @@ Logging.examplemodule {
 
 Ticks.module{
     Logging.module.LoggerControls: {"trace"}
+}
+
+
+// Buildings
+
+Granary1: Building.module.buildings.Granary_Prefab {
+    Building.Location: {3, 8}
+}
+
+Granary2: Building.module.buildings.Granary_Prefab {
+    Building.Location: {5, 10}
 }

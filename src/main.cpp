@@ -63,11 +63,12 @@ int main(int, char *[]) {
 
     ecs.import<Logging::examplemodule>();
     ecs.import<Ticks::module>();
+    ecs.import<Render::module>();  // Must be before building & other modules for observers to work
+
     ecs.import<Map::module>();
     ecs.import<Pawn::module>();
     //ecs.import<LogicPawn::module>();
     ecs.import<Building::module>();
-    ecs.import<Render::module>();  // Must be after building & other modules for observers to work
 
     // TODO: Determine if this is required to be done after the loggers created
     spdlog::flush_on(spdlog::level::trace);
@@ -149,15 +150,6 @@ int main(int, char *[]) {
             }
         });
     
-
-    ecs.system("PrintTime")
-        .tick_source(Ticks::tick_100_Hz)
-        .rate(100)
-        .run([&ecs](flecs::iter it){
-            ZoneScopedN("PrintTime");
-            std::cout << "Time: " << it.world().get_info()->world_time_total << std::endl;
-        });
-
 
     std::cout << "Systems in main.cpp defined" << std::endl;
 

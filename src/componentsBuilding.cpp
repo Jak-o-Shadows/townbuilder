@@ -13,10 +13,10 @@ module::module(flecs::world& ecs) {
     flecs::entity m = ecs.module<module>();
     logger = Logging::init_module_logger(m, ecs.get<Logging::LoggerSink>()->sink);
     // Before using logger, must set the level so the observer can handle it
-    m.set<Logging::LoggerControls>({spdlog::level::err});
+    m.set<Logging::LoggerControls>({spdlog::level::trace});
     logger->trace("Module Created");
     
-    //buildingsParent = ecs.entity("buildings");
+    buildingsParent = ecs.entity("buildings");
 
 
     // Register components with reflection data
@@ -36,19 +36,26 @@ module::module(flecs::world& ecs) {
     logger->trace("Components Registered");
     
 
+    flecs::entity building_prefab = ecs.prefab("building_prefab");
+
+
+
+
+
+
+
     // Start some buildings!
-    /*
-    auto granary = ecs.entity("Granary")
+
+    flecs::entity granary_prefab = ecs.prefab<Granary_Prefab>()
+        .is_a(building_prefab)
         .child_of(buildingsParent)
-        .set<Location>({3, 8})
         .set<BuildingUI>({3, 3, -1, 0})
-        .set<Resources>({0, 0, 0})
-        .add<BuildingType>()
-        ;
-    */
-//        .set<flecs::components::transform::Position3>({3, 0.1, 8})
-//        .set<flecs::components::geometry::Box>({2, 2, 2})
-//        .set<flecs::components::graphics::Rgb>({20, 0, 0});
+        .set<Resources>({0, 0, 0});
+    logger->trace("Granary Prefab Created");
+
+
+
+
 
 
 

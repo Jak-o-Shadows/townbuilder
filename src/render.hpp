@@ -3,6 +3,8 @@
 #include <flecs.h>
 
 #include <GL/glew.h> // Initialize with glewInit()
+#include "imgui.h"
+
 
 // Include glfw3.h after our OpenGL definitions
 #include <GLFW/glfw3.h>
@@ -15,6 +17,14 @@ void part3(GLFWwindow *window);
 struct Window{
     GLFWwindow* window;
 };
+
+
+struct Box{
+    float width;
+    float height;
+    float depth;
+};
+
 
 struct module {
     module(flecs::world& ecs);

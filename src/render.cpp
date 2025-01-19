@@ -51,16 +51,6 @@ void render_conan_logo()
 
 
 
-struct Game {
-    flecs::entity window;
-    flecs::entity level;
-    
-    flecs::components::transform::Position3 center;
-    float size;        
-};
-
-
-
 
 module::module(flecs::world& ecs) {
     // Register module with world. The module entity will be created with the
@@ -75,6 +65,20 @@ module::module(flecs::world& ecs) {
 
     ecs.import<Ticks::module>();
     logger->trace("Modules Imported");
+
+
+
+    ecs.component<ImColor>()
+        .member<float>("r")
+        .member<float>("g")
+        .member<float>("b")
+        .member<float>("a");
+    ecs.component<Box>()
+        .member<float>("width")
+        .member<float>("height")
+        .member<float>("depth");
+
+    logger->trace("Components Registered");
 
 
     // Setup window
@@ -187,6 +191,52 @@ module::module(flecs::world& ecs) {
         });
 
 
+
+
+    
+    ecs.system<const Box,
+               const flecs::components::transform::Position3,
+               const ImColor>("RenderBox")
+        .kind(flecs::OnUpdate)
+        .tick_source(Ticks::tick_render)
+        .term_at(0).in()
+        .term_at(1).in()
+        .term_at(2).in()
+        .run([](flecs::iter& it){
+            ZoneScopedN("RenderBox");
+            
+            ImGui::Begin("Map");
+            
+            ImDrawList *draw_list = ImGui::GetWindowDrawList();
+            const ImVec2 screenpos = ImGui::GetCursorScreenPos();
+
+            while (it.next()) {
+                auto box = it.field<const Box>(0);
+                auto p = it.field<const flecs::components::transform::Position3>(1);
+                auto c = it.field<const ImColor>(2);
+
+                for (auto i : it) {
+                    flecs::entity e = it.entity(i);
+                    ImVec2 corner1 = ImVec2(screenpos.x + (p[i].x - box[i].width/2), screenpos.y + (p[i].y - box[i].height/2));
+                    ImVec2 corner2 = ImVec2(screenpos.x + (p[i].x - box[i].width/2), screenpos.y + (p[i].y + box[i].height/2));
+                    ImVec2 corner3 = ImVec2(screenpos.x + (p[i].x + box[i].width/2), screenpos.y + (p[i].y + box[i].height/2));
+                    ImVec2 corner4 = ImVec2(screenpos.x + (p[i].x + box[i].width/2), screenpos.y + (p[i].y - box[i].height/2));
+                    draw_list->AddQuadFilled(corner1, corner2, corner3, corner4, c[i]);
+                    logger->trace("Rendered {} of: {}, {}, {}, {}", std::string(e.path()), corner1.x, corner1.y, corner3.x, corner3.y);
+                }
+                
+            }
+
+            ImGui::End();
+            
+    });
+    
+
+
+
+
+
+
     /*
     // Initialise game
     const float TileSize = 3.0;
@@ -263,23 +313,42 @@ module::module(flecs::world& ecs) {
 
 
 
-
+    */
 
     // Add GUI components to granary
     // TODO: By using a PreFab, should be able to do this to all buildings of type
-    /*
-    ecs.observer<flecs::ChildOf>("Observer_BuildingCreate")
-        .term_at(0).second(Building::buildingsParent)
+
+
+    ecs.observer<>("Granary_BuildingCreateAddRenderComponents")
         .event(flecs::OnAdd)
-        .each([](flecs::entity building){
-            ZoneScopedN("Observer_BuildingCreate");
-            const Building::Location* loc = building.get<Building::Location>();
-            const Building::BuildingUI* size = building.get<Building::BuildingUI>();
-            building.set<flecs::components::transform::Position3>({(float) loc->x, 0.1, (float) loc->y});
-            building.set<flecs::components::geometry::Box>({(float) size->sizeX, 2, (float) size->sizeY});
-            building.set<flecs::components::graphics::Color>({20, 0, 0});
+        .with(flecs::IsA).second<Building::Granary_Prefab>()
+        //.with<Building::Granary_Prefab>(flecs::IsA)
+        .each([](flecs::entity e){
+            ZoneScopedN("Granary_BuildingCreateAddRenderComponents");
+            e.set<flecs::components::transform::Position3>({0, 0.1, 0});
+            e.set<Box>({20, 20, 1});
+            e.set<ImColor>(ImColor(ImVec4(255.0 / 255.0, 40.0 / 255.0, 255.0 / 255.0, 1.0f)));
+            std::cout << "Added Render Components to Building " << e.path() << std::endl;
+            logger->debug("Added Render Components to Building {}", std::string(e.path()));
         });
-    */
+    
+
+    // Update building render position based on the location
+    ecs.observer<const Building::Location,
+        flecs::components::transform::Position3>("UpdateRenderPosition")
+        .term_at(0).in()
+        .term_at(1).out()
+        .event(flecs::OnSet)
+        .each([](flecs::entity, const Building::Location& loc,flecs::components::transform::Position3& pos){
+            ZoneScopedN("UpdateRenderPosition");
+            float scale = 20;
+            pos.x = scale * loc.x;
+            pos.y = scale * loc.y;
+            pos.z = 0;
+        });
+
+
+
 
    /*
     ecs.observer("Observer_PawnCreate")

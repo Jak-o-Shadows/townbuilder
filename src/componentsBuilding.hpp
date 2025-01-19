@@ -13,6 +13,7 @@ struct module {
 
 extern flecs::entity buildingsParent;
 
+struct Granary_Prefab {};
 
 struct Location {
     int x;
