@@ -158,8 +158,9 @@ int main(int, char *[]) {
     
 
 
-    /*
+    
     ecs.defer_begin();
+    const Map::Grid* map = Map::mapEntity.get<Map::Grid>();
     std::mt19937 rng;
     rng.seed(20231104);
     std::uniform_int_distribution<int> xDist(0, map->m_width-1);
@@ -171,7 +172,7 @@ int main(int, char *[]) {
         pawn.add<Pawn::PawnPathfindingGoal>(flecs::entity(ecs, map->get(targetX, targetY)));
         });
     ecs.defer_end();
-    */
+    
 
 
     ecs_script_run_file(ecs, "../../src/config.flecs");

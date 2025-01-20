@@ -16,7 +16,7 @@ module::module(flecs::world& ecs) {
     flecs::entity m = ecs.module<module>();
     logger = Logging::init_module_logger(m, ecs.get<Logging::LoggerSink>()->sink);
     // Before using logger, must set the level so the observer can handle it
-    m.set<Logging::LoggerControls>({spdlog::level::err});
+    m.set<Logging::LoggerControls>({spdlog::level::trace});
     logger->trace("Module Created");
     
     //ecs.import<Ticks::module>();  // TODO: Need to more registerModule out
@@ -32,7 +32,7 @@ module::module(flecs::world& ecs) {
     ecs.component<PawnNextCell>().add(flecs::Exclusive);
     */
 
-   /*
+   
     // Register components with reflection data & documentation
     ecs.component<PawnLifeTraits>()
         .member<float>("hunger")
@@ -50,15 +50,15 @@ module::module(flecs::world& ecs) {
         .member<double>("x")
         .member<double>("y");
     logger->trace("Components Registered");
-    */
+    
     // Need to give the entities a parent so they show nicer in the flecs explorer
-    /*
+    
     pawnsParent = ecs.entity("pawns");
 
     const Map::Grid* map = Map::mapEntity.get<Map::Grid>();
-    */
+    
 
-    /*
+    
     ecs.observer()
         .event(flecs::OnAdd)
         .with<PawnOccupying>(flecs::Wildcard)
@@ -68,15 +68,17 @@ module::module(flecs::world& ecs) {
             //std::cout << "Pathfinding Update: for " <<  e.name() << std::endl;
             flecs::entity currentCell = e.target<PawnOccupying>();
             flecs::entity targetCell = e.target<PawnPathfindingGoal>();
+            logger->debug("Pathfinding update for {}. Current {} -> {}", std::string(e.path()), std::string(currentCell.path()), std::string(targetCell.path()));
+
             //std::cout << "\t " << currentCell.name() << " to " << targetCell.name() << std::endl;
             // From the current cell, and the target cell, pathfind to find the next cell
             //  First convert the entity data into x, y
             //      Current Cell
-            auto currentStatic = currentCell.get<GridCellStatic>();
+            auto currentStatic = currentCell.get<Map::GridCellStatic>();
             int x = currentStatic->x;
             int y = currentStatic->y;
             //      Target Cell
-            auto targetStatic = targetCell.get<GridCellStatic>();
+            auto targetStatic = targetCell.get<Map::GridCellStatic>();
             int targetX = targetStatic->x;
             int targetY = targetStatic->y;
             if ((targetX == x) && (targetY == y)) {
@@ -92,9 +94,28 @@ module::module(flecs::world& ecs) {
                 machine->react(ev);
 
             } else {
+                
+                int nextX = x-targetX < 0 ? x-1 : x+1;
+                int nextY = y-targetY < 0 ? y-1 : y+1;
+                if (nextX > map->m_width-1) {
+                    nextX = map->m_width-1;
+                }
+                if (nextX < 0) {
+                    nextX = 0;
+                }
+                if (nextY > map->m_height-1) {
+                    nextY = map->m_height-1;
+                }
+                if (nextY < 0) {
+                    nextY = 0;
+                }
+                flecs::entity nextCell = flecs::entity(ecs, map->get(nextX, nextY));
+
+                /*
                 //  Begin Pathfinding
                 flecs::id_t nextCellId = pathfind(ecs, map, x, y, targetX, targetY);
                 flecs::entity nextCell = flecs::entity(ecs, nextCellId);
+                */
                 // Set the next cell
                 e.add<PawnNextCell>(nextCell);
                 // Calculate velocity to get to next cell
@@ -102,16 +123,18 @@ module::module(flecs::world& ecs) {
                 // TODO: This is assuming from middle of cell to middle of cell, not from edge to edge
                 const PawnAbilityTraits *pawnAbilityTraits = e.get<PawnAbilityTraits>();
                 float speed = pawnAbilityTraits->speed;
-                auto nextStatic = nextCell.get<GridCellStatic>();
+                auto nextStatic = nextCell.get<Map::GridCellStatic>();
                 float vx = (nextStatic->x - x)*speed;
                 float vy = (nextStatic->y -y)*speed;
                 //std::cout << "\t Velocity To: " << vx << ", " << vy << std::endl;
                 e.set<Velocity>({vx, vy});
+                
             }
         });
-    */
+    
+    
 
-   /*
+   
     // Generate pawns
     //  Randomly distribute starting & target positions
     std::mt19937 rng;
@@ -131,7 +154,8 @@ module::module(flecs::world& ecs) {
         sprintf(pawnName, "Pawn%d", pawnNumber);  // TODO: Replace with std::format
         auto pawn = ecs.entity(pawnName)
             .child_of(pawnsParent)
-            .set<Position>({0.5, 0.5})
+            .is_a<Pawn_Prefab>()
+            .set<Position>({0, 0})
             .set<Velocity>({0, 0})
             .set<PawnAbilityTraits>({0, speed})
             .add<PawnOccupationWoodcutter>()
@@ -158,7 +182,7 @@ module::module(flecs::world& ecs) {
         machine->update();
 
     }
-    */
+    
     // Put systems in
     auto move_sys = ecs.system<Position, Velocity>("System_IntraCellMovement")
     .tick_source(Ticks::tick_pawn_behaviour)

@@ -112,14 +112,14 @@ void Walking::react(const Arrived_Event&, FullControl& control){
     int map_width = map->m_width;
     int map_height = map->m_height;
 
-    /*
+    
     flecs::id_t id2 = map->get(targetX, targetY);
     flecs::entity e2 = flecs::entity(ecs, id2);
     //e.add<Pawn::PawnPathfindingGoal>(flecs::entity(ecs, map->get(targetX, targetY)));
     e.add<Pawn::PawnPathfindingGoal>(e2);
     std::cout << e.name() << "(" << e.id() << ")" << " Arrived" << std::endl;
     control.changeTo<Walking>();
-    */
+    
 }
 
 

@@ -239,88 +239,6 @@ module::module(flecs::world& ecs) {
     
 
 
-
-
-
-
-    /*
-    // Initialise game
-    const float TileSize = 3.0;
-    const float TileHeight = 0.5;
-    const float PathHeight = 0.1;
-    const float TileSpacing = 0.00;
-    Game& g = ecs.ensure<Game>();
-    g.center = {0, 0, 0};//{ to_x(map_width / 2), 0, to_z(map_height / 2) };
-    // Get the map entity back out for working with for the moment
-    /*
-    const Map::Grid* map = Map::mapEntity.get<Map::Grid>();
-    std::cout << "Map Object gotten" << std::endl;
-    int map_width = map->m_width;
-    int map_height = map->m_height;
-    g.size = map_width * (TileSize + TileSpacing) + 2;
-    std::cout << "map GUI setup" << std::endl;
-    */
-   /*
-   logger->trace("Map Gui Setup");
-   std::cout << "Map Gui Setup" << std::endl;
-
-    
-    // Cannot figure out how to move these to render - so stuff it
-    // Init UI
-    
-    flecs::components::graphics::Camera camera_data = {};
-    camera_data.set_up(0, 1, 0);
-    camera_data.set_fov(20);
-    camera_data.near_ = 1.0;
-    camera_data.far_ = 100.0;
-    //auto camera = ecs.entity("Camera")
-    auto camera = flecs::entity(ecs, "Camera");
-        camera.set<flecs::components::transform::Position3>({0, 8.0, -9.0});
-        camera.set<flecs::components::transform::Rotation3>({-0.5});
-        camera.set<flecs::components::graphics::Camera>(camera_data);
-        camera.add(flecs::game::CameraController);
-    logger->trace("Camera Created");
-    std::cout << "Camera Created" << std::endl;
-    
-
-    flecs::components::graphics::DirectionalLight light_data = {};
-    light_data.set_direction(0.3, -1.0, 0.5);
-    light_data.set_color(0.98, 0.95, 0.8);
-    light_data.intensity = 0.01;
-    //auto light = ecs.entity("Sun")
-    auto light = flecs::entity(ecs, "Sun")
-        .set<flecs::components::graphics::DirectionalLight>(light_data);
-    logger->trace("Light Created");
-    std::cout << "Light Created" << std::endl;
-
-    
-    flecs::components::gui::Canvas canvas_data = {};
-    canvas_data.width = 800;
-    canvas_data.height = 600;
-    canvas_data.title = (char*)"TownBuilder";
-    canvas_data.camera = camera.id();
-    canvas_data.directional_light = light.id();
-    canvas_data.ambient_light = {0.006, 0.005, 0.018};
-    canvas_data.background_color = {0.15, 0.4, 0.6};
-    canvas_data.fog_density = 1.0;
-    //ecs.entity()
-    flecs::entity(ecs, "Canvas_asdf")
-        .set<flecs::components::gui::Canvas>(canvas_data);
-    logger->trace("Canvas Created");
-    std::cout << "Canvas Created" << std::endl;
-    
-
-
-
-
-
-
-
-
-
-
-    */
-
     // Add GUI components to granary
     // TODO: By using a PreFab, should be able to do this to all buildings of type
 
@@ -386,60 +304,41 @@ module::module(flecs::world& ecs) {
             pos.z = 0;
         });
 
-    // Update the position of the granary's over time 
-    ecs.system<Building::Location>("MoveGranaryPosition")
-        .term_at(0).inout()
-        .with(flecs::IsA).second<Building::Granary_Prefab>()
-        .tick_source(Ticks::tick_ui)
-        .each([](flecs::entity e, Building::Location& loc){
-            ZoneScopedN("UpdateGranaryPosition");
-            loc.x = (loc.x + 1) % 10;
-        });
 
 
 
-   /*
+   
     ecs.observer("Observer_PawnCreate")
-        .with(flecs::ChildOf, Pawn::pawnsParent)
+        .with(flecs::IsA).second<Pawn::Pawn_Prefab>()
         .event(flecs::OnAdd)
         .each([](flecs::entity pawn){
             ZoneScopedN("Observer_PawnCreate");
-            std::cout << "Pawn Creation Observer " << pawn.name() << std::endl;
             // Get the location
             flecs::entity currentCell = pawn.target<Pawn::PawnOccupying>();
-            const GridCellStatic* loc = currentCell.get<GridCellStatic>();
+            //const Map::GridCellStatic* loc = currentCell.get<Map::GridCellStatic>();  // TODO: Figure otu why this isn't set
             // Then set renderable components
-            pawn.set<flecs::components::transform::Position3>({(float) loc->x, 0.1, (float) loc->y});
-            pawn.set<flecs::components::geometry::Box>({0.1, 0.8, 0.1});
-            pawn.set<flecs::components::graphics::Color>({165, 42, 42});          
+            //pawn.set<flecs::components::transform::Position3>({(float) loc->x, (float) loc->y, 0.1});
+            pawn.set<flecs::components::transform::Position3>({0.0, 0.0, 0.0});
+            pawn.set<Box>({5, 5, 0});
+            pawn.set<ImColor>(ImColor(ImVec4(255/ 255.0, 255.0 / 255.0, 0.0 / 255.0, 1.0f)));
         });
-    */
-
-    /*
-    // Add rendering components to Pawns
-    //  As iterating, must defer
-    // TODO: This should be an observer looking for when new pawns are added to the pawnsParent
-    ecs.defer_begin();
-    Pawn::pawnsParent.children([](flecs::entity pawn) {
-
-        });
-    ecs.defer_end();
-    */
+    
 
 
 
-    /*
+    
     auto updatePawnRenderLocation_sys = ecs.system<Pawn::Position, flecs::components::transform::Position3>("Update Pawn Render Location")
     .tick_source(Ticks::tick_render)
     .with<Pawn::PawnOccupying>(flecs::Wildcard)
     .each([](flecs::entity pawn, Pawn::Position& p, flecs::components::transform::Position3& renderPos){
         // Get cell from pawn occupying
         flecs::entity currentCell = pawn.target<Pawn::PawnOccupying>();
-        const GridCellStatic* loc = currentCell.get<GridCellStatic>();
-        renderPos.x = loc->x + p.x/2;
-        renderPos.z = loc->y + p.y/2;
+        const Map::GridCellStatic* loc = currentCell.get<Map::GridCellStatic>();  // TODO: Put it into the query
+        float scale = 20;
+        renderPos.x = scale*(loc->x -0.5 + p.x/2);  // -0.5 because centre of the cell
+        renderPos.y = scale*(loc->y -0.5 + p.y/2);
     });
-    */
+    
 
 
 

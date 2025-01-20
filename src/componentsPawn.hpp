@@ -17,6 +17,7 @@ struct module {
 
 extern flecs::entity pawnsParent;
 
+struct Pawn_Prefab {};
 
 struct PawnLifeTraits {
     float hunger;
@@ -36,6 +37,7 @@ struct PawnOccupying {};
 
 struct PawnNextCell {};
 
+// This is for the position of the pawn within the cell
 struct Position {
     double x, y;
 };
