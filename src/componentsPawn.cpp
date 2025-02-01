@@ -22,7 +22,7 @@ module::module(flecs::world& ecs) {
     //ecs.import<Ticks::module>();  // TODO: Need to more registerModule out
     //ecs.import<Map::module>();
 
-    /*
+    
     // Modify pathfinding components
     // Each pawn can only occupy a single cell, so make exclusive
     ecs.component<PawnOccupying>().add(flecs::Exclusive);
@@ -30,7 +30,7 @@ module::module(flecs::world& ecs) {
     ecs.component<PawnPathfindingGoal>().add(flecs::Exclusive);
     // Each pawn can only have a single next cell, so make exclusive
     ecs.component<PawnNextCell>().add(flecs::Exclusive);
-    */
+    
 
    
     // Register components with reflection data & documentation
