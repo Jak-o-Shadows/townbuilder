@@ -24,11 +24,15 @@
 #include <cmath>
 #include <cassert>
 #include <limits>
+#include <iostream>
 
-#include "simNotify/Notify.h"
-#include "simCore/Calc/Angle.h"
-#include "simCore/Calc/Math.h"
-#include "simCore/Calc/CoordinateConverter.h"
+#include "simdis/Angle.h"
+#include "simdis/Math.h"
+#include "simdis/CoordinateConverter.h"
+
+#define SIM_WARN std::cout
+#define SIM_ERROR std::cout
+
 
 namespace simCore
 {

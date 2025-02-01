@@ -23,9 +23,8 @@
 #ifndef SIMCORE_CALC_COORDINATE_H
 #define SIMCORE_CALC_COORDINATE_H
 
-#include "simCore/Common/Common.h"
-#include "simCore/Calc/Vec3.h"
-#include "simCore/Calc/CoordinateSystem.h"
+#include "simdis/Vec3.h"
+#include "simdis/CoordinateSystem.h"
 
 namespace simCore
 {

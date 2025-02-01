@@ -23,7 +23,12 @@ target_sources(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/gridMap.c
     ${DIR_DEPS}/flecs_components_transform.c
     ${DIR_DEPS}/flecs_systems_physics.c
     ${DIR_DEPS}/flecs_systems_transform.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/simdis/Angle.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/simdis/CoordinateConverter.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/simdis/CoordinateSystem.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/simdis/Math.cpp
 )# "$<$<CONFIG:Release>:${CMAKE_CURRENT_SOURCE_DIR}/src/gridMap.cpp>")
+target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_include_directories(${PROJECT_NAME} PRIVATE ${DIR_DEPS})
 
 

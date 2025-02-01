@@ -21,11 +21,24 @@
  *
  */
 #include <cassert>
-#include "simCore/String/Format.h"
-#include "simCore/Calc/CoordinateSystem.h"
+#include "simdis/CoordinateSystem.h"
 
 namespace simCore
 {
+
+  /// Case insensitive string comparison for std::string
+int caseCompare(const std::string &str1, const std::string &str2)
+{
+  if (str1.empty())
+    return str2.empty() ? 0 : -1;
+  if (str2.empty())
+    return 1;
+#ifdef WIN32
+  return _stricmp(str1.c_str(), str2.c_str());
+#else
+  return ::strcasecmp(str1.c_str(), str2.c_str());
+#endif
+}
 
 // Coordinate system string constants, matching Rule Evaluation names for SIMDIS
 static const std::string COORD_SYS_NED_STR = "Topo_NED";

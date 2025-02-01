@@ -20,9 +20,9 @@
  * disclose, or release this software.
  *
  */
-#include "simCore/Calc/Vec3.h"
-#include "simCore/Calc/Angle.h"
-#include "simCore/Calc/Math.h"
+#include "simdis/Vec3.h"
+#include "simdis/Angle.h"
+#include "simdis/Math.h"
 
 //------------------------------------------------------------------------
 

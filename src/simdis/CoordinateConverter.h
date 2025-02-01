@@ -25,9 +25,8 @@
 
 #include <cassert>
 
-#include "simCore/Common/Common.h"
-#include "simCore/Calc/CoordinateSystem.h"
-#include "simCore/Calc/Coordinate.h"
+#include "simdis/CoordinateSystem.h"
+#include "simdis/Coordinate.h"
 
 namespace simCore
 {

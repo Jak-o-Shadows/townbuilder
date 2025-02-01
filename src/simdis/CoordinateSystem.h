@@ -24,7 +24,6 @@
 #define SIMCORE_CALC_COORDINATESYSTEM_H
 
 #include <string>
-#include "simCore/Common/Common.h"
 
 /// Container for enumerations and constants relating to coordinate system calculations and conversion
 namespace simCore
@@ -82,7 +81,7 @@ namespace simCore
    * @param coordSystem Coordinate system to get string value; COORD_SYS_MAX and COORD_SYS_NONE not supported.
    * @return String representation of the coordinate system
    */
-  SDKCORE_EXPORT std::string coordinateSystemToString(simCore::CoordinateSystem coordSystem);
+  std::string coordinateSystemToString(simCore::CoordinateSystem coordSystem);
 
   /**
    * Given a coordinate system string constant, returns the appropriate system, returning 0 on success.
@@ -92,7 +91,7 @@ namespace simCore
    * @param outSystem Output parameter for the coordinate system string.
    * @return 0 on success, non-zero on error.  In error conditions, outSystem is initialized to simCore::COORD_SYS_LLA.
    */
-  SDKCORE_EXPORT int coordinateSystemFromString(const std::string& str, simCore::CoordinateSystem& outSystem);
+  int coordinateSystemFromString(const std::string& str, simCore::CoordinateSystem& outSystem);
 
 } // End of namespace simCore
 
