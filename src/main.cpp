@@ -10,6 +10,7 @@
 #include "ticks.hpp"
 #include "render.hpp"
 #include "msgLogging.hpp"
+#include "coordinates.hpp"
 
 #include "tracy_zones.hpp"
 
@@ -69,10 +70,14 @@ int main(int, char *[]) {
     ecs.import<Pawn::module>();
     //ecs.import<LogicPawn::module>();
     ecs.import<Building::module>();
+    ecs.import<Coordinates::module>();
 
     // TODO: Determine if this is required to be done after the loggers created
     spdlog::flush_on(spdlog::level::trace);
     spdlog::flush_every(std::chrono::seconds(1));
+
+
+    ecs.singleton<Coordinates::Converter>();
 
 
     
@@ -132,7 +137,7 @@ int main(int, char *[]) {
     */
     
 
-    
+    /*
     ecs.system("SaveWorld")
         .tick_source(Ticks::tick_100_Hz)
         .rate(100)
@@ -149,7 +154,7 @@ int main(int, char *[]) {
                 outfile.close();
             }
         });
-    
+    */
 
     std::cout << "Systems in main.cpp defined" << std::endl;
 
@@ -176,6 +181,17 @@ int main(int, char *[]) {
 
 
     ecs_script_run_file(ecs, "../../src/config.flecs");
+
+
+
+    ecs.defer_begin();
+    Pawn::pawnsParent.children([](flecs::entity pawn) {
+        ZoneScopedN("");
+        pawn.set<simCore::Coordinate>({simCore::CoordinateSystem::COORD_SYS_NED, simCore::Vec3(0, 0, 0)});
+    });
+    ecs.defer_end();
+
+
 
 
 

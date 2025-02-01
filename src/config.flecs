@@ -19,6 +19,10 @@ Ticks.module{
     Logging.module.LoggerControls: {"trace"}
 }
 
+Coordinates.module{
+    Logging.module.LoggerControls: {"debug"}
+}
+
 
 // Buildings
 

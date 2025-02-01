@@ -25,6 +25,7 @@
 
 #include "simdis/Vec3.h"
 #include "simdis/CoordinateSystem.h"
+#include "simdis/Export.h"
 
 namespace simCore
 {
