@@ -7,12 +7,35 @@
 
 namespace Coordinates {
 
+    struct LLA : simCore::Coordinate {
+        LLA() {
+            setCoordinateSystem(simCore::COORD_SYS_LLA);
+        }
+    };
+
+    struct NED : simCore::Coordinate {
+        NED() {
+            setCoordinateSystem(simCore::COORD_SYS_NED);
+        }
+    };
+
+    struct ECEF : simCore::Coordinate {
+        ECEF() {
+            setCoordinateSystem(simCore::COORD_SYS_ECEF);
+        }
+    };
+
+    // Tags to set what the base coordinate system is for the position
+    struct NedBase {};
+    struct LlaBase {};
+    struct EcefBase {};
+
 
 struct Converter {
     simCore::CoordinateConverter converter;
 
     Converter() {
-        converter.setReferenceOrigin(-25.23069496914944, 133.80168159420796, 0);
+        converter.setReferenceOrigin(-25.23069496914944*3.14159265/180, 133.80168159420796*3.14159265/180, 0);
     }
 
 };

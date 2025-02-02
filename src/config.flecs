@@ -33,3 +33,9 @@ Building.module.buildings.Granary1: Building.module.buildings.Granary_Prefab {
 Building.module.buildings.Granary2: Building.module.buildings.Granary_Prefab {
     Building.Location: {5, 10}
 }
+
+
+
+
+// Debug Systems
+Coordinates.module.System_CoordPrint { Disabled }

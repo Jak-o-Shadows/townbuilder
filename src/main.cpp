@@ -77,7 +77,7 @@ int main(int, char *[]) {
     spdlog::flush_every(std::chrono::seconds(1));
 
 
-    ecs.singleton<Coordinates::Converter>();
+    ecs.add<Coordinates::Converter>();
 
 
     
@@ -187,7 +187,10 @@ int main(int, char *[]) {
     ecs.defer_begin();
     Pawn::pawnsParent.children([](flecs::entity pawn) {
         ZoneScopedN("");
-        pawn.set<simCore::Coordinate>({simCore::CoordinateSystem::COORD_SYS_NED, simCore::Vec3(0, 0, 0)});
+        pawn.add<Coordinates::NedBase>();
+        pawn.add<Coordinates::NED>();
+        pawn.add<Coordinates::LLA>();
+        pawn.add<Coordinates::ECEF>();
     });
     ecs.defer_end();
 
