@@ -15,6 +15,8 @@ target_sources(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/gridMap.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/componentsBuilding.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/msgLogging.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/coordinates.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/dis.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/pathfinding.cpp
     ${DIR_DEPS}/flecs_components_cglm.c
     ${DIR_DEPS}/flecs_components_geometry.c
     ${DIR_DEPS}/flecs_components_graphics.c
@@ -54,15 +56,28 @@ find_package(spdlog REQUIRED)
 target_link_libraries(${PROJECT_NAME} spdlog::spdlog)
 
 
+#RecastNavigation
+find_package(recastnavigation REQUIRED)
+target_link_libraries(${PROJECT_NAME} recastnavigation::recastnavigation)
+target_include_directories(${PROJECT_NAME} PRIVATE ${recastnavigation_INCLUDE_DIRS})
+
+# KDIS
+set(DIS_VERSION 7 CACHE STRING "setting dis version should be done")
+target_compile_definitions(${PROJECT_NAME} PRIVATE DIS_VERSION=${DIS_VERSION})
+target_link_libraries(${PROJECT_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/tpl/kdis/build/Debug/KDISd.lib)
+target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/tpl/kdis/build/include)
+target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/tpl/kdis/include)
+
+
 # Dear IMGUI
 find_package(imgui REQUIRED)
 find_package(glfw3 REQUIRED)
 find_package(glew REQUIRED)
-add_custom_command(TARGET ${PROJECT_NAME}
-    POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy ${PROJECT_SOURCE_DIR}/assets/simple-shader.vs $<TARGET_FILE_DIR:${PROJECT_NAME}>
-    COMMAND ${CMAKE_COMMAND} -E copy ${PROJECT_SOURCE_DIR}/assets/simple-shader.fs $<TARGET_FILE_DIR:${PROJECT_NAME}>
-)
+#add_custom_command(TARGET ${PROJECT_NAME}
+#    POST_BUILD
+#    COMMAND ${CMAKE_COMMAND} -E copy ${PROJECT_SOURCE_DIR}/assets/simple-shader.vs $<TARGET_FILE_DIR:${PROJECT_NAME}>
+#    COMMAND ${CMAKE_COMMAND} -E copy ${PROJECT_SOURCE_DIR}/assets/simple-shader.fs $<TARGET_FILE_DIR:${PROJECT_NAME}>
+#)
 target_sources(${PROJECT_NAME} PRIVATE
     bindings/imgui_impl_glfw.cpp
     bindings/imgui_impl_opengl3.cpp

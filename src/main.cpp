@@ -11,6 +11,8 @@
 #include "render.hpp"
 #include "msgLogging.hpp"
 #include "coordinates.hpp"
+#include "dis.hpp"
+#include "pathfinding.hpp"
 
 #include "tracy_zones.hpp"
 
@@ -22,7 +24,6 @@
 #include <format>
 #include <vector>
 #include <random>
-
 
 
 
@@ -52,10 +53,21 @@ void operator delete(void* ptr) noexcept {
 
 int main(int, char *[]) {
 
-
     flecs::world ecs;
     ecs.set<flecs::Rest>({});
     ecs.import<flecs::stats>(); // Enable statistics in explorer
+
+    ecs.component<std::string>()
+        .opaque(flecs::String) // Opaque type that maps to string
+            .serialize([](const flecs::serializer *s, const std::string *data) {
+                const char *str = data->c_str();
+                return s->value(flecs::String, &str); // Forward to serializer
+            })
+            .assign_string([](std::string* data, const char *value) {
+                *data = value; // Assign new value to std::string
+            });
+
+
 
 
     
@@ -71,14 +83,20 @@ int main(int, char *[]) {
     //ecs.import<LogicPawn::module>();
     ecs.import<Building::module>();
     ecs.import<Coordinates::module>();
+    ecs.import<fdis::module>();
+    ecs.import<Pathfinding::module>();
 
     // TODO: Determine if this is required to be done after the loggers created
     spdlog::flush_on(spdlog::level::trace);
     spdlog::flush_every(std::chrono::seconds(1));
 
 
+    // Export positions to DIS - this is how playback/recording will work.
     ecs.add<Coordinates::Converter>();
-
+    // TODO: Something to do with the DisConnection isn't working
+    //fdis::DisConnection con("localhost", 3500, 1);
+    //ecs.set<fdis::DisConnection>({"localhost", 3500, 1, nullptr});
+    //ecs.get_mut<fdis::DisConnection>()->connect();
 
     
     // Register UI components so I can see them in the flecs explorer

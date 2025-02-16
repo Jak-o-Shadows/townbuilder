@@ -143,7 +143,7 @@ module::module(flecs::world& ecs) {
     std::uniform_int_distribution<int> yDist(0, map->m_height-1);
     std::uniform_real_distribution<float> speedDist(0.7, 0.9);
 
-    constexpr int numPawns = 20;
+    constexpr int numPawns = 1;
     for (int pawnNumber=0; pawnNumber < numPawns; pawnNumber++){
         int targetX = xDist(rng);
         int targetY = yDist(rng);
@@ -229,7 +229,6 @@ module::module(flecs::world& ecs) {
         if (movedCell){
             logger->trace("Pawn {} moved cell from {} to {}", e.name().c_str(), e.target<PawnOccupying>().name().c_str(), e.target<PawnNextCell>().name().c_str());
             flecs::entity nextCell = e.target<PawnNextCell>();
-            //std::cout << " Moved To " << nextCell.name() << std::endl;
             // Uupdate currently occupying cell
             e.add<PawnOccupying>(nextCell);
             // Update overall goal to force pathfinding update

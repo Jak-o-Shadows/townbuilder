@@ -17,13 +17,18 @@ class FlecsOrbitSimConan(ConanFile):
     def requirements(self):
         self.requires("flecs/4.0.0")
         self.requires("tracy/0.9.1")
+        self.requires("spdlog/1.15.0")
 
+        # Game Things
+        self.requires("recastnavigation/1.6.0")
+
+        #ImGui Things
         self.requires("imgui/1.91.3")
         self.requires("glfw/3.3.8")
         self.requires("glew/2.2.0")
 
+        # Leftover flecs GUI things
         self.requires("cglm/0.9.1")
-        self.requires("spdlog/1.15.0")
 
     def generate(self):
         copy(self, "*glfw*", os.path.join(self.dependencies["imgui"].package_folder,

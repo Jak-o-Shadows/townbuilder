@@ -1,26 +1,30 @@
 
 Render.module  {
-    Logging.module.LoggerControls: {"debug"}
+    Logging.module.LoggerControls: {"info"}
 }
 
 Building.module {
-    Logging.module.LoggerControls: {"trace"}
+    Logging.module.LoggerControls: {"info"}
 }
 
 Pawn.module {
-    Logging.module.LoggerControls: {"trace"}
+    Logging.module.LoggerControls: {"info"}
 }
 
 Logging.examplemodule {
-    Logging.module.LoggerControls: {"trace"}
+    Logging.module.LoggerControls: {"info"}
 }
 
 Ticks.module{
-    Logging.module.LoggerControls: {"trace"}
+    Logging.module.LoggerControls: {"info"}
 }
 
 Coordinates.module{
-    Logging.module.LoggerControls: {"debug"}
+    Logging.module.LoggerControls: {"info"}
+}
+
+Pathfinding.module{
+    Logging.module.LoggerControls: {"info"}
 }
 
 
