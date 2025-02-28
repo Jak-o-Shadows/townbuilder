@@ -12,6 +12,7 @@ target_sources(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/gridMap.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/componentsPawn.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ticks.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/render.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/renderBasics.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/componentsBuilding.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/msgLogging.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/coordinates.cpp
@@ -54,6 +55,10 @@ target_link_libraries(${PROJECT_NAME} Tracy::TracyClient)
 # Spdlog
 find_package(spdlog REQUIRED)
 target_link_libraries(${PROJECT_NAME} spdlog::spdlog)
+
+# Eigen
+find_package(Eigen3 REQUIRED CONFIG)
+target_link_libraries(${PROJECT_NAME} Eigen3::Eigen)
 
 
 #RecastNavigation
