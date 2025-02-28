@@ -15,17 +15,23 @@
 //    misrepresented as being the original software.
 // 3. This notice may not be removed or altered from any source distribution.
 //
+#include "renderBasics.hpp"
+
+#include <cmath>
 
 #include <string.h>
-#include "DebugDraw.h"
 
+namespace Render{
+namespace Basics{
+
+#define POINTSIZE 10
 
 duDebugDraw::~duDebugDraw()
 {
 	// Empty
 }
 
-unsigned int duDebugDraw::areaToCol(unsigned int area)
+ImVec4 duDebugDraw::areaToCol(unsigned int area)
 {
 	if (area == 0)
 	{
@@ -43,7 +49,7 @@ inline int bit(int a, int b)
 	return (a & (1 << b)) >> b;
 }
 
-unsigned int duIntToCol(int i, int a)
+ImVec4 duIntToCol(int i, int a)
 {
 	int	r = bit(i, 1) + bit(i, 3) * 2 + 1;
 	int	g = bit(i, 2) + bit(i, 4) * 2 + 1;
@@ -51,17 +57,17 @@ unsigned int duIntToCol(int i, int a)
 	return duRGBA(r*63,g*63,b*63,a);
 }
 
-void duIntToCol(int i, float* col)
+void duIntToCol(int i, ImVec4* col)
 {
 	int	r = bit(i, 0) + bit(i, 3) * 2 + 1;
 	int	g = bit(i, 1) + bit(i, 4) * 2 + 1;
 	int	b = bit(i, 2) + bit(i, 5) * 2 + 1;
-	col[0] = 1 - r*63.0f/255.0f;
-	col[1] = 1 - g*63.0f/255.0f;
-	col[2] = 1 - b*63.0f/255.0f;
+	col->x = 1 - r*63.0f/255.0f;
+	col->y = 1 - g*63.0f/255.0f;
+	col->z = 1 - b*63.0f/255.0f;
 }
 
-void duCalcBoxColors(unsigned int* colors, unsigned int colTop, unsigned int colSide)
+void duCalcBoxColors(ImVec4* colors, ImVec4 colTop, ImVec4 colSide)
 {
 	if (!colors) return;
 	
@@ -73,111 +79,111 @@ void duCalcBoxColors(unsigned int* colors, unsigned int colTop, unsigned int col
 	colors[5] = duMultCol(colSide, 217);
 }
 
-void duDebugDrawCylinderWire(struct duDebugDraw* dd, float minx, float miny, float minz,
-							 float maxx, float maxy, float maxz, unsigned int col, const float lineWidth)
+void duDebugDrawCylinderWire(ImDrawList* dd, float minx, float miny, float minz,
+							 float maxx, float maxy, float maxz, ImVec4 col, const float lineWidth)
 {
 	if (!dd) return;
 	
-	dd->begin(DU_DRAW_LINES, lineWidth);
+	//dd->begin(DU_DRAW_LINES, lineWidth);
 	duAppendCylinderWire(dd, minx,miny,minz, maxx,maxy,maxz, col);
-	dd->end();
+	//dd->end();
 }
 
-void duDebugDrawBoxWire(struct duDebugDraw* dd, float minx, float miny, float minz,
-						float maxx, float maxy, float maxz, unsigned int col, const float lineWidth)
+void duDebugDrawBoxWire(ImDrawList* dd, float minx, float miny, float minz,
+						float maxx, float maxy, float maxz, ImVec4 col, const float lineWidth)
 {
 	if (!dd) return;
 	
-	dd->begin(DU_DRAW_LINES, lineWidth);
+	//dd->begin(DU_DRAW_LINES, lineWidth);
 	duAppendBoxWire(dd, minx,miny,minz, maxx,maxy,maxz, col);
-	dd->end();
+	//dd->end();
 }
 
-void duDebugDrawArc(struct duDebugDraw* dd, const float x0, const float y0, const float z0,
+void duDebugDrawArc(ImDrawList* dd, const float x0, const float y0, const float z0,
 					const float x1, const float y1, const float z1, const float h,
-					const float as0, const float as1, unsigned int col, const float lineWidth)
+					const float as0, const float as1, ImVec4 col, const float lineWidth)
 {
 	if (!dd) return;
 	
-	dd->begin(DU_DRAW_LINES, lineWidth);
+	//dd->begin(DU_DRAW_LINES, lineWidth);
 	duAppendArc(dd, x0,y0,z0, x1,y1,z1, h, as0, as1, col);
-	dd->end();
+	//dd->end();
 }
 
-void duDebugDrawArrow(struct duDebugDraw* dd, const float x0, const float y0, const float z0,
+void duDebugDrawArrow(ImDrawList* dd, const float x0, const float y0, const float z0,
 					  const float x1, const float y1, const float z1,
-					  const float as0, const float as1, unsigned int col, const float lineWidth)
+					  const float as0, const float as1, ImVec4 col, const float lineWidth)
 {
 	if (!dd) return;
 	
-	dd->begin(DU_DRAW_LINES, lineWidth);
+	//dd->begin(DU_DRAW_LINES, lineWidth);
 	duAppendArrow(dd, x0,y0,z0, x1,y1,z1, as0, as1, col);
-	dd->end();
+	//dd->end();
 }
 
-void duDebugDrawCircle(struct duDebugDraw* dd, const float x, const float y, const float z,
-					   const float r, unsigned int col, const float lineWidth)
+void duDebugDrawCircle(ImDrawList* dd, const float x, const float y, const float z,
+					   const float r, ImVec4 col, const float lineWidth)
 {
 	if (!dd) return;
 	
-	dd->begin(DU_DRAW_LINES, lineWidth);
+	//dd->begin(DU_DRAW_LINES, lineWidth);
 	duAppendCircle(dd, x,y,z, r, col);
-	dd->end();
+	//dd->end();
 }
 
-void duDebugDrawCross(struct duDebugDraw* dd, const float x, const float y, const float z,
-					  const float size, unsigned int col, const float lineWidth)
+void duDebugDrawCross(ImDrawList* dd, const float x, const float y, const float z,
+					  const float size, ImVec4 col, const float lineWidth)
 {
 	if (!dd) return;
 	
-	dd->begin(DU_DRAW_LINES, lineWidth);
+	//dd->begin(DU_DRAW_LINES, lineWidth);
 	duAppendCross(dd, x,y,z, size, col);
-	dd->end();
+	//dd->end();
 }
 
-void duDebugDrawBox(struct duDebugDraw* dd, float minx, float miny, float minz,
-					float maxx, float maxy, float maxz, const unsigned int* fcol)
+void duDebugDrawBox(ImDrawList* dd, float minx, float miny, float minz,
+					float maxx, float maxy, float maxz, const ImVec4* fcol)
 {
 	if (!dd) return;
 	
-	dd->begin(DU_DRAW_QUADS);
+	//dd->begin(DU_DRAW_QUADS);
 	duAppendBox(dd, minx,miny,minz, maxx,maxy,maxz, fcol);
-	dd->end();
+	//dd->end();
 }
 
-void duDebugDrawCylinder(struct duDebugDraw* dd, float minx, float miny, float minz,
-						 float maxx, float maxy, float maxz, unsigned int col)
+void duDebugDrawCylinder(ImDrawList* dd, float minx, float miny, float minz,
+						 float maxx, float maxy, float maxz, ImVec4 col)
 {
 	if (!dd) return;
 	
-	dd->begin(DU_DRAW_TRIS);
+	//dd->begin(DU_DRAW_TRIS);
 	duAppendCylinder(dd, minx,miny,minz, maxx,maxy,maxz, col);
-	dd->end();
+	//dd->end();
 }
 
-void duDebugDrawGridXZ(struct duDebugDraw* dd, const float ox, const float oy, const float oz,
+void duDebugDrawGridXZ(ImDrawList* dd, const float ox, const float oy, const float oz,
 					   const int w, const int h, const float size,
-					   const unsigned int col, const float lineWidth)
+					   const ImVec4 col, const float lineWidth)
 {
 	if (!dd) return;
 
-	dd->begin(DU_DRAW_LINES, lineWidth);
+	//dd->begin(DU_DRAW_LINES, lineWidth);
 	for (int i = 0; i <= h; ++i)
 	{
-		dd->vertex(ox,oy,oz+i*size, col);
-		dd->vertex(ox+w*size,oy,oz+i*size, col);
+		dd->AddCircleFilled(ImVec3(ox,oy,oz+i*size), POINTSIZE, ImColor(col));
+		dd->AddCircleFilled(ImVec3(ox+w*size,oy,oz+i*size), POINTSIZE, ImColor(col));
 	}
 	for (int i = 0; i <= w; ++i)
 	{
-		dd->vertex(ox+i*size,oy,oz, col);
-		dd->vertex(ox+i*size,oy,oz+h*size, col);
+		dd->AddCircleFilled(ImVec3(ox+i*size,oy,oz), POINTSIZE, ImColor(col));
+		dd->AddCircleFilled(ImVec3(ox+i*size,oy,oz+h*size), POINTSIZE, ImColor(col));
 	}
-	dd->end();
+	//dd->end();
 }
 		 
 
-void duAppendCylinderWire(struct duDebugDraw* dd, float minx, float miny, float minz,
-						  float maxx, float maxy, float maxz, unsigned int col)
+void duAppendCylinderWire(ImDrawList* dd, float minx, float miny, float minz,
+						  float maxx, float maxy, float maxz, ImVec4 col)
 {
 	if (!dd) return;
 
@@ -190,8 +196,8 @@ void duAppendCylinderWire(struct duDebugDraw* dd, float minx, float miny, float 
 		for (int i = 0; i < NUM_SEG; ++i)
 		{
 			const float a = (float)i/(float)NUM_SEG*DU_PI*2;
-			dir[i*2] = dtMathCosf(a);
-			dir[i*2+1] = dtMathSinf(a);
+			dir[i*2] = std::cos(a);
+			dir[i*2+1] = std::sin(a);
 		}
 	}
 	
@@ -202,80 +208,80 @@ void duAppendCylinderWire(struct duDebugDraw* dd, float minx, float miny, float 
 	
 	for (int i = 0, j = NUM_SEG-1; i < NUM_SEG; j = i++)
 	{
-		dd->vertex(cx+dir[j*2+0]*rx, miny, cz+dir[j*2+1]*rz, col);
-		dd->vertex(cx+dir[i*2+0]*rx, miny, cz+dir[i*2+1]*rz, col);
-		dd->vertex(cx+dir[j*2+0]*rx, maxy, cz+dir[j*2+1]*rz, col);
-		dd->vertex(cx+dir[i*2+0]*rx, maxy, cz+dir[i*2+1]*rz, col);
+		dd->AddCircleFilled(ImVec3(cx+dir[j*2+0]*rx, miny, cz+dir[j*2+1]*rz), POINTSIZE, ImColor(col));
+		dd->AddCircleFilled(ImVec3(cx+dir[i*2+0]*rx, miny, cz+dir[i*2+1]*rz), POINTSIZE, ImColor(col));
+		dd->AddCircleFilled(ImVec3(cx+dir[j*2+0]*rx, maxy, cz+dir[j*2+1]*rz), POINTSIZE, ImColor(col));
+		dd->AddCircleFilled(ImVec3(cx+dir[i*2+0]*rx, maxy, cz+dir[i*2+1]*rz), POINTSIZE, ImColor(col));
 	}
 	for (int i = 0; i < NUM_SEG; i += NUM_SEG/4)
 	{
-		dd->vertex(cx+dir[i*2+0]*rx, miny, cz+dir[i*2+1]*rz, col);
-		dd->vertex(cx+dir[i*2+0]*rx, maxy, cz+dir[i*2+1]*rz, col);
+		dd->AddCircleFilled(ImVec3(cx+dir[i*2+0]*rx, miny, cz+dir[i*2+1]*rz), POINTSIZE, ImColor(col));
+		dd->AddCircleFilled(ImVec3(cx+dir[i*2+0]*rx, maxy, cz+dir[i*2+1]*rz), POINTSIZE, ImColor(col));
 	}
 }
 
-void duAppendBoxWire(struct duDebugDraw* dd, float minx, float miny, float minz,
-					 float maxx, float maxy, float maxz, unsigned int col)
+void duAppendBoxWire(ImDrawList* dd, float minx, float miny, float minz,
+					 float maxx, float maxy, float maxz, ImVec4 col)
 {
 	if (!dd) return;
 	// Top
-	dd->vertex(minx, miny, minz, col);
-	dd->vertex(maxx, miny, minz, col);
-	dd->vertex(maxx, miny, minz, col);
-	dd->vertex(maxx, miny, maxz, col);
-	dd->vertex(maxx, miny, maxz, col);
-	dd->vertex(minx, miny, maxz, col);
-	dd->vertex(minx, miny, maxz, col);
-	dd->vertex(minx, miny, minz, col);
+	dd->AddCircleFilled(ImVec3(minx, miny, minz), POINTSIZE, ImColor(col));
+	dd->AddCircleFilled(ImVec3(maxx, miny, minz), POINTSIZE, ImColor(col));
+	dd->AddCircleFilled(ImVec3(maxx, miny, minz), POINTSIZE, ImColor(col));
+	dd->AddCircleFilled(ImVec3(maxx, miny, maxz), POINTSIZE, ImColor(col));
+	dd->AddCircleFilled(ImVec3(maxx, miny, maxz), POINTSIZE, ImColor(col));
+	dd->AddCircleFilled(ImVec3(minx, miny, maxz), POINTSIZE, ImColor(col));
+	dd->AddCircleFilled(ImVec3(minx, miny, maxz), POINTSIZE, ImColor(col));
+	dd->AddCircleFilled(ImVec3(minx, miny, minz), POINTSIZE, ImColor(col));
 	
 	// bottom
-	dd->vertex(minx, maxy, minz, col);
-	dd->vertex(maxx, maxy, minz, col);
-	dd->vertex(maxx, maxy, minz, col);
-	dd->vertex(maxx, maxy, maxz, col);
-	dd->vertex(maxx, maxy, maxz, col);
-	dd->vertex(minx, maxy, maxz, col);
-	dd->vertex(minx, maxy, maxz, col);
-	dd->vertex(minx, maxy, minz, col);
+	dd->AddCircleFilled(ImVec3(minx, maxy, minz), POINTSIZE, ImColor(col));
+	dd->AddCircleFilled(ImVec3(maxx, maxy, minz), POINTSIZE, ImColor(col));
+	dd->AddCircleFilled(ImVec3(maxx, maxy, minz), POINTSIZE, ImColor(col));
+	dd->AddCircleFilled(ImVec3(maxx, maxy, maxz), POINTSIZE, ImColor(col));
+	dd->AddCircleFilled(ImVec3(maxx, maxy, maxz), POINTSIZE, ImColor(col));
+	dd->AddCircleFilled(ImVec3(minx, maxy, maxz), POINTSIZE, ImColor(col));
+	dd->AddCircleFilled(ImVec3(minx, maxy, maxz), POINTSIZE, ImColor(col));
+	dd->AddCircleFilled(ImVec3(minx, maxy, minz), POINTSIZE, ImColor(col));
 	
 	// Sides
-	dd->vertex(minx, miny, minz, col);
-	dd->vertex(minx, maxy, minz, col);
-	dd->vertex(maxx, miny, minz, col);
-	dd->vertex(maxx, maxy, minz, col);
-	dd->vertex(maxx, miny, maxz, col);
-	dd->vertex(maxx, maxy, maxz, col);
-	dd->vertex(minx, miny, maxz, col);
-	dd->vertex(minx, maxy, maxz, col);
+	dd->AddCircleFilled(ImVec3(minx, miny, minz), POINTSIZE, ImColor(col));
+	dd->AddCircleFilled(ImVec3(minx, maxy, minz), POINTSIZE, ImColor(col));
+	dd->AddCircleFilled(ImVec3(maxx, miny, minz), POINTSIZE, ImColor(col));
+	dd->AddCircleFilled(ImVec3(maxx, maxy, minz), POINTSIZE, ImColor(col));
+	dd->AddCircleFilled(ImVec3(maxx, miny, maxz), POINTSIZE, ImColor(col));
+	dd->AddCircleFilled(ImVec3(maxx, maxy, maxz), POINTSIZE, ImColor(col));
+	dd->AddCircleFilled(ImVec3(minx, miny, maxz), POINTSIZE, ImColor(col));
+	dd->AddCircleFilled(ImVec3(minx, maxy, maxz), POINTSIZE, ImColor(col));
 }
 
-void duAppendBoxPoints(struct duDebugDraw* dd, float minx, float miny, float minz,
-					   float maxx, float maxy, float maxz, unsigned int col)
+void duAppendBoxPoints(ImDrawList* dd, float minx, float miny, float minz,
+					   float maxx, float maxy, float maxz, ImVec4 col)
 {
 	if (!dd) return;
 	// Top
-	dd->vertex(minx, miny, minz, col);
-	dd->vertex(maxx, miny, minz, col);
-	dd->vertex(maxx, miny, minz, col);
-	dd->vertex(maxx, miny, maxz, col);
-	dd->vertex(maxx, miny, maxz, col);
-	dd->vertex(minx, miny, maxz, col);
-	dd->vertex(minx, miny, maxz, col);
-	dd->vertex(minx, miny, minz, col);
+	dd->AddCircleFilled(ImVec3(minx, miny, minz), POINTSIZE, ImColor(col));
+	dd->AddCircleFilled(ImVec3(maxx, miny, minz), POINTSIZE, ImColor(col));
+	dd->AddCircleFilled(ImVec3(maxx, miny, minz), POINTSIZE, ImColor(col));
+	dd->AddCircleFilled(ImVec3(maxx, miny, maxz), POINTSIZE, ImColor(col));
+	dd->AddCircleFilled(ImVec3(maxx, miny, maxz), POINTSIZE, ImColor(col));
+	dd->AddCircleFilled(ImVec3(minx, miny, maxz), POINTSIZE, ImColor(col));
+	dd->AddCircleFilled(ImVec3(minx, miny, maxz), POINTSIZE, ImColor(col));
+	dd->AddCircleFilled(ImVec3(minx, miny, minz), POINTSIZE, ImColor(col));
 	
 	// bottom
-	dd->vertex(minx, maxy, minz, col);
-	dd->vertex(maxx, maxy, minz, col);
-	dd->vertex(maxx, maxy, minz, col);
-	dd->vertex(maxx, maxy, maxz, col);
-	dd->vertex(maxx, maxy, maxz, col);
-	dd->vertex(minx, maxy, maxz, col);
-	dd->vertex(minx, maxy, maxz, col);
-	dd->vertex(minx, maxy, minz, col);
+	dd->AddCircleFilled(ImVec3(minx, maxy, minz), POINTSIZE, ImColor(col));
+	dd->AddCircleFilled(ImVec3(maxx, maxy, minz), POINTSIZE, ImColor(col));
+	dd->AddCircleFilled(ImVec3(maxx, maxy, minz), POINTSIZE, ImColor(col));
+	dd->AddCircleFilled(ImVec3(maxx, maxy, maxz), POINTSIZE, ImColor(col));
+	dd->AddCircleFilled(ImVec3(maxx, maxy, maxz), POINTSIZE, ImColor(col));
+	dd->AddCircleFilled(ImVec3(minx, maxy, maxz), POINTSIZE, ImColor(col));
+	dd->AddCircleFilled(ImVec3(minx, maxy, maxz), POINTSIZE, ImColor(col));
+	dd->AddCircleFilled(ImVec3(minx, maxy, minz), POINTSIZE, ImColor(col));
 }
 
-void duAppendBox(struct duDebugDraw* dd, float minx, float miny, float minz,
-				 float maxx, float maxy, float maxz, const unsigned int* fcol)
+void duAppendBox(ImDrawList* dd, float minx, float miny, float minz,
+				 float maxx, float maxy, float maxz, const ImVec4* fcol)
 {
 	if (!dd) return;
 	const float verts[8*3] =
@@ -302,15 +308,15 @@ void duAppendBox(struct duDebugDraw* dd, float minx, float miny, float minz,
 	const unsigned char* in = inds;
 	for (int i = 0; i < 6; ++i)
 	{
-		dd->vertex(&verts[*in*3], fcol[i]); in++;
-		dd->vertex(&verts[*in*3], fcol[i]); in++;
-		dd->vertex(&verts[*in*3], fcol[i]); in++;
-		dd->vertex(&verts[*in*3], fcol[i]); in++;
+		dd->AddCircleFilled(ImVec3(&verts[*in*3]), POINTSIZE, ImColor(fcol[i])); in++;
+		dd->AddCircleFilled(ImVec3(&verts[*in*3]), POINTSIZE, ImColor(fcol[i])); in++;
+		dd->AddCircleFilled(ImVec3(&verts[*in*3]), POINTSIZE, ImColor(fcol[i])); in++;
+		dd->AddCircleFilled(ImVec3(&verts[*in*3]), POINTSIZE, ImColor(fcol[i])); in++;
 	}
 }
 
-void duAppendCylinder(struct duDebugDraw* dd, float minx, float miny, float minz,
-					  float maxx, float maxy, float maxz, unsigned int col)
+void duAppendCylinder(ImDrawList* dd, float minx, float miny, float minz,
+					  float maxx, float maxy, float maxz, ImVec4 col)
 {
 	if (!dd) return;
 	
@@ -328,7 +334,7 @@ void duAppendCylinder(struct duDebugDraw* dd, float minx, float miny, float minz
 		}
 	}
 	
-	unsigned int col2 = duMultCol(col, 160);
+	ImVec4 col2 = duMultCol(col, 160);
 	
 	const float cx = (maxx + minx)/2;
 	const float cz = (maxz + minz)/2;
@@ -338,26 +344,26 @@ void duAppendCylinder(struct duDebugDraw* dd, float minx, float miny, float minz
 	for (int i = 2; i < NUM_SEG; ++i)
 	{
 		const int a = 0, b = i-1, c = i;
-		dd->vertex(cx+dir[a*2+0]*rx, miny, cz+dir[a*2+1]*rz, col2);
-		dd->vertex(cx+dir[b*2+0]*rx, miny, cz+dir[b*2+1]*rz, col2);
-		dd->vertex(cx+dir[c*2+0]*rx, miny, cz+dir[c*2+1]*rz, col2);
+		dd->AddCircleFilled(ImVec3(cx+dir[a*2+0]*rx, miny, cz+dir[a*2+1]*rz), POINTSIZE, ImColor(col2));
+		dd->AddCircleFilled(ImVec3(cx+dir[b*2+0]*rx, miny, cz+dir[b*2+1]*rz), POINTSIZE, ImColor(col2));
+		dd->AddCircleFilled(ImVec3(cx+dir[c*2+0]*rx, miny, cz+dir[c*2+1]*rz), POINTSIZE, ImColor(col2));
 	}
 	for (int i = 2; i < NUM_SEG; ++i)
 	{
 		const int a = 0, b = i, c = i-1;
-		dd->vertex(cx+dir[a*2+0]*rx, maxy, cz+dir[a*2+1]*rz, col);
-		dd->vertex(cx+dir[b*2+0]*rx, maxy, cz+dir[b*2+1]*rz, col);
-		dd->vertex(cx+dir[c*2+0]*rx, maxy, cz+dir[c*2+1]*rz, col);
+		dd->AddCircleFilled(ImVec3(cx+dir[a*2+0]*rx, maxy, cz+dir[a*2+1]*rz), POINTSIZE, ImColor(col));
+		dd->AddCircleFilled(ImVec3(cx+dir[b*2+0]*rx, maxy, cz+dir[b*2+1]*rz), POINTSIZE, ImColor(col));
+		dd->AddCircleFilled(ImVec3(cx+dir[c*2+0]*rx, maxy, cz+dir[c*2+1]*rz), POINTSIZE, ImColor(col));
 	}
 	for (int i = 0, j = NUM_SEG-1; i < NUM_SEG; j = i++)
 	{
-		dd->vertex(cx+dir[i*2+0]*rx, miny, cz+dir[i*2+1]*rz, col2);
-		dd->vertex(cx+dir[j*2+0]*rx, miny, cz+dir[j*2+1]*rz, col2);
-		dd->vertex(cx+dir[j*2+0]*rx, maxy, cz+dir[j*2+1]*rz, col);
+		dd->AddCircleFilled(ImVec3(cx+dir[i*2+0]*rx, miny, cz+dir[i*2+1]*rz), POINTSIZE, ImColor(col2));
+		dd->AddCircleFilled(ImVec3(cx+dir[j*2+0]*rx, miny, cz+dir[j*2+1]*rz), POINTSIZE, ImColor(col2));
+		dd->AddCircleFilled(ImVec3(cx+dir[j*2+0]*rx, maxy, cz+dir[j*2+1]*rz), POINTSIZE, ImColor(col));
 
-		dd->vertex(cx+dir[i*2+0]*rx, miny, cz+dir[i*2+1]*rz, col2);
-		dd->vertex(cx+dir[j*2+0]*rx, maxy, cz+dir[j*2+1]*rz, col);
-		dd->vertex(cx+dir[i*2+0]*rx, maxy, cz+dir[i*2+1]*rz, col);
+		dd->AddCircleFilled(ImVec3(cx+dir[i*2+0]*rx, miny, cz+dir[i*2+1]*rz), POINTSIZE, ImColor(col2));
+		dd->AddCircleFilled(ImVec3(cx+dir[j*2+0]*rx, maxy, cz+dir[j*2+1]*rz), POINTSIZE, ImColor(col));
+		dd->AddCircleFilled(ImVec3(cx+dir[i*2+0]*rx, maxy, cz+dir[i*2+1]*rz), POINTSIZE, ImColor(col));
 	}
 }
 
@@ -403,8 +409,8 @@ inline float vdistSqr(const float* v1, const float* v2)
 }
 
 
-void appendArrowHead(struct duDebugDraw* dd, const float* p, const float* q,
-					 const float s, unsigned int col)
+void appendArrowHead(ImDrawList* dd, const float* p, const float* q,
+					 const float s, ImVec4 col)
 {
 	const float eps = 0.001f;
 	if (!dd) return;
@@ -416,19 +422,19 @@ void appendArrowHead(struct duDebugDraw* dd, const float* p, const float* q,
 	vcross(ay, az, ax);
 	vnormalize(ay);
 
-	dd->vertex(p, col);
-//	dd->vertex(p[0]+az[0]*s+ay[0]*s/2, p[1]+az[1]*s+ay[1]*s/2, p[2]+az[2]*s+ay[2]*s/2, col);
-	dd->vertex(p[0]+az[0]*s+ax[0]*s/3, p[1]+az[1]*s+ax[1]*s/3, p[2]+az[2]*s+ax[2]*s/3, col);
+	dd->AddCircleFilled(ImVec3(p), POINTSIZE, ImColor(col));
+//	dd->AddCircleFilled(ImVec3(p[0]+az[0]*s+ay[0]*s/2, p[1]+az[1]*s+ay[1]*s/2, p[2]+az[2]*s+ay[2]*s/2, ImColor(col));
+	dd->AddCircleFilled(ImVec3(p[0]+az[0]*s+ax[0]*s/3, p[1]+az[1]*s+ax[1]*s/3, p[2]+az[2]*s+ax[2]*s/3), POINTSIZE, ImColor(col));
 
-	dd->vertex(p, col);
-//	dd->vertex(p[0]+az[0]*s-ay[0]*s/2, p[1]+az[1]*s-ay[1]*s/2, p[2]+az[2]*s-ay[2]*s/2, col);
-	dd->vertex(p[0]+az[0]*s-ax[0]*s/3, p[1]+az[1]*s-ax[1]*s/3, p[2]+az[2]*s-ax[2]*s/3, col);
+	dd->AddCircleFilled(ImVec3(p), POINTSIZE, ImColor(col));
+//	dd->AddCircleFilled(ImVec3(p[0]+az[0]*s-ay[0]*s/2, p[1]+az[1]*s-ay[1]*s/2, p[2]+az[2]*s-ay[2]*s/2, ImColor(col));
+	dd->AddCircleFilled(ImVec3(p[0]+az[0]*s-ax[0]*s/3, p[1]+az[1]*s-ax[1]*s/3, p[2]+az[2]*s-ax[2]*s/3), POINTSIZE, ImColor(col));
 	
 }
 
-void duAppendArc(struct duDebugDraw* dd, const float x0, const float y0, const float z0,
+void duAppendArc(ImDrawList* dd, const float x0, const float y0, const float z0,
 				 const float x1, const float y1, const float z1, const float h,
-				 const float as0, const float as1, unsigned int col)
+				 const float as0, const float as1, ImVec4 col)
 {
 	if (!dd) return;
 	static const int NUM_ARC_PTS = 8;
@@ -445,8 +451,8 @@ void duAppendArc(struct duDebugDraw* dd, const float x0, const float y0, const f
 		const float u = PAD + i * ARC_PTS_SCALE;
 		float pt[3];
 		evalArc(x0,y0,z0, dx,dy,dz, len*h, u, pt);
-		dd->vertex(prev[0],prev[1],prev[2], col);
-		dd->vertex(pt[0],pt[1],pt[2], col);
+		dd->AddCircleFilled(ImVec3(prev[0],prev[1],prev[2]), POINTSIZE, ImColor(col));
+		dd->AddCircleFilled(ImVec3(pt[0],pt[1],pt[2]), POINTSIZE, ImColor(col));
 		prev[0] = pt[0]; prev[1] = pt[1]; prev[2] = pt[2];
 	}
 	
@@ -468,14 +474,14 @@ void duAppendArc(struct duDebugDraw* dd, const float x0, const float y0, const f
 	}
 }
 
-void duAppendArrow(struct duDebugDraw* dd, const float x0, const float y0, const float z0,
+void duAppendArrow(ImDrawList* dd, const float x0, const float y0, const float z0,
 				   const float x1, const float y1, const float z1,
-				   const float as0, const float as1, unsigned int col)
+				   const float as0, const float as1, ImVec4 col)
 {
 	if (!dd) return;
 
-	dd->vertex(x0,y0,z0, col);
-	dd->vertex(x1,y1,z1, col);
+	dd->AddCircleFilled(ImVec3(x0,y0,z0), POINTSIZE, ImColor(col));
+	dd->AddCircleFilled(ImVec3(x1,y1,z1), POINTSIZE, ImColor(col));
 	
 	// End arrows
 	const float p[3] = {x0,y0,z0}, q[3] = {x1,y1,z1};
@@ -485,8 +491,8 @@ void duAppendArrow(struct duDebugDraw* dd, const float x0, const float y0, const
 		appendArrowHead(dd, q, p, as1, col);
 }
 
-void duAppendCircle(struct duDebugDraw* dd, const float x, const float y, const float z,
-					const float r, unsigned int col)
+void duAppendCircle(ImDrawList* dd, const float x, const float y, const float z,
+					const float r, ImVec4 col)
 {
 	if (!dd) return;
 	static const int NUM_SEG = 40;
@@ -498,28 +504,28 @@ void duAppendCircle(struct duDebugDraw* dd, const float x, const float y, const 
 		for (int i = 0; i < NUM_SEG; ++i)
 		{
 			const float a = (float)i/(float)NUM_SEG*DU_PI*2;
-			dir[i*2] = cosf(a);
-			dir[i*2+1] = sinf(a);
+			dir[i*2] = std::cos(a);
+			dir[i*2+1] = std::sin(a);
 		}
 	}
 	
 	for (int i = 0, j = NUM_SEG-1; i < NUM_SEG; j = i++)
 	{
-		dd->vertex(x+dir[j*2+0]*r, y, z+dir[j*2+1]*r, col);
-		dd->vertex(x+dir[i*2+0]*r, y, z+dir[i*2+1]*r, col);
+		dd->AddCircleFilled(ImVec3(x+dir[j*2+0]*r, y, z+dir[j*2+1]*r), POINTSIZE, ImColor(col));
+		dd->AddCircleFilled(ImVec3(x+dir[i*2+0]*r, y, z+dir[i*2+1]*r), POINTSIZE, ImColor(col));
 	}
 }
 
-void duAppendCross(struct duDebugDraw* dd, const float x, const float y, const float z,
-				   const float s, unsigned int col)
+void duAppendCross(ImDrawList* dd, const float x, const float y, const float z,
+				   const float s, ImVec4 col)
 {
 	if (!dd) return;
-	dd->vertex(x-s,y,z, col);
-	dd->vertex(x+s,y,z, col);
-	dd->vertex(x,y-s,z, col);
-	dd->vertex(x,y+s,z, col);
-	dd->vertex(x,y,z-s, col);
-	dd->vertex(x,y,z+s, col);
+	dd->AddCircleFilled(ImVec3(x-s,y,z), POINTSIZE, ImColor(col));
+	dd->AddCircleFilled(ImVec3(x+s,y,z), POINTSIZE, ImColor(col));
+	dd->AddCircleFilled(ImVec3(x,y-s,z), POINTSIZE, ImColor(col));
+	dd->AddCircleFilled(ImVec3(x,y+s,z), POINTSIZE, ImColor(col));
+	dd->AddCircleFilled(ImVec3(x,y,z-s), POINTSIZE, ImColor(col));
+	dd->AddCircleFilled(ImVec3(x,y,z+s), POINTSIZE, ImColor(col));
 }
 
 duDisplayList::duDisplayList(int cap) :
@@ -550,7 +556,7 @@ void duDisplayList::resize(int cap)
 	delete [] m_pos;
 	m_pos = newPos;
 
-	unsigned int* newColor = new unsigned int[cap];
+	ImVec4* newColor = new ImVec4[cap];
 	if (m_size)
 		memcpy(newColor, m_color, sizeof(unsigned int)*m_size);
 	delete [] m_color;
@@ -576,7 +582,7 @@ void duDisplayList::begin(duDebugDrawPrimitives prim, float size)
 	m_primSize = size;
 }
 
-void duDisplayList::vertex(const float x, const float y, const float z, unsigned int color)
+void duDisplayList::vertex(const float x, const float y, const float z, ImVec4 color)
 {
 	if (m_size+1 >= m_cap)
 		resize(m_cap*2);
@@ -588,7 +594,7 @@ void duDisplayList::vertex(const float x, const float y, const float z, unsigned
 	m_size++;
 }
 
-void duDisplayList::vertex(const float* pos, unsigned int color)
+void duDisplayList::vertex(const float* pos, ImVec4 color)
 {
 	vertex(pos[0],pos[1],pos[2],color);
 }
@@ -597,13 +603,16 @@ void duDisplayList::end()
 {
 }
 
-void duDisplayList::draw(struct duDebugDraw* dd)
+void duDisplayList::draw(ImDrawList* dd)
 {
 	if (!dd) return;
 	if (!m_size) return;
-	dd->depthMask(m_depthMask);
-	dd->begin(m_prim, m_primSize);
+	//dd->depthMask(m_depthMask);
+	//dd->begin(m_prim, m_primSize);
 	for (int i = 0; i < m_size; ++i)
-		dd->vertex(&m_pos[i*3], m_color[i]);
-	dd->end();
+		dd->AddCircleFilled(ImVec3(&m_pos[i*3]), POINTSIZE, ImColor(m_color[i]));
+	//dd->end();
+}
+
+}
 }
