@@ -13,6 +13,7 @@ target_sources(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/gridMap.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ticks.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/render.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/renderBasics.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/renderNavmesh.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/componentsBuilding.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/msgLogging.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/coordinates.cpp
@@ -22,10 +23,10 @@ target_sources(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/gridMap.c
     ${DIR_DEPS}/flecs_components_geometry.c
     ${DIR_DEPS}/flecs_components_graphics.c
     ${DIR_DEPS}/flecs_components_gui.c
-    ${DIR_DEPS}/flecs_components_input.c
+#    ${DIR_DEPS}/flecs_components_input.c
     ${DIR_DEPS}/flecs_components_physics.c
     ${DIR_DEPS}/flecs_components_transform.c
-    ${DIR_DEPS}/flecs_systems_physics.c
+#    ${DIR_DEPS}/flecs_systems_physics.c
     ${DIR_DEPS}/flecs_systems_transform.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/simdis/Angle.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/simdis/CoordinateConverter.cpp

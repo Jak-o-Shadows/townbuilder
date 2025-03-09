@@ -88,12 +88,12 @@ struct duDebugDraw
 	virtual ImVec4 areaToCol(unsigned int area);
 };
 
-ImVec4 duRGBA(int r, int g, int b, int a)
+static inline ImVec4 duRGBA(int r, int g, int b, int a)
 {
     return ImVec4(r/255.0f, g/255.0f, b/255.0f, a/255.0f);
 }
 
-ImVec4 duRGBAf(float fr, float fg, float fb, float fa)
+static inline ImVec4 duRGBAf(float fr, float fg, float fb, float fa)
 {
 	return ImVec4(fr, fg, fb, fa);
 }
@@ -101,18 +101,18 @@ ImVec4 duRGBAf(float fr, float fg, float fb, float fa)
 ImVec4 duIntToCol(int i, int a);
 void duIntToCol(int i, ImVec4* col);
 
-ImVec4 duMultCol(const ImVec4 col, const unsigned int d)
+static inline ImVec4 duMultCol(const ImVec4 col, const unsigned int d)
 {
     return ImVec4(col.x*d, col.y*d, col.z*d, col.w);
 }
 
-ImVec4 duDarkenCol(const ImVec4 col)
+static inline ImVec4 duDarkenCol(const ImVec4 col)
 {
     return col;  // TODO: Darken it somehow?
 	//return ((col >> 1) & 0x007f7f7f) | (col & 0xff000000);
 }
 
-ImVec4 duLerpCol(const ImVec4 ca, const ImVec4 cb, const unsigned int u)
+static inline ImVec4 duLerpCol(const ImVec4 ca, const ImVec4 cb, const unsigned int u)
 {
 
 	unsigned int r = (255*ca.x*(255-u) + 255*cb.x*u)/255;
@@ -122,7 +122,7 @@ ImVec4 duLerpCol(const ImVec4 ca, const ImVec4 cb, const unsigned int u)
 	return duRGBA(r,g,b,a);
 }
 
-ImVec4 duTransCol(const ImVec4 c, unsigned int a)
+static inline ImVec4 duTransCol(const ImVec4 c, unsigned int a)
 {
     return ImVec4(c.x, c.y, c.z, a/255.0f);
 }

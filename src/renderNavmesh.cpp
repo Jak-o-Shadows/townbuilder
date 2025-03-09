@@ -15,16 +15,22 @@
 //    misrepresented as being the original software.
 // 3. This notice may not be removed or altered from any source distribution.
 //
+#include "renderNavmesh.hpp"
 
 #include <math.h>
-#include "DebugDraw.h"
-#include "RecastDebugDraw.h"
-#include "Recast.h"
+#include "renderBasics.hpp"
+#include <recastnavigation/Recast.h>
 
-void duDebugDrawTriMesh(duDebugDraw* dd, const float* verts, int /*nverts*/,
+#include <iostream>
+
+namespace Render {
+namespace Navmesh {
+
+void ImDrawListTriMesh(ImDrawList* dd, const float* verts, int /*nverts*/,
 						const int* tris, const float* normals, int ntris,
 						const unsigned char* flags, const float texScale)
 {
+    /*
 	if (!dd) return;
 	if (!verts) return;
 	if (!tris) return;
@@ -74,12 +80,14 @@ void duDebugDrawTriMesh(duDebugDraw* dd, const float* verts, int /*nverts*/,
 	}
 	dd->end();
 	dd->texture(false);
+    */
 }
 
-void duDebugDrawTriMeshSlope(duDebugDraw* dd, const float* verts, int /*nverts*/,
+void ImDrawListTriMeshSlope(ImDrawList* dd, const float* verts, int /*nverts*/,
 							 const int* tris, const float* normals, int ntris,
 							 const float walkableSlopeAngle, const float texScale)
 {
+    /*
 	if (!dd) return;
 	if (!verts) return;
 	if (!tris) return;
@@ -132,10 +140,12 @@ void duDebugDrawTriMeshSlope(duDebugDraw* dd, const float* verts, int /*nverts*/
 	dd->end();
 
 	dd->texture(false);
+    */
 }
 
-void duDebugDrawHeightfieldSolid(duDebugDraw* dd, const rcHeightfield& hf)
+void ImDrawListHeightfieldSolid(ImDrawList* dd, const rcHeightfield& hf)
 {
+    /*
 	if (!dd) return;
 
 	const float* orig = hf.bmin;
@@ -165,10 +175,12 @@ void duDebugDrawHeightfieldSolid(duDebugDraw* dd, const rcHeightfield& hf)
 		}
 	}
 	dd->end();
+    */
 }
 
-void duDebugDrawHeightfieldWalkable(duDebugDraw* dd, const rcHeightfield& hf)
+void ImDrawListHeightfieldWalkable(ImDrawList* dd, const rcHeightfield& hf)
 {
+    /*
 	if (!dd) return;
 
 	const float* orig = hf.bmin;
@@ -206,10 +218,12 @@ void duDebugDrawHeightfieldWalkable(duDebugDraw* dd, const rcHeightfield& hf)
 	}
 	
 	dd->end();
+    */
 }
 
-void duDebugDrawCompactHeightfieldSolid(duDebugDraw* dd, const rcCompactHeightfield& chf)
+void ImDrawListCompactHeightfieldSolid(ImDrawList* dd, const rcCompactHeightfield& chf)
 {
+    /*
 	if (!dd) return;
 
 	const float cs = chf.cs;
@@ -247,10 +261,12 @@ void duDebugDrawCompactHeightfieldSolid(duDebugDraw* dd, const rcCompactHeightfi
 		}
 	}
 	dd->end();
+    */
 }
 
-void duDebugDrawCompactHeightfieldRegions(duDebugDraw* dd, const rcCompactHeightfield& chf)
+void ImDrawListCompactHeightfieldRegions(ImDrawList* dd, const rcCompactHeightfield& chf)
 {
+    /*
 	if (!dd) return;
 
 	const float cs = chf.cs;
@@ -285,11 +301,13 @@ void duDebugDrawCompactHeightfieldRegions(duDebugDraw* dd, const rcCompactHeight
 	}
 	
 	dd->end();
+    */
 }
 
 
-void duDebugDrawCompactHeightfieldDistance(duDebugDraw* dd, const rcCompactHeightfield& chf)
+void ImDrawListCompactHeightfieldDistance(ImDrawList* dd, const rcCompactHeightfield& chf)
 {
+    /*
 	if (!dd) return;
 	if (!chf.dist) return;
 		
@@ -324,10 +342,12 @@ void duDebugDrawCompactHeightfieldDistance(duDebugDraw* dd, const rcCompactHeigh
 		}
 	}
 	dd->end();
+    */
 }
 
-static void drawLayerPortals(duDebugDraw* dd, const rcHeightfieldLayer* layer)
+static void drawLayerPortals(ImDrawList* dd, const rcHeightfieldLayer* layer)
 {
+    /*
 	const float cs = layer->cs;
 	const float ch = layer->ch;
 	const int w = layer->width;
@@ -365,10 +385,12 @@ static void drawLayerPortals(duDebugDraw* dd, const rcHeightfieldLayer* layer)
 		}
 	}
 	dd->end();
+    */
 }
 
-void duDebugDrawHeightfieldLayer(duDebugDraw* dd, const struct rcHeightfieldLayer& layer, const int idx)
+void ImDrawListHeightfieldLayer(ImDrawList* dd, const struct rcHeightfieldLayer& layer, const int idx)
 {
+    /*
 	const float cs = layer.cs;
 	const float ch = layer.ch;
 	const int w = layer.width;
@@ -384,7 +406,7 @@ void duDebugDrawHeightfieldLayer(duDebugDraw* dd, const struct rcHeightfieldLaye
 	bmax[0] = layer.bmin[0] + (layer.maxx+1)*cs;
 	bmax[1] = layer.bmax[1];
 	bmax[2] = layer.bmin[2] + (layer.maxy+1)*cs;
-	duDebugDrawBoxWire(dd, bmin[0],bmin[1],bmin[2], bmax[0],bmax[1],bmax[2], duTransCol(color,128), 2.0f);
+	ImDrawListBoxWire(dd, bmin[0],bmin[1],bmin[2], bmax[0],bmax[1],bmax[2], duTransCol(color,128), 2.0f);
 	
 	// Layer height
 	dd->begin(DU_DRAW_QUADS);
@@ -419,17 +441,21 @@ void duDebugDrawHeightfieldLayer(duDebugDraw* dd, const struct rcHeightfieldLaye
 	
 	// Portals
 	drawLayerPortals(dd, &layer);
+    */
 }
 
-void duDebugDrawHeightfieldLayers(duDebugDraw* dd, const struct rcHeightfieldLayerSet& lset)
+void ImDrawListHeightfieldLayers(ImDrawList* dd, const struct rcHeightfieldLayerSet& lset)
 {
+    /*
 	if (!dd) return;
-	for (int i = 0; i < lset.nlayers; ++i)
-		duDebugDrawHeightfieldLayer(dd, lset.layers[i], i);
+	for (int i = 0; i < lset.nlayers; ++i) {
+		ImDrawListHeightfieldLayer(dd, lset.layers[i], i);
+    }
+    */
 }
 
 /*
-void duDebugDrawLayerContours(duDebugDraw* dd, const struct rcLayerContourSet& lcset)
+void ImDrawListLayerContours(ImDrawList* dd, const struct rcLayerContourSet& lcset)
 {
 	if (!dd) return;
 	
@@ -508,7 +534,7 @@ void duDebugDrawLayerContours(duDebugDraw* dd, const struct rcLayerContourSet& l
 	dd->end();
 }
 
-void duDebugDrawLayerPolyMesh(duDebugDraw* dd, const struct rcLayerPolyMesh& lmesh)
+void ImDrawListLayerPolyMesh(ImDrawList* dd, const struct rcLayerPolyMesh& lmesh)
 {
 	if (!dd) return;
 	
@@ -647,6 +673,7 @@ void duDebugDrawLayerPolyMesh(duDebugDraw* dd, const struct rcLayerPolyMesh& lme
 
 static void getContourCenter(const rcContour* cont, const float* orig, float cs, float ch, float* center)
 {
+    /*
 	center[0] = 0;
 	center[1] = 0;
 	center[2] = 0;
@@ -666,20 +693,24 @@ static void getContourCenter(const rcContour* cont, const float* orig, float cs,
 	center[0] += orig[0];
 	center[1] += orig[1] + 4*ch;
 	center[2] += orig[2];
+    */
 }
 
 static const rcContour* findContourFromSet(const rcContourSet& cset, unsigned short reg)
 {
+    /*
 	for (int i = 0; i < cset.nconts; ++i)
 	{
 		if (cset.conts[i].reg == reg)
 			return &cset.conts[i];
 	}
+    */
 	return 0;
 }
 
-void duDebugDrawRegionConnections(duDebugDraw* dd, const rcContourSet& cset, const float alpha)
+void ImDrawListRegionConnections(ImDrawList* dd, const rcContourSet& cset, const float alpha)
 {
+    /*
 	if (!dd) return;
 	
 	const float* orig = cset.bmin;
@@ -724,10 +755,12 @@ void duDebugDrawRegionConnections(duDebugDraw* dd, const rcContourSet& cset, con
 		dd->vertex(pos, col);
 	}
 	dd->end();
+    */
 }
 
-void duDebugDrawRawContours(duDebugDraw* dd, const rcContourSet& cset, const float alpha)
+void ImDrawListRawContours(ImDrawList* dd, const rcContourSet& cset, const float alpha)
 {
+    /*
 	if (!dd) return;
 
 	const float* orig = cset.bmin;
@@ -787,10 +820,12 @@ void duDebugDrawRawContours(duDebugDraw* dd, const rcContourSet& cset, const flo
 		}
 	}
 	dd->end();
+    */
 }
 
-void duDebugDrawContours(duDebugDraw* dd, const rcContourSet& cset, const float alpha)
+void ImDrawListContours(ImDrawList* dd, const rcContourSet& cset, const float alpha)
 {
+    /*
 	if (!dd) return;
 
 	const float* orig = cset.bmin;
@@ -850,10 +885,12 @@ void duDebugDrawContours(duDebugDraw* dd, const rcContourSet& cset, const float 
 		}
 	}
 	dd->end();
+    */
 }
 
-void duDebugDrawPolyMesh(duDebugDraw* dd, const struct rcPolyMesh& mesh)
+void ImDrawListPolyMesh(ImDrawList* dd, const struct rcPolyMesh& mesh)
 {
+    /*
 	if (!dd) return;
 
 	const int nvp = mesh.nvp;
@@ -959,11 +996,15 @@ void duDebugDrawPolyMesh(duDebugDraw* dd, const struct rcPolyMesh& mesh)
 		dd->vertex(x,y,z, colv);
 	}
 	dd->end();
+    */
 }
 
-void duDebugDrawPolyMeshDetail(duDebugDraw* dd, const struct rcPolyMeshDetail& dmesh)
+void ImDrawListPolyMeshDetail(ImDrawList* dd, const struct rcPolyMeshDetail& dmesh)
 {
 	if (!dd) return;
+
+    std::cout << "ImDrawPolyMeshDetail" << std::endl;
+    /*
 
 	dd->begin(DU_DRAW_TRIS);
 	
@@ -1060,4 +1101,9 @@ void duDebugDrawPolyMeshDetail(duDebugDraw* dd, const struct rcPolyMeshDetail& d
 			dd->vertex(&verts[j*3], colv);
 	}
 	dd->end();
+    */
+}
+
+
+}
 }

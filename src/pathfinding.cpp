@@ -29,6 +29,16 @@ module::module(flecs::world& ecs){
 
 
 
+
+
+
+
+	//ecs.component<NavmeshDebugStuff>().add(flecs::Sparse);
+	//logger->trace("Components Registered");
+
+
+
+
     // Create navmesh
     flecs::entity mapEntity = Map::mapEntity;  // TODO: Shouldn't be doing it from here - get it in a safer way
     const Map::Grid* map = mapEntity.get<Map::Grid>();
@@ -233,19 +243,14 @@ module::module(flecs::world& ecs){
 		ctx->log(RC_LOG_ERROR, "buildNavigation: Could not triangulate contours.");
 	}
 
-
-
     //
 	// Step 7. Create detail mesh which allows to access approximate height on each polygon.
-	//
-	m_dmesh = rcAllocPolyMeshDetail();
+	std::shared_ptr<rcPolyMeshDetail> m_dmesh = std::make_shared<rcPolyMeshDetail>();
 	if (!m_dmesh) {
 		ctx->log(RC_LOG_ERROR, "buildNavigation: Out of memory 'pmdtl'.");
-		return false;
 	}
 	if (!rcBuildPolyMeshDetail(ctx, *m_pmesh, *m_chf, detailSampleDist, detailSampleMaxError, *m_dmesh)) {
 		ctx->log(RC_LOG_ERROR, "buildNavigation: Could not build detail mesh.");
-		return false;
 	}
 	if (!m_keepInterResults) {
 		rcFreeCompactHeightfield(m_chf);
@@ -256,8 +261,18 @@ module::module(flecs::world& ecs){
 
 
 
+	// Add NavmeshDebugStuff component to the mapEntity
+	
+	NavmeshDebugStuff debugStuff;
+	
+	//debugStuff.navMesh = std::make_shared<dtNavMesh>();
+	//debugStuff.navQuery = std::make_shared<dtNavMeshQuery>();
+	//debugStuff.polyMesh = std::shared_ptr<rcPolyMesh>(m_pmesh, rcFreePolyMesh);
+	debugStuff.polyMeshDetail = m_dmesh;
 
-
+	//mapEntity.set<NavmeshDebugStuff>(debugStuff);
+	logger->trace("NavmeshDebugStuff component added to mapEntity");
+	
 
 
     }

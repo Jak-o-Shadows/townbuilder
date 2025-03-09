@@ -8,9 +8,9 @@
 #include "flecs_components_geometry.h"
 #include "flecs_components_physics.h"
 #include "flecs_components_gui.h"
-#include "flecs_components_input.h"
+//#include "flecs_components_input.h"
 #include "flecs_systems_transform.h"
-#include "flecs_systems_physics.h"
+//#include "flecs_systems_physics.h"
 
 #include "imgui.h"
 #include "../bindings/imgui_impl_glfw.h"
@@ -82,7 +82,6 @@ module::module(flecs::world& ecs) {
         .member<float>("x")
         .member<float>("y")
         .member<float>("z");
-
     logger->trace("Components Registered");
 
 

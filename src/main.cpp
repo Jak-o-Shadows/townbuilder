@@ -197,9 +197,7 @@ int main(int, char *[]) {
     ecs.defer_end();
     
 
-
     ecs_script_run_file(ecs, "../../src/config.flecs");
-
 
 
     ecs.defer_begin();
