@@ -22,6 +22,8 @@
 #include "componentsBuilding.hpp"
 #include "componentsMap.hpp"
 #include "ticks.hpp"
+#include "pathfinding.hpp"
+#include "renderNavmesh.hpp"
 
 namespace Render{
 
@@ -236,6 +238,17 @@ module::module(flecs::world& ecs) {
             
     });
     
+
+    ecs.system<Pathfinding::NavmeshDebugStuff>("RenderNavmesh")
+        .kind(flecs::OnUpdate)
+        .tick_source(Ticks::tick_render)
+        .each([](Pathfinding::NavmeshDebugStuff& navmesh){
+            ZoneScopedN("RenderNavmesh");
+            ImGui::Begin("Navmesh");
+            ImDrawList *draw_list = ImGui::GetWindowDrawList();
+            Render::Navmesh::ImDrawListPolyMeshDetail(draw_list, *navmesh.polyMeshDetail);
+            ImGui::End();
+        });
 
 
     // Add GUI components to granary

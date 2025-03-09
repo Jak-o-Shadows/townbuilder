@@ -16,8 +16,6 @@ namespace Pathfinding{
 
 std::shared_ptr<spdlog::logger> logger;
 
-
-
 module::module(flecs::world& ecs){
     // Register module with world. The module entity will be created with the
     // same hierarchy as the C++ namespaces (e.g. simple::module)
@@ -28,19 +26,12 @@ module::module(flecs::world& ecs){
     logger->trace("Module Created");
 
 
-
-
-
-
-
-	//ecs.component<NavmeshDebugStuff>().add(flecs::Sparse);
-	//logger->trace("Components Registered");
-
-
-
+	logger->trace("Components Registered");
 
     // Create navmesh
     flecs::entity mapEntity = Map::mapEntity;  // TODO: Shouldn't be doing it from here - get it in a safer way
+	//flecs::entity mapEntity = ecs.lookup("Map::module::map");  // not sure this is better
+	logger->trace("Map Entity: {} {}", mapEntity.id(), std::string(mapEntity.path()));
     const Map::Grid* map = mapEntity.get<Map::Grid>();
     int width = map->m_width;
     int height = map->m_height;
@@ -261,17 +252,13 @@ module::module(flecs::world& ecs){
 
 
 
-	// Add NavmeshDebugStuff component to the mapEntity
-	
-	NavmeshDebugStuff debugStuff;
-	
-	//debugStuff.navMesh = std::make_shared<dtNavMesh>();
-	//debugStuff.navQuery = std::make_shared<dtNavMeshQuery>();
-	//debugStuff.polyMesh = std::shared_ptr<rcPolyMesh>(m_pmesh, rcFreePolyMesh);
-	debugStuff.polyMeshDetail = m_dmesh;
+	// Add NavmeshDebugStuff component so we can render it
+	// You'd REALLY think that the navmesh render stuff could be stored in the mapEntity,
+	//	but this causes a runtime error.
+	ecs.entity("navmeshStuff").set<NavmeshDebugStuff>({m_dmesh});
+	logger->trace("NavmeshDebugStuff component added to navmeshStuff");
 
-	//mapEntity.set<NavmeshDebugStuff>(debugStuff);
-	logger->trace("NavmeshDebugStuff component added to mapEntity");
+	logger->trace("Navmesh things: nmeshes {}", m_dmesh->nmeshes);
 	
 
 

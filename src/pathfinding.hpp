@@ -35,20 +35,8 @@ enum SamplePolyFlags
 
 
 struct NavmeshDebugStuff {
-    //std::shared_ptr<dtNavMesh> navMesh;
-    //std::shared_ptr<dtNavMeshQuery> navQuery;
-    //std::shared_ptr<rcPolyMesh> polyMesh;
     std::shared_ptr<rcPolyMeshDetail> polyMeshDetail;
 };
-
-struct blah {
-    float x;
-    int y;
-};
-
-
-
-
 
 
 

@@ -17,28 +17,33 @@
 //
 #pragma once
 
+#include <recastnavigation/DetourNavMesh.h>
+#include <recastnavigation/Recast.h>
+#include <imgui.h>
+
+
 namespace Render {
 namespace Navmesh {
 
-void ImDrawListTriMesh(struct ImDrawList* dd, const float* verts, int nverts, const int* tris, const float* normals, int ntris, const unsigned char* flags, const float texScale);
-void ImDrawListTriMeshSlope(struct ImDrawList* dd, const float* verts, int nverts, const int* tris, const float* normals, int ntris, const float walkableSlopeAngle, const float texScale);
+void ImDrawListTriMesh(ImDrawList* dd, const float* verts, int nverts, const int* tris, const float* normals, int ntris, const unsigned char* flags, const float texScale);
+void ImDrawListTriMeshSlope(ImDrawList* dd, const float* verts, int nverts, const int* tris, const float* normals, int ntris, const float walkableSlopeAngle, const float texScale);
 
-void ImDrawListHeightfieldSolid(struct ImDrawList* dd, const struct rcHeightfield& hf);
-void ImDrawListHeightfieldWalkable(struct ImDrawList* dd, const struct rcHeightfield& hf);
+void ImDrawListHeightfieldSolid(ImDrawList* dd, const rcHeightfield& hf);
+void ImDrawListHeightfieldWalkable(ImDrawList* dd, const rcHeightfield& hf);
 
-void ImDrawListCompactHeightfieldSolid(struct ImDrawList* dd, const struct rcCompactHeightfield& chf);
-void ImDrawListCompactHeightfieldRegions(struct ImDrawList* dd, const struct rcCompactHeightfield& chf);
-void ImDrawListCompactHeightfieldDistance(struct ImDrawList* dd, const struct rcCompactHeightfield& chf);
+void ImDrawListCompactHeightfieldSolid(ImDrawList* dd, const rcCompactHeightfield& chf);
+void ImDrawListCompactHeightfieldRegions(ImDrawList* dd, const rcCompactHeightfield& chf);
+void ImDrawListCompactHeightfieldDistance(ImDrawList* dd, const rcCompactHeightfield& chf);
 
-void ImDrawListHeightfieldLayer(ImDrawList* dd, const struct rcHeightfieldLayer& layer, const int idx);
-void ImDrawListHeightfieldLayers(ImDrawList* dd, const struct rcHeightfieldLayerSet& lset);
-void ImDrawListHeightfieldLayersRegions(ImDrawList* dd, const struct rcHeightfieldLayerSet& lset);
+void ImDrawListHeightfieldLayer(ImDrawList* dd, const rcHeightfieldLayer& layer, const int idx);
+void ImDrawListHeightfieldLayers(ImDrawList* dd, const rcHeightfieldLayerSet& lset);
+void ImDrawListHeightfieldLayersRegions(ImDrawList* dd, const rcHeightfieldLayerSet& lset);
 
-void ImDrawListRegionConnections(struct ImDrawList* dd, const struct rcContourSet& cset, const float alpha = 1.0f);
-void ImDrawListRawContours(struct ImDrawList* dd, const struct rcContourSet& cset, const float alpha = 1.0f);
-void ImDrawListContours(struct ImDrawList* dd, const struct rcContourSet& cset, const float alpha = 1.0f);
-void ImDrawListPolyMesh(struct ImDrawList* dd, const struct rcPolyMesh& mesh);
-void ImDrawListPolyMeshDetail(struct ImDrawList* dd, const struct rcPolyMeshDetail& dmesh);
+void ImDrawListRegionConnections(ImDrawList* dd, const rcContourSet& cset, const float alpha = 1.0f);
+void ImDrawListRawContours(ImDrawList* dd, const rcContourSet& cset, const float alpha = 1.0f);
+void ImDrawListContours(ImDrawList* dd, const rcContourSet& cset, const float alpha = 1.0f);
+void ImDrawListPolyMesh(ImDrawList* dd, const rcPolyMesh& mesh);
+void ImDrawListPolyMeshDetail(ImDrawList* dd, const rcPolyMeshDetail& dmesh);
 
 }
 }

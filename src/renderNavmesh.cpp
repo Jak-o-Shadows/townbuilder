@@ -388,7 +388,7 @@ static void drawLayerPortals(ImDrawList* dd, const rcHeightfieldLayer* layer)
     */
 }
 
-void ImDrawListHeightfieldLayer(ImDrawList* dd, const struct rcHeightfieldLayer& layer, const int idx)
+void ImDrawListHeightfieldLayer(ImDrawList* dd, const rcHeightfieldLayer& layer, const int idx)
 {
     /*
 	const float cs = layer.cs;
@@ -444,7 +444,7 @@ void ImDrawListHeightfieldLayer(ImDrawList* dd, const struct rcHeightfieldLayer&
     */
 }
 
-void ImDrawListHeightfieldLayers(ImDrawList* dd, const struct rcHeightfieldLayerSet& lset)
+void ImDrawListHeightfieldLayers(ImDrawList* dd, const rcHeightfieldLayerSet& lset)
 {
     /*
 	if (!dd) return;
@@ -888,7 +888,7 @@ void ImDrawListContours(ImDrawList* dd, const rcContourSet& cset, const float al
     */
 }
 
-void ImDrawListPolyMesh(ImDrawList* dd, const struct rcPolyMesh& mesh)
+void ImDrawListPolyMesh(ImDrawList* dd, const rcPolyMesh& mesh)
 {
     /*
 	if (!dd) return;
@@ -999,14 +999,13 @@ void ImDrawListPolyMesh(ImDrawList* dd, const struct rcPolyMesh& mesh)
     */
 }
 
-void ImDrawListPolyMeshDetail(ImDrawList* dd, const struct rcPolyMeshDetail& dmesh)
+void ImDrawListPolyMeshDetail(ImDrawList* dd, const rcPolyMeshDetail& dmesh)
 {
 	if (!dd) return;
 
-    std::cout << "ImDrawPolyMeshDetail" << std::endl;
-    /*
+	const ImVec2 screenpos = ImGui::GetCursorScreenPos();
 
-	dd->begin(DU_DRAW_TRIS);
+    std::cout << "ImDrawPolyMeshDetail" << std::endl;
 	
 	for (int i = 0; i < dmesh.nmeshes; ++i)
 	{
@@ -1017,20 +1016,22 @@ void ImDrawListPolyMeshDetail(ImDrawList* dd, const struct rcPolyMeshDetail& dme
 		const float* verts = &dmesh.verts[bverts*3];
 		const unsigned char* tris = &dmesh.tris[btris*4];
 
-		unsigned int color = duIntToCol(i, 192);
+		ImVec4 color;
+		Render::Basics::duIntToCol(192, &color);
 
 		for (int j = 0; j < ntris; ++j)
 		{
-			dd->vertex(&verts[tris[j*4+0]*3], color);
-			dd->vertex(&verts[tris[j*4+1]*3], color);
-			dd->vertex(&verts[tris[j*4+2]*3], color);
+			ImVec2 v1 = ImVec2(screenpos.x + verts[tris[j*4+0]*3+0], screenpos.y + verts[tris[j*4+0]*3+1]);
+			ImVec2 v2 = ImVec2(screenpos.x + verts[tris[j*4+1]*3+0], screenpos.y + verts[tris[j*4+1]*3+1]);
+			ImVec2 v3 = ImVec2(screenpos.x + verts[tris[j*4+2]*3+0], screenpos.y + verts[tris[j*4+2]*3+1]);
+			std::cout << "Triangle" << std::endl;
+			dd->AddTriangleFilled(v1, v2, v3, ImColor(color));
+
 		}
 	}
-	dd->end();
 
 	// Internal edges.
-	dd->begin(DU_DRAW_LINES, 1.0f);
-	const unsigned int coli = duRGBA(0,0,0,64);
+	ImVec4 coli = Render::Basics::duRGBA(0,0,0,64);
 	for (int i = 0; i < dmesh.nmeshes; ++i)
 	{
 		const unsigned int* m = &dmesh.meshes[i*4];
@@ -1051,18 +1052,17 @@ void ImDrawListPolyMeshDetail(ImDrawList* dd, const struct rcPolyMeshDetail& dme
 					// Internal edge
 					if (t[kp] < t[k])
 					{
-						dd->vertex(&verts[t[kp]*3], coli);
-						dd->vertex(&verts[t[k]*3], coli);
+						dd->AddLine(ImVec2(screenpos.x + verts[t[kp]*3+0], screenpos.y + verts[t[kp]*3+1]),
+								    ImVec2(screenpos.x + verts[t[k]*3+0],  screenpos.y + verts[t[k]*3+1]),
+									ImColor(coli), 2.0f);
 					}
 				}
 			}
 		}
 	}
-	dd->end();
 	
 	// External edges.
-	dd->begin(DU_DRAW_LINES, 2.0f);
-	const unsigned int cole = duRGBA(0,0,0,64);
+	ImVec4 cole = Render::Basics::duRGBA(0,0,0,64);
 	for (int i = 0; i < dmesh.nmeshes; ++i)
 	{
 		const unsigned int* m = &dmesh.meshes[i*4];
@@ -1081,27 +1081,27 @@ void ImDrawListPolyMeshDetail(ImDrawList* dd, const struct rcPolyMeshDetail& dme
 				if (ef != 0)
 				{
 					// Ext edge
-					dd->vertex(&verts[t[kp]*3], cole);
-					dd->vertex(&verts[t[k]*3], cole);
+					dd->AddLine(ImVec2(screenpos.x + verts[t[kp]*3+0], screenpos.y + verts[t[kp]*3+1]),
+							    ImVec2(screenpos.x + verts[t[k]*3+0],  screenpos.y + verts[t[k]*3+1]),
+								ImColor(cole), 2.0f);
 				}
 			}
 		}
 	}
-	dd->end();
 	
-	dd->begin(DU_DRAW_POINTS, 3.0f);
-	const unsigned int colv = duRGBA(0,0,0,64);
+	ImVec4 colv = Render::Basics::duRGBA(0,0,0,64);
 	for (int i = 0; i < dmesh.nmeshes; ++i)
 	{
 		const unsigned int* m = &dmesh.meshes[i*4];
 		const unsigned int bverts = m[0];
 		const int nverts = (int)m[1];
 		const float* verts = &dmesh.verts[bverts*3];
-		for (int j = 0; j < nverts; ++j)
-			dd->vertex(&verts[j*3], colv);
+		for (int j = 0; j < nverts; ++j) {
+			dd->AddCircleFilled(ImVec2(screenpos.x + verts[j*3+0],
+									   screenpos.y + verts[j*3+1]),
+								0.1f, ImColor(colv));
+		}
 	}
-	dd->end();
-    */
 }
 
 
