@@ -72,7 +72,7 @@ void simCore::v3RotY(const Vec3 &a, const double ang, Vec3 &vp)
 /// Computes angle between two input vectors
 double simCore::v3Angle(const Vec3 &u, const Vec3 &v)
 {
-  const double length = u.length() * v.length();
+  const double length = u.norm() * v.norm();
   if (length == 0.0)
     return 0.0;
 

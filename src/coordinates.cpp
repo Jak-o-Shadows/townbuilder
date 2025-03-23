@@ -31,18 +31,59 @@ module::module(flecs::world& ecs) {
         .member<double>("z");
 
     ecs.component<simCore::CoordinateSystem>()
-        .constant("COORD_SYS_NONE", simCore::COORD_SYS_NONE)
-        .constant("COORD_SYS_NED", simCore::COORD_SYS_NED)
-        .constant("COORD_SYS_NWU", simCore::COORD_SYS_NWU)
-        .constant("COORD_SYS_ENU", simCore::COORD_SYS_ENU)
-        .constant("COORD_SYS_LLA", simCore::COORD_SYS_LLA)
-        .constant("COORD_SYS_ECEF", simCore::COORD_SYS_ECEF)
-        .constant("COORD_SYS_ECI", simCore::COORD_SYS_ECI)
-        .constant("COORD_SYS_XEAST", simCore::COORD_SYS_XEAST)
-        .constant("COORD_SYS_GTP", simCore::COORD_SYS_GTP)
-        .constant("COORD_SYS_MAX", simCore::COORD_SYS_MAX);
+        .constant("COORD_SYS_NONE",  simCore::CoordinateSystem::COORD_SYS_NONE)
+        .constant("COORD_SYS_NED",   simCore::CoordinateSystem::COORD_SYS_NED)
+        .constant("COORD_SYS_NWU",   simCore::CoordinateSystem::COORD_SYS_NWU)
+        .constant("COORD_SYS_ENU",   simCore::CoordinateSystem::COORD_SYS_ENU)
+        .constant("COORD_SYS_LLA",   simCore::CoordinateSystem::COORD_SYS_LLA)
+        .constant("COORD_SYS_ECEF",  simCore::CoordinateSystem::COORD_SYS_ECEF)
+        .constant("COORD_SYS_ECI",   simCore::CoordinateSystem::COORD_SYS_ECI)
+        .constant("COORD_SYS_XEAST", simCore::CoordinateSystem::COORD_SYS_XEAST)
+        .constant("COORD_SYS_GTP",   simCore::CoordinateSystem::COORD_SYS_GTP)
+        .constant("COORD_SYS_MAX",   simCore::CoordinateSystem::COORD_SYS_MAX);
 
     // TODO: The hidden variables in the Coordinate struct need more work to be able to be used in the flecs explorer
+    //  they are somewhat visible now, but cause crashes? And why doesn't the enum work?
+    ecs.component<simCore::Coordinate>()
+        //.member<simCore::CoordinateSystem>("system_")
+        .member<simCore::Vec3>("pos_")
+        .member<simCore::Vec3>("vel_")
+        .member<simCore::Vec3>("ori_")
+        .member<simCore::Vec3>("acc_")
+        .member<double>("elapsedEciTime_")
+        .member<bool>("hasVel_")
+        .member<bool>("hasOri_")
+        .member<bool>("hasAcc_");
+    ecs.component<LLA>()
+        //.member<simCore::CoordinateSystem>("system_")
+        .member<simCore::Vec3>("pos_")
+        .member<simCore::Vec3>("vel_")
+        .member<simCore::Vec3>("ori_")
+        .member<simCore::Vec3>("acc_")
+        .member<double>("elapsedEciTime_")
+        .member<bool>("hasVel_")
+        .member<bool>("hasOri_")
+        .member<bool>("hasAcc_");
+    ecs.component<NED>()
+        //.member<simCore::CoordinateSystem>("system_")
+        .member<simCore::Vec3>("pos_")
+        .member<simCore::Vec3>("vel_")
+        .member<simCore::Vec3>("ori_")
+        .member<simCore::Vec3>("acc_")
+        .member<double>("elapsedEciTime_")
+        .member<bool>("hasVel_")
+        .member<bool>("hasOri_")
+        .member<bool>("hasAcc_");
+    ecs.component<ECEF>()
+        //.member<simCore::CoordinateSystem>("system_")
+        .member<simCore::Vec3>("pos_")
+        .member<simCore::Vec3>("vel_")
+        .member<simCore::Vec3>("ori_")
+        .member<simCore::Vec3>("acc_")
+        .member<double>("elapsedEciTime_")
+        .member<bool>("hasVel_")
+        .member<bool>("hasOri_")
+        .member<bool>("hasAcc_");
 
     logger->trace("Components Registered");
 
@@ -63,6 +104,7 @@ module::module(flecs::world& ecs) {
             logger->trace("loc: {}, {}; pos: {}, {} -> ned: {}, {}", loc->x, loc->y, pos.x, pos.y, scale_m_per_cell * (loc->y + pos.y), scale_m_per_cell * (loc->x + pos.x));
             ned.setPosition(scale_m_per_cell * (loc->y + pos.y), scale_m_per_cell * (loc->x + pos.x), 0);
             ned.setVelocity(scale_m_per_cell * vel.y, scale_m_per_cell * vel.x, 0);
+            logger->trace("ned: {}, {}, {} m, {}, {}, {} m/s", ned.x(), ned.y(), ned.z(), ned.vx(), ned.vy(), ned.vz());
         });
 
 

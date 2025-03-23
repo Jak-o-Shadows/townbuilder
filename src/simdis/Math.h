@@ -247,7 +247,7 @@ namespace simCore
   */
   inline double v3Distance(const Vec3 &u, const Vec3 &v)
   {
-    return (u - v).length();
+    return (u - v).norm();
   }
 
 
@@ -262,7 +262,7 @@ namespace simCore
   */
   inline double v3Unit(Vec3 &u)
   {
-    const double t = u.length();
+    const double t = u.norm();
     if (t > 0.)
       u /= t;
     return t;

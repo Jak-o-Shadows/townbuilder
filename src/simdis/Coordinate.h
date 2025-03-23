@@ -363,7 +363,7 @@ namespace simCore
     */
     double az() const { return acc_.z(); }
 
-  private:
+    // Need the hidden/private variables public so we can see them in flecs explorer
     CoordinateSystem system_;
 
     Vec3 pos_;                ///< position: radians and meter for geodetic, meters for remaining coordinates

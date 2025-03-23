@@ -9,19 +9,19 @@ namespace Coordinates {
 
     struct LLA : simCore::Coordinate {
         LLA() {
-            setCoordinateSystem(simCore::COORD_SYS_LLA);
+            setCoordinateSystem(simCore::CoordinateSystem::COORD_SYS_LLA);
         }
     };
 
     struct NED : simCore::Coordinate {
         NED() {
-            setCoordinateSystem(simCore::COORD_SYS_NED);
+            setCoordinateSystem(simCore::CoordinateSystem::COORD_SYS_NED);
         }
     };
 
     struct ECEF : simCore::Coordinate {
         ECEF() {
-            setCoordinateSystem(simCore::COORD_SYS_ECEF);
+            setCoordinateSystem(simCore::CoordinateSystem::COORD_SYS_ECEF);
         }
     };
 
