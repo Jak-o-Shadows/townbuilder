@@ -103,6 +103,7 @@ module::module(flecs::world& ecs) {
             .set<Coordinates::Grid>({myX, myY})
             .set<Coordinates::Cell>({0, 0})
             .set<Coordinates::CellVelocity>({0, 0})
+            .add<Coordinates::GridBase>()
             .set<PawnAbilityTraits>({0, speed})
             .add<PawnOccupationWoodcutter>()
             .add<PawnWoodcutterState>(ecs.component<PawnWoodcutterStateIdle>());

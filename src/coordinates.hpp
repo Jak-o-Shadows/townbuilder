@@ -44,6 +44,7 @@ namespace Coordinates {
     };
 
     // Tags to set what the base coordinate system is for the position
+    struct GridBase {};
     struct NedBase {};
     struct LlaBase {};
     struct EcefBase {};

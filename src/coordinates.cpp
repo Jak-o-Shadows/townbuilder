@@ -111,6 +111,7 @@ module::module(flecs::world& ecs) {
         .term_at(1).in()
         .term_at(2).in()
         .term_at(3).in()
+        .with<GridBase>()
         .each([](flecs::entity pawn, NED& ned, const Grid& grid, const Cell& cell, const CellVelocity& vel){
             ZoneScopedN("System_CoordinateUpdate");
             float scale_m_per_cell = 20;
@@ -181,12 +182,69 @@ module::module(flecs::world& ecs) {
             converter.converter.convert(lla, ecef, simCore::COORD_SYS_ECEF);
         });
 
+    // Defined after the other converts so that it runs after them
+    ecs.system<const NED, Grid, Cell, CellVelocity>("System_NEDtoGrid")
+        .term_at(0).in()
+        .term_at(1).out()
+        .term_at(2).out()
+        .term_at(3).out()
+        .without<GridBase>()
+        .each([](const NED& ned, Grid& grid, Cell& cell, CellVelocity& vel){
+            ZoneScopedN("System_NEDtoGrid");
+            float scale_m_per_cell = 20;
+            grid.x = static_cast<int>(ned.x() / scale_m_per_cell);
+            grid.y = static_cast<int>(ned.y() / scale_m_per_cell);
+            cell.x = static_cast<int>((ned.x() - grid.x * scale_m_per_cell) / scale_m_per_cell * 2 - 1);
+            cell.y = static_cast<int>((ned.y() - grid.y * scale_m_per_cell) / scale_m_per_cell * 2 - 1);
+            vel.x = ned.vx();
+            vel.y = ned.vy();
+        });
 
 
+    // Add observers that add the other coordinate systems depending on the base system
+    ecs.observer<const GridBase>("Observer_AddCoordinates_GridBase")
+        .event(flecs::OnAdd)
+        .each([](flecs::entity e, const GridBase&){
+            ZoneScopedN("Observer_AddCoordinates_GridBase");
+            e.add<NedBase>();  // CHEAT to reuse system definition
+            e.add<Coordinates::NED>();
+            e.add<Coordinates::LLA>();
+            e.add<Coordinates::ECEF>();
+        });
 
+    ecs.observer<const NedBase>("Observer_AddCoordinates_NedBase")
+        .event(flecs::OnAdd)
+        .without<Coordinates::GridBase>()  // To get around the cheating in Observer_AddCoordinates_GridBase
+        .each([](flecs::entity e, const NedBase&){
+            ZoneScopedN("Observer_AddCoordinates_NedBase");
+            e.add<Coordinates::LLA>();
+            e.add<Coordinates::ECEF>();
+            e.add<Coordinates::Grid>();
+            e.add<Coordinates::Cell>();
+            e.add<Coordinates::CellVelocity>();
+        });
+        
+    ecs.observer<const LlaBase>("Observer_AddCoordinates_LlaBase")
+    .event(flecs::OnAdd)
+    .each([](flecs::entity e, const LlaBase&){
+        ZoneScopedN("Observer_AddCoordinates_LlaBase");
+        e.add<Coordinates::NED>();
+        e.add<Coordinates::ECEF>();
+        e.add<Coordinates::Grid>();
+        e.add<Coordinates::Cell>();
+        e.add<Coordinates::CellVelocity>();
+    });
 
-
-
+    ecs.observer<const EcefBase>("Observer_AddCoordinates_EcefBase")
+        .event(flecs::OnAdd)
+        .each([](flecs::entity e, const EcefBase&){
+            ZoneScopedN("Observer_AddCoordinates_EcefBase");
+            e.add<Coordinates::NED>();
+            e.add<Coordinates::LLA>();
+            e.add<Coordinates::Grid>();
+            e.add<Coordinates::Cell>();
+            e.add<Coordinates::CellVelocity>();
+        });
 
 
     ecs.system<const NED, const LLA, const ECEF>("System_CoordPrint")

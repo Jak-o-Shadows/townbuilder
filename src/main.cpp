@@ -78,11 +78,11 @@ int main(int, char *[]) {
     ecs.import<Ticks::module>();
     ecs.import<Render::module>();  // Must be before building & other modules for observers to work
 
+    ecs.import<Coordinates::module>();
     ecs.import<Map::module>();
     ecs.import<Pawn::module>();
     //ecs.import<LogicPawn::module>();
     ecs.import<Building::module>();
-    ecs.import<Coordinates::module>();
     ecs.import<fdis::module>();
     ecs.import<Pathfinding::module>();
 
@@ -197,19 +197,6 @@ int main(int, char *[]) {
     
 
     ecs_script_run_file(ecs, "../../src/config.flecs");
-
-
-    ecs.defer_begin();
-    Pawn::pawnsParent.children([](flecs::entity pawn) {
-        ZoneScopedN("");
-        pawn.add<Coordinates::NedBase>();
-        pawn.add<Coordinates::NED>();
-        pawn.add<Coordinates::LLA>();
-        pawn.add<Coordinates::ECEF>();
-    });
-    ecs.defer_end();
-
-
 
 
 
