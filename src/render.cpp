@@ -338,11 +338,7 @@ module::module(flecs::world& ecs) {
         .event(flecs::OnAdd)
         .each([](flecs::entity pawn){
             ZoneScopedN("Observer_PawnCreate");
-            // Get the location
-            flecs::entity currentCell = pawn.target<Pawn::PawnOccupying>();
-            //const Map::GridCellStatic* loc = currentCell.get<Map::GridCellStatic>();  // TODO: Figure otu why this isn't set
-            // Then set renderable components
-            //pawn.set<flecs::components::transform::Position3>({(float) loc->x, (float) loc->y, 0.1});
+            // Set renderable components
             pawn.set<flecs::components::transform::Position3>({0.0, 0.0, 0.0});
             pawn.set<Box>({5, 5, 0});
             pawn.set<ImColor>(ImColor(ImVec4(255/ 255.0, 255.0 / 255.0, 0.0 / 255.0, 1.0f)));
@@ -360,14 +356,10 @@ module::module(flecs::world& ecs) {
     .term_at(1).in()
     .term_at(2).out()
     .tick_source(Ticks::tick_render)
-    .with<Pawn::PawnOccupying>(flecs::Wildcard)
     .each([](flecs::entity pawn, const Coordinates::Grid& grid, const Coordinates::Cell& cell, flecs::components::transform::Position3& renderPos){
-        // Get cell from pawn occupying
-        flecs::entity currentCell = pawn.target<Pawn::PawnOccupying>();
-        const Map::GridCellStatic* loc = currentCell.get<Map::GridCellStatic>();  // TODO: Put it into the query
         float scale = 20;
-        renderPos.x = scale*(loc->x -0.5 + cell.x/2);  // -0.5 because centre of the cell
-        renderPos.y = scale*(loc->y -0.5 + cell.y/2);
+        renderPos.x = scale*(grid.x -0.5 + cell.x/2);  // -0.5 because centre of the cell
+        renderPos.y = scale*(grid.y -0.5 + cell.y/2);
     });
     
 

@@ -107,7 +107,6 @@ module::module(flecs::world& ecs) {
               const Grid,
               const Cell,
               const CellVelocity>("System_CoordinateUpdate")
-        .with<Pawn::PawnOccupying>(flecs::Wildcard)
         .term_at(0).inout()
         .term_at(1).in()
         .term_at(2).in()

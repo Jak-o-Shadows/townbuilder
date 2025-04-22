@@ -51,84 +51,35 @@ module::module(flecs::world& ecs) {
 
     const Map::Grid* map = Map::mapEntity.get<Map::Grid>();
     
-
-    
-    ecs.observer()
-        .event(flecs::OnAdd)
-        .with<PawnOccupying>(flecs::Wildcard)
-        .with<PawnPathfindingGoal>(flecs::Wildcard)
-        .each([map, &ecs](flecs::entity e){
-            ZoneScopedN(ts_PawnPathfindingUpdate);
-            //std::cout << "Pathfinding Update: for " <<  e.name() << std::endl;
-            flecs::entity currentCell = e.target<PawnOccupying>();
-            flecs::entity targetCell = e.target<PawnPathfindingGoal>();
-            logger->debug("Pathfinding update for {}. Current {} -> {}", std::string(e.path()), std::string(currentCell.path()), std::string(targetCell.path()));
-
-            //std::cout << "\t " << currentCell.name() << " to " << targetCell.name() << std::endl;
-            // From the current cell, and the target cell, pathfind to find the next cell
-            //  First convert the entity data into x, y
-            //      Current Cell
-            auto currentStatic = currentCell.get<Map::GridCellStatic>();
-            int x = currentStatic->x;
-            int y = currentStatic->y;
-            //      Target Cell
-            auto targetStatic = targetCell.get<Map::GridCellStatic>();
-            int targetX = targetStatic->x;
-            int targetY = targetStatic->y;
-            if ((targetX == x) && (targetY == y)) {
-                // No need to pathfind - just move to the centre of the cell
-                //  Jump to it - realistically the next level logic would take over and move to the right place
-                Coordinates::Cell& p = e.ensure<Coordinates::Cell>();
-                //std::cout << "\t" << e.name() << " finished!" << std::endl;
-                p.x = 0;
-                p.y = 0;
-                e.set<Coordinates::CellVelocity>({0, 0});
-                std::shared_ptr<LogicPawn::PawnFSM::Instance> machine = e.get<PawnFSMContainer>()->machine;
-                LogicPawn::Arrived_Event ev;
-                machine->react(ev);
-
-            } else {
-                
-                int nextX = x-targetX < 0 ? x-1 : x+1;
-                int nextY = y-targetY < 0 ? y-1 : y+1;
-                if (nextX > map->m_width-1) {
-                    nextX = map->m_width-1;
-                }
-                if (nextX < 0) {
-                    nextX = 0;
-                }
-                if (nextY > map->m_height-1) {
-                    nextY = map->m_height-1;
-                }
-                if (nextY < 0) {
-                    nextY = 0;
-                }
-                flecs::entity nextCell = flecs::entity(ecs, map->get(nextX, nextY));
-
-                /*
-                //  Begin Pathfinding
-                flecs::id_t nextCellId = pathfind(ecs, map, x, y, targetX, targetY);
-                flecs::entity nextCell = flecs::entity(ecs, nextCellId);
-                */
-                // Set the next cell
-                e.add<PawnNextCell>(nextCell);
-                // Calculate velocity to get to next cell
-                // TODO: This might need to be smarter if I have non-uniform cells
-                // TODO: This is assuming from middle of cell to middle of cell, not from edge to edge
-                const PawnAbilityTraits *pawnAbilityTraits = e.get<PawnAbilityTraits>();
-                float speed = pawnAbilityTraits->speed;
-                auto nextStatic = nextCell.get<Map::GridCellStatic>();
-                float vx = (nextStatic->x - x)*speed;
-                float vy = (nextStatic->y -y)*speed;
-                //std::cout << "\t Velocity To: " << vx << ", " << vy << std::endl;
-                e.set<Coordinates::CellVelocity>({vx, vy});
-                
-            }
-        });
-    
-    
-
    
+    // Put systems in
+    auto move_sys = ecs.system<Coordinates::Cell, Coordinates::CellVelocity>("System_IntraCellMovement")
+    .tick_source(Ticks::tick_pawn_behaviour)
+    .run([](flecs::iter& it){
+        ZoneScopedN("System_IntraCellMovement");
+        while (it.next()){
+            auto p = it.field<Coordinates::Cell>(0);
+            auto v = it.field<Coordinates::CellVelocity>(1);
+            for (auto i: it){
+                p[i].x += v[i].x * it.delta_system_time();
+                p[i].y += v[i].y * it.delta_system_time();
+                //std::cout << p[i].x << ", " << p[i].y << " @ " << v[i].x << ", " << v[i].y << std::endl;
+            }
+        }
+    });
+    
+    ecs.observer<const Coordinates::Grid>("Observer_PawnOccupying")
+        .term_at(0).in()
+        .event(flecs::OnSet)
+        .each([&map](flecs::entity pawn, const Coordinates::Grid& grid){
+            ZoneScopedN("Observer_PawnOccupying");
+            pawn.add<PawnOccupying>(flecs::entity(pawn.world(), map->get(grid.x, grid.y)));
+        });
+
+    logger->trace("Module Setup Complete");
+
+
+
     // Generate pawns
     //  Randomly distribute starting & target positions
     std::mt19937 rng;
@@ -149,12 +100,12 @@ module::module(flecs::world& ecs) {
         auto pawn = ecs.entity(pawnName)
             .child_of(pawnsParent)
             .is_a<Pawn_Prefab>()
+            .set<Coordinates::Grid>({myX, myY})
             .set<Coordinates::Cell>({0, 0})
             .set<Coordinates::CellVelocity>({0, 0})
             .set<PawnAbilityTraits>({0, speed})
             .add<PawnOccupationWoodcutter>()
-            .add<PawnWoodcutterState>(ecs.component<PawnWoodcutterStateIdle>())
-            .add<PawnOccupying>(flecs::entity(ecs, map->get(myX,myY)));
+            .add<PawnWoodcutterState>(ecs.component<PawnWoodcutterStateIdle>());
 
 
         //PawnFSM::Instance machine{blah};
@@ -176,68 +127,11 @@ module::module(flecs::world& ecs) {
         machine->update();
 
     }
-    
-    // Put systems in
-    auto move_sys = ecs.system<Coordinates::Cell, Coordinates::CellVelocity>("System_IntraCellMovement")
-    .tick_source(Ticks::tick_pawn_behaviour)
-    .run([](flecs::iter& it){
-        ZoneScopedN("System_IntraCellMovement");
-        while (it.next()){
-            auto p = it.field<Coordinates::Cell>(0);
-            auto v = it.field<Coordinates::CellVelocity>(1);
-            for (auto i: it){
-                p[i].x += v[i].x * it.delta_system_time();
-                p[i].y += v[i].y * it.delta_system_time();
-                //std::cout << p[i].x << ", " << p[i].y << " @ " << v[i].x << ", " << v[i].y << std::endl;
-            }
-        }
-    });
-    
-    auto moveCell_sys = ecs.system<Coordinates::Cell>("System_BetweenCellMovement")
-    .with<PawnNextCell>(flecs::Wildcard)
-    .tick_source(Ticks::tick_pawn_behaviour)
-    .multi_threaded()
-    .each([](flecs::entity e, Coordinates::Cell& p){
-        ZoneScopedN("System_BetweenCellMovement");
-        //std::cout << "Checking Cell Moveover" << std::endl;
-        bool movedCell = false;
-        // Assume that the velocity is correct, and if we move over any boundary we're there
-        if (p.x > 1){
-            movedCell = true;
-            p.x = -1;
-        } else if (p.x < -1) {
-            // Moved cell left
-            movedCell = true;
-            p.x = 1;
-        } 
-        if (p.y > 1) {
-            // Moved cell up
-            movedCell = true;
-            p.y = -1;
-        } else if (p.y < -1) {
-            // Moved cell down
-            movedCell = true;
-            p.y = 1;
-        }
 
-        if (movedCell){
-            logger->trace("Pawn {} moved cell from {} to {}", e.name().c_str(), e.target<PawnOccupying>().name().c_str(), e.target<PawnNextCell>().name().c_str());
-            flecs::entity nextCell = e.target<PawnNextCell>();
-            // Uupdate currently occupying cell
-            e.add<PawnOccupying>(nextCell);
-            // Update overall goal to force pathfinding update
-            flecs::entity goalCell = e.target<PawnPathfindingGoal>();
-            e.add<PawnPathfindingGoal>(goalCell);
-        }
-    });
+    logger->trace("Created pawns");
 
 
 
-
-
-
-
-    logger->trace("Module Setup Complete");
 };
 
 
