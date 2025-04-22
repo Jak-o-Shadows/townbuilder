@@ -6,7 +6,7 @@
 #include <recastnavigation/DetourNavMesh.h>
 #include <recastnavigation/Recast.h>
 #include <spdlog/spdlog.h>  // Unlike most modules, need this imported to alias it to the recast logger
-
+#include <imgui.h>
 
 namespace Pathfinding {
 
@@ -31,7 +31,43 @@ enum SamplePolyFlags
 	SAMPLE_POLYFLAGS_ALL		= 0xffff	// All abilities.
 };
 
+struct Vertex {
+    float x;
+    float y;
+    float z;
+    ImVec2 toImVec2() {
+        return ImVec2(x, y);
+    }
+};
 
+struct Triangle {
+    int v1Idx;
+    int v2Idx;
+    int v3Idx;
+};
+
+
+
+
+struct MapTriangles{
+    /*Vertices is conceptually a [3xn] array. e.g. [0] is p1.x, [1]=p1.y, [2]=p1.z, [3]=p2.x, etc.*/
+    std::vector<Vertex> vertices;
+    /*Triangles is a [3xn] array.*/
+    std::vector<Triangle> triangles;
+    
+    inline int triangleIdxGet(int n){
+        return n;
+    }
+    inline int vertexIdxGet(int n){
+        return n;
+    }
+    int ntris(){
+        return triangles.size();
+    }
+    int nverts(){
+        return vertices.size();
+    }
+};
 
 
 struct NavmeshDebugStuff {

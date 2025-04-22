@@ -7,6 +7,24 @@
 
 namespace Coordinates {
 
+
+
+    struct Grid{
+        int x;
+        int y;
+    };
+
+    struct Cell {
+        int x;
+        int y;
+    };
+
+    struct CellVelocity{
+        float x;
+        float y;
+    };
+
+
     struct LLA : simCore::Coordinate {
         LLA() {
             setCoordinateSystem(simCore::CoordinateSystem::COORD_SYS_LLA);

@@ -26,6 +26,51 @@
 namespace Render {
 namespace Navmesh {
 
+
+void ImDrawRawTriangles(ImDrawList* dd, const Pathfinding::MapTriangles& triangles) {
+	if (!dd) return;
+	if (triangles.vertices.size() == 0) return;
+	if (triangles.triangles.size() == 0) return;
+
+	const ImVec2 screenpos = ImGui::GetCursorScreenPos();
+	
+	ImVec4 faceColor(1.0f, 1.0f, 1.0f, 1.0f);
+	ImVec4 edgeColor(0.0f, 1.0f, 1.0f, 1.0f);;
+	//Render::Basics::duIntToCol(192, &faceColor);
+	//Render::Basics::duIntToCol(222, &edgeColor);
+
+	constexpr float lineWidth = 2.0f;
+	constexpr float scale = 20;
+
+	//std::cout << "Triangles:" << std::endl;
+	for (int triIdx = 0; triIdx < triangles.triangles.size(); ++triIdx)
+	{
+		int vert1 = triangles.triangles[triIdx].v1Idx;
+		int vert2 = triangles.triangles[triIdx].v2Idx;
+		int vert3 = triangles.triangles[triIdx].v3Idx;
+		ImVec2 v1(triangles.vertices[vert1].x, triangles.vertices[vert1].y);
+		ImVec2 v2(triangles.vertices[vert2].x, triangles.vertices[vert2].y);
+		ImVec2 v3(triangles.vertices[vert3].x, triangles.vertices[vert3].y);
+		//ImVec2 v1 = triangles.vertices[vert1].toImVec2();
+		//ImVec2 v2 = triangles.vertices[vert2].toImVec2();
+		//ImVec2 v3 = triangles.vertices[vert3].toImVec2();
+		// Offset origin & scale
+		//TODO: Change to a sensible datatype that lets you do maths on it
+		v1.x = screenpos.x + scale*v1.x;
+		v1.y = screenpos.y + scale*v1.y;
+		v2.x = screenpos.x + scale*v2.x;
+		v2.y = screenpos.y + scale*v2.y;
+		v3.x = screenpos.x + scale*v3.x;
+		v3.y = screenpos.y + scale*v3.y;
+		//std::cout << "Triangle: " << triIdx << " " << vert1 << ", " << vert2 << ", " << vert3 << std::endl;
+		//std::cout << "Triangle: " << triIdx << " (" << v1.x << ", " << v1.y << "), (" << v2.x << ", " << v2.y << "), (" << v3.x << ", " << v3.y << ")" << std::endl;
+		dd->AddTriangleFilled(v1, v2, v3, ImColor(faceColor));
+		dd->AddLine(v1, v2, ImColor(edgeColor), lineWidth);
+		dd->AddLine(v2, v3, ImColor(edgeColor), lineWidth);
+		dd->AddLine(v3, v1, ImColor(edgeColor), lineWidth);
+	}
+}
+
 void ImDrawListTriMesh(ImDrawList* dd, const float* verts, int /*nverts*/,
 						const int* tris, const float* normals, int ntris,
 						const unsigned char* flags, const float texScale)

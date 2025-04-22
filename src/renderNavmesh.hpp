@@ -17,13 +17,20 @@
 //
 #pragma once
 
+#include <vector>
+
 #include <recastnavigation/DetourNavMesh.h>
 #include <recastnavigation/Recast.h>
 #include <imgui.h>
 
+#include "pathfinding.hpp"
+
 
 namespace Render {
 namespace Navmesh {
+
+void ImDrawRawTriangles(ImDrawList* dd, const Pathfinding::MapTriangles& triangles);
+
 
 void ImDrawListTriMesh(ImDrawList* dd, const float* verts, int nverts, const int* tris, const float* normals, int ntris, const unsigned char* flags, const float texScale);
 void ImDrawListTriMeshSlope(ImDrawList* dd, const float* verts, int nverts, const int* tris, const float* normals, int ntris, const float walkableSlopeAngle, const float texScale);

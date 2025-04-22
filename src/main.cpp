@@ -42,7 +42,9 @@ void operator delete(void* ptr) noexcept {
 }
 
 
-
+struct PtTest {
+    std::shared_ptr<int> p;
+};
 
 
 
@@ -66,8 +68,6 @@ int main(int, char *[]) {
             .assign_string([](std::string* data, const char *value) {
                 *data = value; // Assign new value to std::string
             });
-
-
 
 
     
@@ -155,11 +155,10 @@ int main(int, char *[]) {
     */
     
 
-    /*
+    
     ecs.system("SaveWorld")
-        .tick_source(Ticks::tick_100_Hz)
-        .rate(100)
-        .run([&ecs](flecs::iter it){
+        .interval(10)
+        .run([&ecs](flecs::iter& it){
             ZoneScopedN("SaveWorld");
             flecs::string json = ecs.to_json();
 
@@ -172,7 +171,7 @@ int main(int, char *[]) {
                 outfile.close();
             }
         });
-    */
+    
 
     std::cout << "Systems in main.cpp defined" << std::endl;
 

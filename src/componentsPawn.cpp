@@ -1,5 +1,6 @@
 #include "componentsPawn.hpp"
 #include "ticks.hpp"
+#include "coordinates.hpp"
 
 #include <random>
 
@@ -42,13 +43,6 @@ module::module(flecs::world& ecs) {
     ecs.component<PawnAbilityTraits>()
         .member<float>("strength")
         .member<float>("speed");
-    ecs.component<Pawn::Position>()
-        .member<double>("x")
-        .member<double>("y")
-        .set_doc_brief("Location within the grid cell. Limited to [-1, 1]");
-    ecs.component<Pawn::Velocity>()
-        .member<double>("x")
-        .member<double>("y");
     logger->trace("Components Registered");
     
     // Need to give the entities a parent so they show nicer in the flecs explorer
@@ -84,11 +78,11 @@ module::module(flecs::world& ecs) {
             if ((targetX == x) && (targetY == y)) {
                 // No need to pathfind - just move to the centre of the cell
                 //  Jump to it - realistically the next level logic would take over and move to the right place
-                Position& p = e.ensure<Position>();
+                Coordinates::Cell& p = e.ensure<Coordinates::Cell>();
                 //std::cout << "\t" << e.name() << " finished!" << std::endl;
                 p.x = 0;
                 p.y = 0;
-                e.set<Velocity>({0, 0});
+                e.set<Coordinates::CellVelocity>({0, 0});
                 std::shared_ptr<LogicPawn::PawnFSM::Instance> machine = e.get<PawnFSMContainer>()->machine;
                 LogicPawn::Arrived_Event ev;
                 machine->react(ev);
@@ -127,7 +121,7 @@ module::module(flecs::world& ecs) {
                 float vx = (nextStatic->x - x)*speed;
                 float vy = (nextStatic->y -y)*speed;
                 //std::cout << "\t Velocity To: " << vx << ", " << vy << std::endl;
-                e.set<Velocity>({vx, vy});
+                e.set<Coordinates::CellVelocity>({vx, vy});
                 
             }
         });
@@ -155,8 +149,8 @@ module::module(flecs::world& ecs) {
         auto pawn = ecs.entity(pawnName)
             .child_of(pawnsParent)
             .is_a<Pawn_Prefab>()
-            .set<Position>({0, 0})
-            .set<Velocity>({0, 0})
+            .set<Coordinates::Cell>({0, 0})
+            .set<Coordinates::CellVelocity>({0, 0})
             .set<PawnAbilityTraits>({0, speed})
             .add<PawnOccupationWoodcutter>()
             .add<PawnWoodcutterState>(ecs.component<PawnWoodcutterStateIdle>())
@@ -184,13 +178,13 @@ module::module(flecs::world& ecs) {
     }
     
     // Put systems in
-    auto move_sys = ecs.system<Position, Velocity>("System_IntraCellMovement")
+    auto move_sys = ecs.system<Coordinates::Cell, Coordinates::CellVelocity>("System_IntraCellMovement")
     .tick_source(Ticks::tick_pawn_behaviour)
     .run([](flecs::iter& it){
         ZoneScopedN("System_IntraCellMovement");
         while (it.next()){
-            auto p = it.field<Position>(0);
-            auto v = it.field<Velocity>(1);
+            auto p = it.field<Coordinates::Cell>(0);
+            auto v = it.field<Coordinates::CellVelocity>(1);
             for (auto i: it){
                 p[i].x += v[i].x * it.delta_system_time();
                 p[i].y += v[i].y * it.delta_system_time();
@@ -199,11 +193,11 @@ module::module(flecs::world& ecs) {
         }
     });
     
-    auto moveCell_sys = ecs.system<Position>("System_BetweenCellMovement")
+    auto moveCell_sys = ecs.system<Coordinates::Cell>("System_BetweenCellMovement")
     .with<PawnNextCell>(flecs::Wildcard)
     .tick_source(Ticks::tick_pawn_behaviour)
     .multi_threaded()
-    .each([](flecs::entity e, Position& p){
+    .each([](flecs::entity e, Coordinates::Cell& p){
         ZoneScopedN("System_BetweenCellMovement");
         //std::cout << "Checking Cell Moveover" << std::endl;
         bool movedCell = false;

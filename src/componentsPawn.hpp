@@ -37,16 +37,6 @@ struct PawnOccupying {};
 
 struct PawnNextCell {};
 
-// This is for the position of the pawn within the cell
-struct Position {
-    double x, y;
-};
-
-struct Velocity {
-    double x, y;
-};
-
-
 struct Likes { };
 
 

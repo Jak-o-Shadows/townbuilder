@@ -24,6 +24,20 @@ module::module(flecs::world& ecs) {
     m.set<Logging::LoggerControls>({spdlog::level::trace});
     logger->trace("Module Created");
 
+
+
+    // Register components
+    ecs.component<Grid>("Grid")
+        .member<int>("x")
+        .member<int>("y");
+    ecs.component<Cell>("Cell")
+        .member<int>("x")
+        .member<int>("y")
+        .set_doc_brief("Location within the grid cell. Limited to [-1, 1]");
+    ecs.component<CellVelocity>("CellVelocity")
+        .member<float>("x")
+        .member<float>("y");
+
     // Register Simdis components
     ecs.component<simCore::Vec3>()
         .member<double>("x")
@@ -90,19 +104,19 @@ module::module(flecs::world& ecs) {
 
 
     ecs.system<NED,
-              const Pawn::Position,
-              const Pawn::Velocity>("System_CoordinateUpdate")
+              const Grid,
+              const Cell,
+              const CellVelocity>("System_CoordinateUpdate")
         .with<Pawn::PawnOccupying>(flecs::Wildcard)
         .term_at(0).inout()
         .term_at(1).in()
         .term_at(2).in()
-        .each([](flecs::entity pawn, NED& ned, const Pawn::Position& pos, const Pawn::Velocity& vel){
+        .term_at(3).in()
+        .each([](flecs::entity pawn, NED& ned, const Grid& grid, const Cell& cell, const CellVelocity& vel){
             ZoneScopedN("System_CoordinateUpdate");
-            flecs::entity currentCell = pawn.target<Pawn::PawnOccupying>();
-            const Map::GridCellStatic* loc = currentCell.get<Map::GridCellStatic>();  // TODO: Put it into the query
             float scale_m_per_cell = 20;
-            logger->trace("loc: {}, {}; pos: {}, {} -> ned: {}, {}", loc->x, loc->y, pos.x, pos.y, scale_m_per_cell * (loc->y + pos.y), scale_m_per_cell * (loc->x + pos.x));
-            ned.setPosition(scale_m_per_cell * (loc->y + pos.y), scale_m_per_cell * (loc->x + pos.x), 0);
+            logger->trace("loc: {}, {}; pos: {}, {} -> ned: {}, {}", grid.x, grid.y, cell.x, cell.y, scale_m_per_cell * (grid.y + cell.y), scale_m_per_cell * (grid.x + cell.x));
+            ned.setPosition(scale_m_per_cell * (grid.y + cell.y), scale_m_per_cell * (grid.x + cell.x), 0);
             ned.setVelocity(scale_m_per_cell * vel.y, scale_m_per_cell * vel.x, 0);
             logger->trace("ned: {}, {}, {} m, {}, {}, {} m/s", ned.x(), ned.y(), ned.z(), ned.vx(), ned.vy(), ned.vz());
         });
@@ -181,14 +195,14 @@ module::module(flecs::world& ecs) {
         .term_at(1).in()
         .term_at(2).in()
         .interval(1)
-        .each([](const NED& ned, const LLA& lla, const ECEF& ecef){
+        .each([](flecs::entity e, const NED& ned, const LLA& lla, const ECEF& ecef){
             ZoneScopedN("System_CoordPrint");
-            std::string msg = std::format("NED: {}, {}, {}; LLA: {}, {}, {}; ECEF: {}, {}, {}", 
+            std::string msg = std::format("{}: NED: {}, {}, {}; LLA: {}, {}, {}; ECEF: {}, {}, {}", 
+                e.path().c_str(),
                 ned.x(), ned.y(), ned.z(),
                 lla.lat()*180/M_PI, lla.lon()*180/M_PI, lla.alt(),
                 ecef.x(), ecef.y(), ecef.z());
-            std::cout << msg << std::endl;
-            logger->trace(msg);
+            logger->debug(msg);
         });
 
 

@@ -113,10 +113,6 @@ module::module(flecs::world& ecs) {
                     .set<Building::Location>({x, y})
                     .set<Building::Resources>({0, 100, 0})
                     .add<Building::NatureType>();
-                    // TODO: Move this Rendering stuff to `render.cpp`
-                    //.set<flecs::components::transform::Position3>({(float) x, 1, (float) y})
-                    //.set<flecs::components::graphics::Color>({0, 255, 0})
-                    //.set<flecs::components::geometry::Box>({0.1, 0.5, 0.1});
             }
         }
     }

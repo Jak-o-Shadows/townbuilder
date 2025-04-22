@@ -28,6 +28,12 @@ module::module(flecs::world& ecs){
 
 	logger->trace("Components Registered");
 
+
+	flecs::entity navmesh = ecs.entity("NavMesh");
+	navmesh.add<MapTriangles>();
+	MapTriangles* triangles = navmesh.get_mut<MapTriangles>();
+
+
     // Create navmesh
     flecs::entity mapEntity = Map::mapEntity;  // TODO: Shouldn't be doing it from here - get it in a safer way
 	//flecs::entity mapEntity = ecs.lookup("Map::module::map");  // not sure this is better
@@ -73,40 +79,49 @@ module::module(flecs::world& ecs){
 		ctx->log(RC_LOG_ERROR, "buildNavigation: Could not create solid heightfield.");
 	}
 
-    std::vector<float> vertices;
-    std::vector<int> triangles;
+
 
     // Generate vertices
     for (int row=0;row<=height;row++) {
         for (int col=0;col<=width;col++) {
-            vertices.push_back(static_cast<float>(col)); // x
-            vertices.push_back(static_cast<float>(row)); // y
-            vertices.push_back(0.0f);                 // z (assuming z = 0 for a 2D grid)
+			//(assuming z = 0 for a 2D grid)
+			triangles->vertices.push_back(Vertex(col, row, 0.0f));
         }
     }
     // Generate triangles
     for (int row=0;row<height;row++) {
         for (int col=0;col<width;col++) {
-            int topLeft = row * (width + 1) * 3 + col * 3;
-            int topRight = topLeft + 3;
-            int bottomLeft = topLeft + (width + 1) * 3;
-            int bottomRight = bottomLeft + 3;
+			int topLeft =      row      * (width+1) + col;
+			int topRight =     row      * (width+1) + (col + 1);
+			int bottomLeft =  (row + 1) * (width+1) + col;
+			int bottomRight = (row + 1) * (width+1) + (col + 1);
 
+
+            //int topLeft = row * (width + 1) + col;
+            //int topRight = topLeft + 1;
+            //int bottomLeft = topLeft + (width + 1);
+            //int bottomRight = bottomLeft + 1;
+			std::cout << std::format("({}, {}) is vertices: {}, {}, {}, {}", row, col, topLeft, topRight, bottomLeft, bottomRight) << std::endl;
             // Triangle 1
-            triangles.push_back(topLeft / 3);
-            triangles.push_back(topRight / 3);
-            triangles.push_back(bottomRight / 3);
+			triangles->triangles.push_back(Triangle(topLeft, topRight, bottomRight));
             // Triangle 2
-            triangles.push_back(topLeft / 3);
-            triangles.push_back(bottomRight / 3);
-            triangles.push_back(bottomLeft / 3);
+            triangles->triangles.push_back(Triangle(topLeft, bottomRight, bottomLeft));
         }
     }
-    int nverts = vertices.size()/3;
-    int ntris = triangles.size()/3;
+    int nverts = triangles->nverts();
+    int ntris = triangles->ntris();
     std::cout << "NumVerts: " << nverts << " NumTris: " << ntris << std::endl;
 
-
+	for (int triIdx = 0; triIdx < ntris; ++triIdx)
+	{
+		int vert1 = triangles->triangles[triIdx].v1Idx;
+		int vert2 = triangles->triangles[triIdx].v2Idx;
+		int vert3 = triangles->triangles[triIdx].v3Idx;
+		std::cout << "(" << triangles->vertices[vert1].x << ", " << triangles->vertices[vert1].y <<
+			      "), (" << triangles->vertices[vert2].x << ", " << triangles->vertices[vert2].y <<
+				  "), (" << triangles->vertices[vert3].x << ", " << triangles->vertices[vert3].y << ")" << std::endl;
+	}
+	
 	unsigned char* m_triareas = new unsigned char[ntris];
 	if (!m_triareas)
 	{
@@ -120,10 +135,13 @@ module::module(flecs::world& ecs){
 	memset(m_triareas, 0, ntris*sizeof(unsigned char));
     std::cout << "Initialised m_triareas to zero" << std::endl;
 	rcMarkWalkableTriangles(ctx, walkableSlopeAngle,
-        vertices.data(), nverts,
-        triangles.data(), ntris, m_triareas);
+        reinterpret_cast<float*>(triangles->vertices.data()), nverts,
+        reinterpret_cast<int*>(triangles->triangles.data()), ntris, m_triareas);
+	memset(m_triareas, RC_WALKABLE_AREA, ntris*sizeof(unsigned char));  // FAKE IT
     std::cout << "Marked Walkable Triangles" << std::endl;
-	if (!rcRasterizeTriangles(ctx, vertices.data(), nverts, triangles.data(), m_triareas, ntris, *m_solid, walkableClimb))
+	if (!rcRasterizeTriangles(ctx, reinterpret_cast<float*>(triangles->vertices.data()), nverts,
+						           reinterpret_cast<int*>(triangles->triangles.data()), m_triareas, ntris,
+							  *m_solid, walkableClimb))
 	{
 		ctx->log(RC_LOG_ERROR, "buildNavigation: Could not rasterize triangles.");
 	}
@@ -178,12 +196,11 @@ module::module(flecs::world& ecs){
 
 	// (Optional) Mark areas.
     // TODO: Put thsi back in. It requires more files
-    /*
-	const ConvexVolume* vols = m_geom->getConvexVolumes();
-	for (int i  = 0; i < m_geom->getConvexVolumeCount(); ++i) {
-		rcMarkConvexPolyArea(ctx, vols[i].verts, vols[i].nverts, vols[i].hmin, vols[i].hmax, (unsigned char)vols[i].area, *m_chf);
-    }
-    */
+//	const ConvexVolume* vols = m_geom->getConvexVolumes();
+//	for (int i  = 0; i < m_geom->getConvexVolumeCount(); ++i) {
+//		rcMarkConvexPolyArea(ctx, vols[i].verts, vols[i].nverts, vols[i].hmin, vols[i].hmax, (unsigned char)vols[i].area, *m_chf);
+//    }
+    
 
 
 	// Partition the heightfield so that we can use simple algorithm later to triangulate the walkable areas.
@@ -255,12 +272,12 @@ module::module(flecs::world& ecs){
 	// Add NavmeshDebugStuff component so we can render it
 	// You'd REALLY think that the navmesh render stuff could be stored in the mapEntity,
 	//	but this causes a runtime error.
-	ecs.entity("navmeshStuff").set<NavmeshDebugStuff>({m_dmesh});
-	logger->trace("NavmeshDebugStuff component added to navmeshStuff");
+	//navmesh.set<NavmeshDebugStuff>({m_dmesh});
+	//logger->trace("NavmeshDebugStuff component added to navmeshStuff");
 
 	logger->trace("Navmesh things: nmeshes {}", m_dmesh->nmeshes);
 	
-
+	
 
     }
 }

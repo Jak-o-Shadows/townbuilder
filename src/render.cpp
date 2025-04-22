@@ -24,6 +24,7 @@
 #include "ticks.hpp"
 #include "pathfinding.hpp"
 #include "renderNavmesh.hpp"
+#include "coordinates.hpp"
 
 namespace Render{
 
@@ -239,6 +240,18 @@ module::module(flecs::world& ecs) {
     });
     
 
+    ecs.system<const Pathfinding::MapTriangles>("RenderBaseTriangles")
+        .kind(flecs::OnUpdate)
+        .tick_source(Ticks::tick_render)
+        .each([](const Pathfinding::MapTriangles& triangles){
+            ZoneScopedN("RenderBaseTriangles");
+            ImGui::Begin("BaseTriangles");
+            ImDrawList *draw_list = ImGui::GetWindowDrawList();
+            Render::Navmesh::ImDrawRawTriangles(draw_list, triangles);
+            ImGui::End();
+        });
+
+
     ecs.system<Pathfinding::NavmeshDebugStuff>("RenderNavmesh")
         .kind(flecs::OnUpdate)
         .tick_source(Ticks::tick_render)
@@ -339,16 +352,22 @@ module::module(flecs::world& ecs) {
 
 
     
-    auto updatePawnRenderLocation_sys = ecs.system<Pawn::Position, flecs::components::transform::Position3>("Update Pawn Render Location")
+    auto updatePawnRenderLocation_sys = ecs.system<
+        Coordinates::Grid,
+        Coordinates::Cell,
+        flecs::components::transform::Position3>("Update Pawn Render Location")
+    .term_at(0).in()
+    .term_at(1).in()
+    .term_at(2).out()
     .tick_source(Ticks::tick_render)
     .with<Pawn::PawnOccupying>(flecs::Wildcard)
-    .each([](flecs::entity pawn, Pawn::Position& p, flecs::components::transform::Position3& renderPos){
+    .each([](flecs::entity pawn, const Coordinates::Grid& grid, const Coordinates::Cell& cell, flecs::components::transform::Position3& renderPos){
         // Get cell from pawn occupying
         flecs::entity currentCell = pawn.target<Pawn::PawnOccupying>();
         const Map::GridCellStatic* loc = currentCell.get<Map::GridCellStatic>();  // TODO: Put it into the query
         float scale = 20;
-        renderPos.x = scale*(loc->x -0.5 + p.x/2);  // -0.5 because centre of the cell
-        renderPos.y = scale*(loc->y -0.5 + p.y/2);
+        renderPos.x = scale*(loc->x -0.5 + cell.x/2);  // -0.5 because centre of the cell
+        renderPos.y = scale*(loc->y -0.5 + cell.y/2);
     });
     
 

@@ -20,7 +20,7 @@ Ticks.module{
 }
 
 Coordinates.module{
-    Logging.module.LoggerControls: {info}
+    Logging.module.LoggerControls: {debug}
 }
 
 Pathfinding.module{
@@ -42,4 +42,6 @@ Building.module.buildings.Granary2: Building.module.buildings.Granary_Prefab {
 
 
 // Debug Systems
-Coordinates.module.System_CoordPrint { Disabled }
+//Coordinates.module.System_CoordPrint { Disabled }
+
+SaveWorld {Disabled}
