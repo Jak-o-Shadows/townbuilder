@@ -48,9 +48,10 @@ void ImDrawRawTriangles(ImDrawList* dd, const Pathfinding::MapTriangles& triangl
 		int vert1 = triangles.triangles[triIdx].v1Idx;
 		int vert2 = triangles.triangles[triIdx].v2Idx;
 		int vert3 = triangles.triangles[triIdx].v3Idx;
-		ImVec2 v1(triangles.vertices[vert1].x, triangles.vertices[vert1].y);
-		ImVec2 v2(triangles.vertices[vert2].x, triangles.vertices[vert2].y);
-		ImVec2 v3(triangles.vertices[vert3].x, triangles.vertices[vert3].y);
+		// Remember recast uses x left/right, y up/down, z forward/backward
+		ImVec2 v1(triangles.vertices[vert1].x, triangles.vertices[vert1].z);
+		ImVec2 v2(triangles.vertices[vert2].x, triangles.vertices[vert2].z);
+		ImVec2 v3(triangles.vertices[vert3].x, triangles.vertices[vert3].z);
 		//ImVec2 v1 = triangles.vertices[vert1].toImVec2();
 		//ImVec2 v2 = triangles.vertices[vert2].toImVec2();
 		//ImVec2 v3 = triangles.vertices[vert3].toImVec2();

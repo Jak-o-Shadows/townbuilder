@@ -51,7 +51,7 @@ module::module(flecs::world& ecs){
     float walkableHeight = 1;
     float walkableRadius = 1;
 
-    bool m_keepInterResults = false;
+    bool m_keepInterResults = true;
     bool m_filterLowHangingObstacles = false;
     bool m_filterLedgeSpans = false;
     bool m_filterWalkableLowHeightSpans = false;
@@ -85,7 +85,8 @@ module::module(flecs::world& ecs){
     for (int row=0;row<=height;row++) {
         for (int col=0;col<=width;col++) {
 			//(assuming z = 0 for a 2D grid)
-			triangles->vertices.push_back(Vertex(col, row, 0.0f));
+			// Note that recast uses a left/right, down/up, backward/forward coordinate system
+			triangles->vertices.push_back(Vertex(col, 0.0f, row));
         }
     }
     // Generate triangles
@@ -102,10 +103,12 @@ module::module(flecs::world& ecs){
             //int bottomLeft = topLeft + (width + 1);
             //int bottomRight = bottomLeft + 1;
 			std::cout << std::format("({}, {}) is vertices: {}, {}, {}, {}", row, col, topLeft, topRight, bottomLeft, bottomRight) << std::endl;
+			// Define them in a counterclockwise order, despite what the recast docs say, because that made
+			// the normals point the right way when marking them as walkable
             // Triangle 1
-			triangles->triangles.push_back(Triangle(topLeft, topRight, bottomRight));
+			triangles->triangles.push_back(Triangle(bottomRight, topRight, topLeft));
             // Triangle 2
-            triangles->triangles.push_back(Triangle(topLeft, bottomRight, bottomLeft));
+            triangles->triangles.push_back(Triangle(bottomLeft, bottomRight, topLeft));
         }
     }
     int nverts = triangles->nverts();
@@ -137,7 +140,10 @@ module::module(flecs::world& ecs){
 	rcMarkWalkableTriangles(ctx, walkableSlopeAngle,
         reinterpret_cast<float*>(triangles->vertices.data()), nverts,
         reinterpret_cast<int*>(triangles->triangles.data()), ntris, m_triareas);
-	memset(m_triareas, RC_WALKABLE_AREA, ntris*sizeof(unsigned char));  // FAKE IT
+	//memset(m_triareas, RC_WALKABLE_AREA, ntris*sizeof(unsigned char));  // FAKE IT
+	for (int triIdx = 0; triIdx < ntris; triIdx++){
+		std::cout << "tri: " << triIdx << " is walkable: " << (int)m_triareas[triIdx] << std::endl;
+	}
     std::cout << "Marked Walkable Triangles" << std::endl;
 	if (!rcRasterizeTriangles(ctx, reinterpret_cast<float*>(triangles->vertices.data()), nverts,
 						           reinterpret_cast<int*>(triangles->triangles.data()), m_triareas, ntris,
@@ -145,12 +151,13 @@ module::module(flecs::world& ecs){
 	{
 		ctx->log(RC_LOG_ERROR, "buildNavigation: Could not rasterize triangles.");
 	}
+	std::cout << "Rasterized Triangles" << std::endl;
 	if (!m_keepInterResults)
 	{
 		delete [] m_triareas;
 		m_triareas = nullptr;
 	}
-    std::cout << "walkabletriangles " << std::endl;
+    std::cout << "Finished WalkableTriangles " << std::endl;
     
     // Step 3. Filter walkable surfaces.
 	
