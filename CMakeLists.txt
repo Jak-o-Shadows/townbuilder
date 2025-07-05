@@ -39,8 +39,8 @@ target_include_directories(${PROJECT_NAME} PRIVATE ${DIR_DEPS})
 
 
 # HFSM2
-set(HFSM2_DIR tpl/hfsm2)
-target_include_directories(${PROJECT_NAME} PRIVATE ${HFSM2_DIR}/include)
+find_package(hfsm2 REQUIRED CONFIG)
+target_link_libraries(${PROJECT_NAME} hfsm2::hfsm2)
 
 
 # Flecs

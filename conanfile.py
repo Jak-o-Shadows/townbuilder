@@ -19,6 +19,7 @@ class FlecsOrbitSimConan(ConanFile):
         self.requires("tracy/0.9.1")
         self.requires("spdlog/1.15.0")
         self.requires("eigen/3.4.0")
+        self.requires("hfsm2/2.5.2")
 
         # Game Things
         self.requires("recastnavigation/1.6.0")
