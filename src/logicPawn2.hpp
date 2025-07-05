@@ -122,9 +122,9 @@ struct Context {
 						M::Composite<Working,
 							PawnOccupationUnemployed,
 							M::Utilitarian<PawnOccupationWoodcutter,
-								PawnWoodcutterStateWalkingTo
-								//PawnWoodcutterStateReturning,
-								//PawnWoodcutterStateChopping
+								PawnWoodcutterStateWalkingTo,
+								PawnWoodcutterStateReturning,
+								PawnWoodcutterStateChopping
 								>
 							>,
 						Walking,
@@ -191,12 +191,12 @@ struct Context {
 		void react(const Arrived_Event&, FullControl& control);
 	};
 
-/*	struct PawnWoodcutterStateReturning : BasePawnState<PawnWoodCutterStateReturning> {
+	struct PawnWoodcutterStateReturning : BasePawnState<PawnWoodcutterStateReturning> {
 	};
 
-	struct PawnWoodcutterStateChopping : BasePawnState<PawnWoodCutterStateChopping> {
+	struct PawnWoodcutterStateChopping : BasePawnState<PawnWoodcutterStateChopping> {
 	};
-*/	
+
 
 
 
