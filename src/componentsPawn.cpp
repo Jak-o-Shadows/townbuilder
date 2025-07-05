@@ -106,8 +106,30 @@ module::module(flecs::world& ecs) {
             .add<Coordinates::GridBase>()
             .set<PawnAbilityTraits>({0, speed});
         
+
+        // For each possible State, put the timing info in. Note that this must be
+        // done before the FSM is created, otherwise it will not be able to access
+        // the timing info.
+        pawn.set<LogicPawn::StateTiming, LogicPawn::Alive>({0, 0});
+        pawn.set<LogicPawn::StateTiming, LogicPawn::Idle>({0, 0});
+        pawn.set<LogicPawn::StateTiming, LogicPawn::Walking>({0, 0});
+        pawn.set<LogicPawn::StateTiming, LogicPawn::Working>({0, 0});
+        pawn.set<LogicPawn::StateTiming, LogicPawn::Fleeing>({0, 0});
+        pawn.set<LogicPawn::StateTiming, LogicPawn::Combat>({0, 0});
+        pawn.set<LogicPawn::StateTiming, LogicPawn::Dead>({0, 0});
+        pawn.set<LogicPawn::StateTiming, LogicPawn::PawnOccupationUnemployed>({0, 0});
+        pawn.set<LogicPawn::StateTiming, LogicPawn::PawnOccupationWoodcutter>({0, 0});
+        pawn.set<LogicPawn::StateTiming, LogicPawn::PawnWoodcutterStateWalkingTo>({0, 0});
+        pawn.set<LogicPawn::StateTiming, LogicPawn::PawnWoodcutterStateReturning>({0, 0});
+        pawn.set<LogicPawn::StateTiming, LogicPawn::PawnWoodcutterStateChopping>({0, 0});
+
+
         LogicPawn::Context blah{pawn.id(), ecs};  // No idea why this has to be a separate variable, but it does, so bugger it
         pawn.set<PawnFSMContainer>({std::shared_ptr<LogicPawn::PawnFSM::Instance>(new LogicPawn::PawnFSM::Instance(blah))});
+
+
+
+
 
 
     }

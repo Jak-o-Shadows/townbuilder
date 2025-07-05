@@ -73,6 +73,11 @@ struct Context {
 	flecs::world& ecs;
 };
 
+struct StateTiming{
+	float timeInState_s = 0;
+	float culmulativeTimeInState_s = 0;
+};
+
 // data shared between FSM states and outside code
 
 	// convenience typedef
@@ -80,7 +85,7 @@ struct Context {
 
 
 	// Events
-	struct Arrived_Event {};
+	struct Arrived_Event {};  // When you arrive at a location or cell
 	struct SecondaryEvent { int payload; };
 	struct Attacked {};
 
@@ -105,7 +110,6 @@ struct Context {
 
 	// Pawn States
 	//  Woodcutter
-	struct PawnWoodcutterState;
 	struct PawnWoodcutterStateWalkingTo;
 	struct PawnWoodcutterStateReturning;
 	struct PawnWoodcutterStateChopping;
@@ -144,6 +148,9 @@ struct Context {
 		void enter(Control& control) {
 			flecs::entity e = flecs::entity(control.context().ecs, control.context().id);
 			logger->trace("Pawn {} entering state {}", std::string(e.path()), TypeName<TemplateState>());
+			// Reset how long we've been in this state
+			StateTiming* timing = e.get_mut<StateTiming, TemplateState>();
+			timing->timeInState_s = 0;
 			e.add<TemplateState>();
 		}
 		void exit(Control& control) {

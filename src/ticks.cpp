@@ -26,7 +26,7 @@ module::module(flecs::world& ecs) {
     logger->trace("Module Created");
 
     // Create basic timers
-    // 1000 Hz should be enough for anybody
+    // 100 Hz should be enough for anybody
     tick_100_Hz = ecs.timer("Timer_100 Hz")
         .interval(0.01);
     // Pawn behaviour

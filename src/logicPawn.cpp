@@ -4,6 +4,7 @@
 
 #include "gridMap.hpp"
 #include "componentsPawn.hpp"
+#include "ticks.hpp"
 
 
 namespace LogicPawn {
@@ -17,6 +18,11 @@ module::module(flecs::world& ecs) {
     logger = Logging::init_module_logger(m, ecs.get<Logging::LoggerSink>()->sink);
     // Before using loggers, must set the level so the observer can handle it
     m.set<Logging::LoggerControls>({spdlog::level::trace});
+
+    // Register components
+    ecs.component<StateTiming>()
+        .member<float>("timeInState_s")
+        .member<float>("culmulativeTimeInState_s");
 
 
     // State actions
@@ -34,6 +40,19 @@ module::module(flecs::world& ecs) {
             }
     });
     */
+    
+    ecs.system<StateTiming>("Increment_StateTiming")
+        .term_at(0).second("$state")
+        .with("$state")
+        .tick_source(Ticks::tick_pawn_behaviour)
+        .each([](StateTiming& timing) {
+            ZoneScopedN("Increment_StateTiming");
+            float dt = 0.01;//it.delta_system_time();  // TODO: This needs to be the it.delta_system_time(), but not working
+            timing.timeInState_s += dt;
+            timing.culmulativeTimeInState_s += dt;
+        });
+
+
 
     logger->trace("Module Created");
 
