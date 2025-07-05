@@ -78,8 +78,8 @@ module::module(flecs::world& ecs) {
     //   making it show nicer in the explorer
     mapEntity = ecs.entity("map");
     //  Each cell of the map is an entity
-    const int map_width = 5;
-    const int map_height = 5;
+    const int map_width = 50;
+    const int map_height = 25;
     // Stored in a vector for each access
     mapEntity.emplace<Grid>(map_width, map_height, &ecs, mapEntity);
     const Grid* map = mapEntity.get<Grid>();

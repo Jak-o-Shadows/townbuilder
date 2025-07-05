@@ -27,6 +27,10 @@ Pathfinding.module{
     Logging.module.LoggerControls: {info}
 }
 
+LogicPawn.module{
+    Logging.module.LoggerControls: {trace}
+}
+
 
 // Buildings
 
@@ -42,6 +46,6 @@ Building.module.buildings.Granary2: Building.module.buildings.Granary_Prefab {
 
 
 // Debug Systems
-//Coordinates.module.System_CoordPrint { Disabled }
+Coordinates.module.System_CoordPrint { Disabled }
 
 SaveWorld {Disabled}

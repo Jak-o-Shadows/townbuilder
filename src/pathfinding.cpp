@@ -29,6 +29,10 @@ module::module(flecs::world& ecs){
 	logger->trace("Components Registered");
 
 
+
+
+
+	/* Recast/Detour - not working, so bugger it and do fun stuff
 	flecs::entity navmesh = ecs.entity("NavMesh");
 	navmesh.add<MapTriangles>();
 	MapTriangles* triangles = navmesh.get_mut<MapTriangles>();
@@ -69,7 +73,7 @@ module::module(flecs::world& ecs){
 	MyBuildContext* ctx = new MyBuildContext(logger);
     ctx->enableLog(true);
 
-    rcHeightfield* m_solid = rcAllocHeightfield();
+	rcHeightfield* m_solid = rcAllocHeightfield();
 	if (!m_solid)
 	{
 	    ctx->log(RC_LOG_ERROR, "buildNavigation: Out of memory 'solid'.");
@@ -279,11 +283,11 @@ module::module(flecs::world& ecs){
 	// Add NavmeshDebugStuff component so we can render it
 	// You'd REALLY think that the navmesh render stuff could be stored in the mapEntity,
 	//	but this causes a runtime error.
-	//navmesh.set<NavmeshDebugStuff>({m_dmesh});
-	//logger->trace("NavmeshDebugStuff component added to navmeshStuff");
+	navmesh.set<NavmeshDebugStuff>({m_dmesh, m_solid});
+	logger->trace("NavmeshDebugStuff component added to navmeshStuff");
 
 	logger->trace("Navmesh things: nmeshes {}", m_dmesh->nmeshes);
-	
+	*/
 	
 
     }

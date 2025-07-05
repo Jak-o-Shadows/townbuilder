@@ -72,6 +72,7 @@ struct MapTriangles{
 
 struct NavmeshDebugStuff {
     std::shared_ptr<rcPolyMeshDetail> polyMeshDetail;
+    rcHeightfield* m_solid;  // Just a poniter is fine, because this is allocated forever
 };
 
 

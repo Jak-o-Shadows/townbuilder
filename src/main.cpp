@@ -80,8 +80,8 @@ int main(int, char *[]) {
 
     ecs.import<Coordinates::module>();
     ecs.import<Map::module>();
+    ecs.import<LogicPawn::module>();  // Must be before Pawn::module for the logging
     ecs.import<Pawn::module>();
-    //ecs.import<LogicPawn::module>();
     ecs.import<Building::module>();
     ecs.import<fdis::module>();
     ecs.import<Pathfinding::module>();
@@ -180,7 +180,7 @@ int main(int, char *[]) {
     
 
 
-    
+    /*
     ecs.defer_begin();
     const Map::Grid* map = Map::mapEntity.get<Map::Grid>();
     std::mt19937 rng;
@@ -194,10 +194,10 @@ int main(int, char *[]) {
         pawn.add<Pawn::PawnPathfindingGoal>(flecs::entity(ecs, map->get(targetX, targetY)));
         });
     ecs.defer_end();
-    
+    */
 
     ecs_script_run_file(ecs, "../../src/config.flecs");
-
+    std::cout << "Flecs script loaded" << std::endl;
 
 
     std::cout << "Just before run" << std::endl;

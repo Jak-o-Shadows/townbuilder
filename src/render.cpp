@@ -62,7 +62,7 @@ module::module(flecs::world& ecs) {
     flecs::entity m = ecs.module<module>();
     logger = Logging::init_module_logger(m, ecs.get<Logging::LoggerSink>()->sink);
     // Before using logger, must set the level so the observer can handle it
-    m.set<Logging::LoggerControls>({spdlog::level::trace});
+    m.set<Logging::LoggerControls>({spdlog::level::err});
     logger->trace("Module Created");
     std::cout << "Render Module Created" << std::endl;
 
@@ -260,6 +260,7 @@ module::module(flecs::world& ecs) {
             ImGui::Begin("Navmesh");
             ImDrawList *draw_list = ImGui::GetWindowDrawList();
             Render::Navmesh::ImDrawListPolyMeshDetail(draw_list, *navmesh.polyMeshDetail);
+            Render::Navmesh::ImDrawListHeightfieldSolid(draw_list, *navmesh.m_solid);
             ImGui::End();
         });
 

@@ -20,11 +20,12 @@
 #include <cmath>
 
 #include <string.h>
+#include <iostream>
 
 namespace Render{
 namespace Basics{
 
-#define POINTSIZE 10
+#define POINTSIZE 5
 
 duDebugDraw::~duDebugDraw()
 {
@@ -284,35 +285,28 @@ void duAppendBox(ImDrawList* dd, float minx, float miny, float minz,
 				 float maxx, float maxy, float maxz, const ImVec4* fcol)
 {
 	if (!dd) return;
-	const float verts[8*3] =
-	{
-		minx, miny, minz,
-		maxx, miny, minz,
-		maxx, miny, maxz,
-		minx, miny, maxz,
-		minx, maxy, minz,
-		maxx, maxy, minz,
-		maxx, maxy, maxz,
-		minx, maxy, maxz,
-	};
-	static const unsigned char inds[6*4] =
-	{
-		7, 6, 5, 4,
-		0, 1, 2, 3,
-		1, 5, 6, 2,
-		3, 7, 4, 0,
-		2, 6, 7, 3,
-		0, 4, 5, 1,
-	};
-	
-	const unsigned char* in = inds;
-	for (int i = 0; i < 6; ++i)
-	{
-		dd->AddCircleFilled(ImVec3(&verts[*in*3]), POINTSIZE, ImColor(fcol[i])); in++;
-		dd->AddCircleFilled(ImVec3(&verts[*in*3]), POINTSIZE, ImColor(fcol[i])); in++;
-		dd->AddCircleFilled(ImVec3(&verts[*in*3]), POINTSIZE, ImColor(fcol[i])); in++;
-		dd->AddCircleFilled(ImVec3(&verts[*in*3]), POINTSIZE, ImColor(fcol[i])); in++;
-	}
+
+	// Note: Only doing the 2D projection of the cuboid
+	ImVec2 top_left(minx, miny);
+	ImVec2 top_right(maxx, miny);
+	ImVec2 bottom_right(maxx, maxy);
+	ImVec2 bottom_left(minx, maxy);
+
+	// Thickness of the lines
+	float thickness = 2.0f;
+
+	ImColor color = ImColor(fcol[0]);
+
+	// Draw the outline of the quadrilateral
+	dd->AddLine(top_left, top_right, color, thickness);
+	dd->AddLine(top_right, bottom_right, color, thickness);
+	dd->AddLine(bottom_right, bottom_left, color, thickness);
+	dd->AddLine(bottom_left, top_left, color, thickness);
+
+	// If you want to fill the quadrilateral, use AddConvexPolyFilled:
+	ImVec2 points[] = {top_left, top_right, bottom_right, bottom_left};
+	dd->AddConvexPolyFilled(points, 4, color);
+
 }
 
 void duAppendCylinder(ImDrawList* dd, float minx, float miny, float minz,

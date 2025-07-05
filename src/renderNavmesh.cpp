@@ -189,10 +189,18 @@ void ImDrawListTriMeshSlope(ImDrawList* dd, const float* verts, int /*nverts*/,
     */
 }
 
+
+
+
+
+
+
 void ImDrawListHeightfieldSolid(ImDrawList* dd, const rcHeightfield& hf)
 {
-    /*
+    
 	if (!dd) return;
+
+	constexpr float scale = 20;
 
 	const float* orig = hf.bmin;
 	const float cs = hf.cs;
@@ -200,12 +208,22 @@ void ImDrawListHeightfieldSolid(ImDrawList* dd, const rcHeightfield& hf)
 	
 	const int w = hf.width;
 	const int h = hf.height;
+	
 		
-	unsigned int fcol[6];
-	duCalcBoxColors(fcol, duRGBA(255,255,255,255), duRGBA(255,255,255,255));
+	ImVec4 fcol[6];
+	Render::Basics::duCalcBoxColors(fcol, Render::Basics::duRGBA(255,255,255,255), Render::Basics::duRGBA(0,255,0,255));
 	
-	dd->begin(DU_DRAW_QUADS);
-	
+    std::cout << "ImDrawListHeightfieldSolid" << std::endl;
+	std::cout << "Heightfield is this big:" << hf.bmin[0] << ", " << hf.bmin[1] << ", " << hf.bmin[2] << " -> " << hf.bmax[0] << ", " << hf.bmax[1] << ", " << hf.bmax[2] << std::endl;
+
+	const ImVec2 screenpos = ImGui::GetCursorScreenPos();
+
+	for (rcSpan* s = hf.spans[0]; s; s = s->next)
+	{
+		std::cout << "Span: (" << s->smin << ", " << s->smax << "), area: " << (int)s->area << std::endl;
+	}
+
+
 	for (int y = 0; y < h; ++y)
 	{
 		for (int x = 0; x < w; ++x)
@@ -215,13 +233,27 @@ void ImDrawListHeightfieldSolid(ImDrawList* dd, const rcHeightfield& hf)
 			const rcSpan* s = hf.spans[x + y*w];
 			while (s)
 			{
-				duAppendBox(dd, fx, orig[1]+s->smin*ch, fz, fx+cs, orig[1] + s->smax*ch, fz+cs, fcol);
+				// Remember to swap y and z because recast uses x left/right, y up/down, z forward/backward
+				// and add the screenpos to the x and z coordinates
+				float minx = screenpos.x + scale*fx;
+				float miny = screenpos.y + scale*fz;
+				float minz = 0 + scale*(orig[1] + s->smin*ch);
+				float maxx = screenpos.x + scale*(fx+cs);
+				float maxy = screenpos.y + scale*(fz+cs);
+				float maxz = 0 + scale*(orig[1] + s->smax*ch);
+				std::cout << "(" << x << ", " << y << "): (" << minx << ", " << miny << ", " << minz << ") -> (" << maxx << ", " << maxy << ", " << maxz << ")" << std::endl;
+				
+				fcol[0] = (s->area == RC_WALKABLE_AREA) 
+				? ImVec4(0.0f, 1.0f, 0.0f, 1.0f) 
+				: ImVec4(1.0f, 0.0f, 0.0f, 1.0f);
+				Render::Basics::duAppendBox(dd, 
+					minx, miny, minz, maxx, maxy, maxz,
+					fcol);
 				s = s->next;
 			}
 		}
 	}
-	dd->end();
-    */
+    
 }
 
 void ImDrawListHeightfieldWalkable(ImDrawList* dd, const rcHeightfield& hf)
@@ -1051,7 +1083,7 @@ void ImDrawListPolyMeshDetail(ImDrawList* dd, const rcPolyMeshDetail& dmesh)
 
 	const ImVec2 screenpos = ImGui::GetCursorScreenPos();
 
-    std::cout << "ImDrawPolyMeshDetail" << std::endl;
+    //std::cout << "ImDrawPolyMeshDetail" << std::endl;
 	
 	for (int i = 0; i < dmesh.nmeshes; ++i)
 	{

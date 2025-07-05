@@ -104,28 +104,11 @@ module::module(flecs::world& ecs) {
             .set<Coordinates::Cell>({0, 0})
             .set<Coordinates::CellVelocity>({0, 0})
             .add<Coordinates::GridBase>()
-            .set<PawnAbilityTraits>({0, speed})
-            .add<PawnOccupationWoodcutter>()
-            .add<PawnWoodcutterState>(ecs.component<PawnWoodcutterStateIdle>());
+            .set<PawnAbilityTraits>({0, speed});
+        
+        LogicPawn::Context blah{pawn.id(), ecs};  // No idea why this has to be a separate variable, but it does, so bugger it
+        pawn.set<PawnFSMContainer>({std::shared_ptr<LogicPawn::PawnFSM::Instance>(new LogicPawn::PawnFSM::Instance(blah))});
 
-
-        //PawnFSM::Instance machine{blah};
-        //pawn.set<PawnFSMContainer>({PawnFSM::Instance{blah}});
-        //std::unique_ptr<PawnFSM::Instance> ptr(new PawnFSM::Instance(blah));// = std::make_unique<PawnFSM::Instance>(machine);
-
-        // Create the FSM
-        LogicPawn::Context blah{pawn.id(), ecs};
-        LogicPawn::PawnFSM::Instance test{blah};
-        std::shared_ptr<LogicPawn::PawnFSM::Instance> ptr(&test);
-        pawn.set<PawnFSMContainer>({ptr});
-
-        //flecs::entity_to_json_desc_t desc;
-        //desc.serialize_path = true;
-        //desc.serialize_values = true;
-        //std::cout << pawn.to_json(&desc) << "\n";
-        std::shared_ptr<LogicPawn::PawnFSM::Instance> machine = pawn.get<PawnFSMContainer>()->machine;
-        machine->changeTo<LogicPawn::Walking>();
-        machine->update();
 
     }
 

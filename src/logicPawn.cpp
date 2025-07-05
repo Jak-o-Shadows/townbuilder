@@ -8,10 +8,15 @@
 
 namespace LogicPawn {
 
+std::shared_ptr<spdlog::logger> logger;
+
 module::module(flecs::world& ecs) {
     // Register module with world. The module entity will be created with the
     // same hierarchy as the C++ namespaces (e.g. simple::module)
-    ecs.module<module>();
+    flecs::entity m = ecs.module<module>();
+    logger = Logging::init_module_logger(m, ecs.get<Logging::LoggerSink>()->sink);
+    // Before using loggers, must set the level so the observer can handle it
+    m.set<Logging::LoggerControls>({spdlog::level::trace});
 
 
     // State actions
@@ -30,31 +35,18 @@ module::module(flecs::world& ecs) {
     });
     */
 
+    logger->trace("Module Created");
 
 };
 
-// top-level region in the hierarchy
-void Alive::enter(Control& control) {
-    flecs::entity e = flecs::entity(control.context().ecs, control.context().id);
-    char msg[100];
-    sprintf(&msg[0], "%s(%i) -> Alive", e.name().c_str(), (int) e.id());
-    TracyMessage(msg, 100);
-    e.add<Alive>();
-}
-void Alive::exit(Control& control) {
-    flecs::entity e = flecs::entity(control.context().ecs, control.context().id);
-    e.remove<Alive>();
-}
+
+
 //------------------------------------------------------------------------------
 
-void Idle::enter(Control& control) {
-    flecs::entity e = flecs::entity(control.context().ecs, control.context().id);
-    e.add<Idle>();
-}
-void Idle::exit(Control& control) {
-    flecs::entity e = flecs::entity(control.context().ecs, control.context().id);
-    e.remove<Idle>();
-}
+// top-level region in the hierarchy
+
+
+
 
 // state can initiate transitions to _any_ other state
 /*
@@ -69,34 +61,6 @@ void Idle::update(FullControl& control) {
 
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-void Working::enter(Control& control) {
-    flecs::entity e = flecs::entity(control.context().ecs, control.context().id);
-    char msg[100];
-    sprintf(&msg[0], "%s(%i) -> Working", e.name().c_str(), (int) e.id());
-    TracyMessage(msg, 100);
-    e.add<Working>();
-}
-void Working::exit(Control& control) {
-    flecs::entity e = flecs::entity(control.context().ecs, control.context().id);
-    e.remove<Working>();
-}
-
-//void Working::update(FullControl& control) {
-//    control.changeTo<Fleeing>();
-//}
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-void Walking::enter(Control& control) {
-    flecs::entity e = flecs::entity(control.context().ecs, control.context().id);
-    char msg[100];
-    sprintf(&msg[0], "%s(%i) -> Walking", e.name().c_str(), (int) e.id());
-    TracyMessage(msg, 100);
-    e.add<Walking>();
-}
-
-void Walking::exit(Control& control) {
-    flecs::entity e = flecs::entity(control.context().ecs, control.context().id);
-    e.remove<Walking>();
-}
 
 void Walking::react(const Arrived_Event&, FullControl& control){
     flecs::entity e = flecs::entity(control.context().ecs, control.context().id);
@@ -120,49 +84,6 @@ void Walking::react(const Arrived_Event&, FullControl& control){
     std::cout << e.name() << "(" << e.id() << ")" << " Arrived" << std::endl;
     control.changeTo<Walking>();
     
-}
-
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-void Combat::enter(Control& control) {
-    flecs::entity e = flecs::entity(control.context().ecs, control.context().id);
-    e.add<Combat>();
-}
-void Combat::exit(Control& control) {
-    flecs::entity e = flecs::entity(control.context().ecs, control.context().id);
-    e.remove<Combat>();
-}
-
-void Combat::update(FullControl& control) {
-    control.changeTo<Idle>();
-}
-
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-void Fleeing::enter(Control& control) {
-    flecs::entity e = flecs::entity(control.context().ecs, control.context().id);
-    e.add<Fleeing>();
-}
-void Fleeing::exit(Control& control) {
-    flecs::entity e = flecs::entity(control.context().ecs, control.context().id);
-    e.remove<Fleeing>();
-}
-
-void Fleeing::update(FullControl& control) {
-    control.changeTo<Idle>();
-}
-
-//------------------------------------------------------------------------------
-
-// another top-level state
-
-void Dead::enter(Control& control) {
-    flecs::entity e = flecs::entity(control.context().ecs, control.context().id);
-    e.add<Dead>();
-}
-void Dead::exit(Control& control) {
-    flecs::entity e = flecs::entity(control.context().ecs, control.context().id);
-    e.remove<Dead>();
 }
 
 
