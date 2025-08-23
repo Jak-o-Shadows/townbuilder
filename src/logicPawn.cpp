@@ -5,6 +5,8 @@
 #include "gridMap.hpp"
 #include "componentsPawn.hpp"
 #include "ticks.hpp"
+#include "coordinates.hpp"
+
 
 
 namespace LogicPawn {
@@ -40,6 +42,36 @@ module::module(flecs::world& ecs) {
             }
     });
     */
+
+
+    /*
+    ecs.system<Pawn::PawnPathfindingGoal>("Pawn_Walk")
+        //.with<LogicPawn::Walking>()//.or_().with<LogicPawn::PawnWoodcutterStateWalkingTo>().or_().with<LogicPawn::PawnWoodcutterStateReturning>()
+        //.term_at(0).second("$goal")
+        //.term_at(0).in()
+        //.tick_source(Ticks::tick_pawn_behaviour)
+        .each([](flecs::entity e){
+            ZoneScopedN("Pawn_Walk");
+            //flecs::entity dest = e.target_for<Pawn::PawnPathfindingGoal>(flecs::ChildOf);
+            //std::cout << e.path() << " : " << dest.path() << std::endl;
+        });
+    */
+   
+   ecs.system<Coordinates::Grid, Pawn::PawnPathfindingGoal>("Pawn_Walk")
+        .term_at(0).in()
+        .term_at(1).second("$goal")
+        .term_at(1).in()
+        .tick_source(Ticks::tick_pawn_behaviour)
+        .each([](flecs::entity e, const Coordinates::Grid& grid, const Pawn::PawnPathfindingGoal& goal) {
+            ZoneScopedN("Pawn_Walk");
+            flecs::entity dest = e.target_for<Pawn::PawnPathfindingGoal>(flecs::ChildOf);
+            logger->trace("Pawn {} walking to {}", std::string(e.path()), std::string(dest.path()));
+        });
+    
+
+
+
+
     
     ecs.system<StateTiming>("Increment_StateTiming")
         .term_at(0).second("$state")
@@ -81,28 +113,28 @@ void Idle::update(FullControl& control) {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+void Walking::react(const Destination_Event& dest, FullControl& control) {
+    flecs::entity e = flecs::entity(control.context().ecs, control.context().id);
+    flecs::world& ecs = control.context().ecs;
+
+    //  Each cell of the map is an entity
+    // Stored in a vector for each access
+    const Map::Grid* map = ecs.get<Map::Grid>();
+   
+    flecs::id_t id2 = map->get(dest.x, dest.y);
+    flecs::entity e2 = flecs::entity(ecs, id2);
+    e.add<Pawn::PawnPathfindingGoal>(e2);
+    logger->trace("Walking::react(Destination_Event) called for entity {} with destination ({}, {}): {}", std::string(e.path()), dest.x, dest.y, std::string(e2.path()));
+}
+
 void Walking::react(const Arrived_Event&, FullControl& control){
     flecs::entity e = flecs::entity(control.context().ecs, control.context().id);
     flecs::world& ecs = control.context().ecs;
-    // Randomly generate a new place
-    int targetX = 5;
-    int targetY = 5;
 
-    //  Each cell of the map is an entity
+    // We arrived -> remove the destination
+    e.remove<Pawn::PawnPathfindingGoal>();
 
-    // Stored in a vector for each access
-    const Map::Grid* map = Map::mapEntity.get<Map::Grid>();
-    int map_width = map->m_width;
-    int map_height = map->m_height;
-
-    
-    flecs::id_t id2 = map->get(targetX, targetY);
-    flecs::entity e2 = flecs::entity(ecs, id2);
-    //e.add<Pawn::PawnPathfindingGoal>(flecs::entity(ecs, map->get(targetX, targetY)));
-    e.add<Pawn::PawnPathfindingGoal>(e2);
-    std::cout << e.name() << "(" << e.id() << ")" << " Arrived" << std::endl;
-    control.changeTo<Walking>();
-    
+    control.changeTo<Idle>();
 }
 
 

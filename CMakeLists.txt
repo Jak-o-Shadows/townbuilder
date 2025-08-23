@@ -45,7 +45,7 @@ target_link_libraries(${PROJECT_NAME} hfsm2::hfsm2)
 
 # Flecs
 set(FLECS_DIR build)
-find_package(flecs REQUIRED CONFIG)
+find_package(flecs REQUIRED)
 target_link_libraries(${PROJECT_NAME} flecs::flecs_static)
 
 
@@ -60,6 +60,10 @@ target_link_libraries(${PROJECT_NAME} spdlog::spdlog)
 # Eigen
 find_package(Eigen3 REQUIRED CONFIG)
 target_link_libraries(${PROJECT_NAME} Eigen3::Eigen)
+
+# RapidCSV
+find_package(rapidcsv REQUIRED CONFIG)
+target_link_libraries(${PROJECT_NAME} rapidcsv::rapidcsv)
 
 
 #RecastNavigation

@@ -46,11 +46,12 @@ module::module(flecs::world& ecs) {
     logger->trace("Components Registered");
     
     // Need to give the entities a parent so they show nicer in the flecs explorer
-    
     pawnsParent = ecs.entity("pawns");
 
-    const Map::Grid* map = Map::mapEntity.get<Map::Grid>();
+
     
+    const Map::Grid* map = ecs.get<Map::Grid>();
+
    
     // Put systems in
     auto move_sys = ecs.system<Coordinates::Cell, Coordinates::CellVelocity>("System_IntraCellMovement")
@@ -63,7 +64,7 @@ module::module(flecs::world& ecs) {
             for (auto i: it){
                 p[i].x += v[i].x * it.delta_system_time();
                 p[i].y += v[i].y * it.delta_system_time();
-                //std::cout << p[i].x << ", " << p[i].y << " @ " << v[i].x << ", " << v[i].y << std::endl;
+                logger->trace("Position: {}, {} @ Velocity: {}, {}", p[i].x, p[i].y, v[i].x, v[i].y);
             }
         }
     });
@@ -80,61 +81,7 @@ module::module(flecs::world& ecs) {
 
 
 
-    // Generate pawns
-    //  Randomly distribute starting & target positions
-    std::mt19937 rng;
-    rng.seed(20231104);
-    std::uniform_int_distribution<int> xDist(0, map->m_width-1);
-    std::uniform_int_distribution<int> yDist(0, map->m_height-1);
-    std::uniform_real_distribution<float> speedDist(0.7, 0.9);
 
-    constexpr int numPawns = 1;
-    for (int pawnNumber=0; pawnNumber < numPawns; pawnNumber++){
-        int targetX = xDist(rng);
-        int targetY = yDist(rng);
-        int myX = xDist(rng);
-        int myY = yDist(rng);
-        float speed = (float) speedDist(rng);
-        char pawnName[200];
-        sprintf(pawnName, "Pawn%d", pawnNumber);  // TODO: Replace with std::format
-        auto pawn = ecs.entity(pawnName)
-            .child_of(pawnsParent)
-            .is_a<Pawn_Prefab>()
-            .set<Coordinates::Grid>({myX, myY})
-            .set<Coordinates::Cell>({0, 0})
-            .set<Coordinates::CellVelocity>({0, 0})
-            .add<Coordinates::GridBase>()
-            .set<PawnAbilityTraits>({0, speed});
-        
-
-        // For each possible State, put the timing info in. Note that this must be
-        // done before the FSM is created, otherwise it will not be able to access
-        // the timing info.
-        pawn.set<LogicPawn::StateTiming, LogicPawn::Alive>({0, 0});
-        pawn.set<LogicPawn::StateTiming, LogicPawn::Idle>({0, 0});
-        pawn.set<LogicPawn::StateTiming, LogicPawn::Walking>({0, 0});
-        pawn.set<LogicPawn::StateTiming, LogicPawn::Working>({0, 0});
-        pawn.set<LogicPawn::StateTiming, LogicPawn::Fleeing>({0, 0});
-        pawn.set<LogicPawn::StateTiming, LogicPawn::Combat>({0, 0});
-        pawn.set<LogicPawn::StateTiming, LogicPawn::Dead>({0, 0});
-        pawn.set<LogicPawn::StateTiming, LogicPawn::PawnOccupationUnemployed>({0, 0});
-        pawn.set<LogicPawn::StateTiming, LogicPawn::PawnOccupationWoodcutter>({0, 0});
-        pawn.set<LogicPawn::StateTiming, LogicPawn::PawnWoodcutterStateWalkingTo>({0, 0});
-        pawn.set<LogicPawn::StateTiming, LogicPawn::PawnWoodcutterStateReturning>({0, 0});
-        pawn.set<LogicPawn::StateTiming, LogicPawn::PawnWoodcutterStateChopping>({0, 0});
-
-
-        LogicPawn::Context blah{pawn.id(), ecs};  // No idea why this has to be a separate variable, but it does, so bugger it
-        pawn.set<PawnFSMContainer>({std::shared_ptr<LogicPawn::PawnFSM::Instance>(new LogicPawn::PawnFSM::Instance(blah))});
-
-
-
-
-
-
-    }
-
-    logger->trace("Created pawns");
 
 
 

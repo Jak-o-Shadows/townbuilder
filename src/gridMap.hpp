@@ -15,7 +15,6 @@ struct module {
     module(flecs::world& ecs);
 };
 
-extern flecs::entity mapEntity;
 extern flecs::entity resourcesParent;
 
 struct GridCell_Prefab {};

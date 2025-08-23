@@ -20,6 +20,8 @@
 namespace LogicPawn {
 
 extern std::shared_ptr<spdlog::logger> logger;  // Declaration for use in base class and elsewhere, as opposed to the normal way
+
+// From https://stackoverflow.com/questions/1055452/c-get-name-of-type-in-template
 namespace loggingImpl
 {
     template <typename T>
@@ -85,6 +87,10 @@ struct StateTiming{
 
 
 	// Events
+	struct Destination_Event{
+		int x;
+		int y;
+	};
 	struct Arrived_Event {};  // When you arrive at a location or cell
 	struct SecondaryEvent { int payload; };
 	struct Attacked {};
@@ -142,6 +148,7 @@ struct StateTiming{
 	template <typename TemplateState>
 	struct BasePawnState : PawnFSM::State {
 		// BasePawnState is a base class for all Pawn states, providing default reactions
+		void react(const Destination_Event&, FullControl& control) {};
 		void react(const Arrived_Event&, FullControl& control) {};
 		void react(const SecondaryEvent&, FullControl& control) {};
 		void react(const Attacked&, FullControl& control) {};
@@ -167,12 +174,14 @@ struct StateTiming{
 	};
 
 	struct Idle : BasePawnState<Idle> {
+		void react(const Destination_Event& event, FullControl& control);
 	};
 
 	struct Working : BasePawnState<Working> {
 	};
 
 	struct Walking : BasePawnState<Walking> {
+		void react(const Destination_Event& event, FullControl& control);
 		void react(const Arrived_Event&, FullControl& control);
 	};
 

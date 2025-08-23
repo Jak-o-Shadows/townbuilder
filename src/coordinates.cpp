@@ -30,6 +30,7 @@ module::module(flecs::world& ecs) {
     ecs.component<Grid>("Grid")
         .member<int>("x")
         .member<int>("y");
+    
     ecs.component<Cell>("Cell")
         .member<int>("x")
         .member<int>("y")
@@ -98,11 +99,11 @@ module::module(flecs::world& ecs) {
         .member<bool>("hasVel_")
         .member<bool>("hasOri_")
         .member<bool>("hasAcc_");
-
+    
     logger->trace("Components Registered");
 
 
-
+    
     ecs.system<NED,
               const Grid,
               const Cell,
@@ -262,6 +263,7 @@ module::module(flecs::world& ecs) {
             logger->debug(msg);
         });
 
+    
 
 }
 

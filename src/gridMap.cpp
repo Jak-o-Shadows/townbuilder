@@ -13,13 +13,12 @@
 namespace Map{
 
 // Handle extern entities
-flecs::entity mapEntity;
 flecs::entity resourcesParent;
-
+std::shared_ptr<spdlog::logger> logger;
 
 
 void setCellRelationship(flecs::world& ecs, const Grid* map, int x, int y, int second_x, int second_y, float weight, bool reversible) {
-    //std::cout << "Setting (" << x << ", " << y << ") --> ()" << second_x << ", " << second_y << ") to " << weight << std::endl;
+    logger->trace("Setting ({}, {}) --> ({}, {}) to {}", x, y, second_x, second_y, weight);
     flecs::entity thisCell = flecs::entity(ecs, map->get(x,y));
     flecs::entity secondCell = flecs::entity(ecs, map->get(second_x, second_y));
     thisCell.set<GridConnected>(secondCell.id(), {weight});
@@ -58,8 +57,12 @@ void setCellConnectivity(flecs::world& ecs, const Grid* map, int x, int y, float
 module::module(flecs::world& ecs) {
     // Register module with world. The module entity will be created with the
     // same hierarchy as the C++ namespaces (e.g. simple::module)
-    ecs.module<module>();
-
+    flecs::entity m = ecs.module<module>();
+    logger = Logging::init_module_logger(m, ecs.get<Logging::LoggerSink>()->sink);
+    // Before using logger, must set the level so the observer can handle it
+    m.set<Logging::LoggerControls>({spdlog::level::warn});
+    logger->trace("Module Created");
+    
     //ecs.import<Building::module>();
 
     ecs.prefab<GridCell_Prefab>();
@@ -76,6 +79,7 @@ module::module(flecs::world& ecs) {
     //  This is defined early because it isn't properly in the ECS, so initialisation order matters mroe
     // Have a base entity - lets the map class be accssible from the ECS, and is a parent,
     //   making it show nicer in the explorer
+    /*
     mapEntity = ecs.entity("map");
     //  Each cell of the map is an entity
     const int map_width = 50;
@@ -116,7 +120,7 @@ module::module(flecs::world& ecs) {
             }
         }
     }
-
+    */
 
     // Update the map by making the cells unaccessible
     //  TODO: This should be an observer on the children 
@@ -150,7 +154,7 @@ Grid::Grid(int width, int height, flecs::world *ecs, flecs::entity &parent)
                 // TODO: Name them better
                 char name[100];
                 snprintf(name, 100, "%d_%d", x, y);
-                //std::cout << x << ", " << y << " name is " << name << std::endl;
+                logger->trace("{} , {} name is {}", x, y, name);
                 auto cell = ecs->entity(name)
                     .is_a<GridCell_Prefab>()
                     // The set operation finds or creates a component, and sets it.
@@ -187,7 +191,7 @@ public:
     { }
 
     void set(int32_t x, int32_t y, T value) {
-        //std::cout << "\t\t\tSetting " << x << ", " << y << " from " << y * m_width + x << " to " << value << std::endl;
+        logger->trace("\t\t\tSetting {}, {} from {} to {}", x, y, y * m_width + x, value);
         m_values[y * m_width + x] = value;
     }
 
@@ -196,7 +200,7 @@ public:
     }
 
     T get(int32_t x, int32_t y) {  // TODO: just use an operator as above
-        //std::cout << "\t\t\tGetting " << x << ", " << y << " from " << y * m_width + x << std::endl;
+        logger->trace("\t\t\tGetting {}, {} from {}", x, y, y * m_width + x);
         return m_values[y * m_width + x];
     }
 
@@ -222,7 +226,6 @@ flecs::id_t pathfind(flecs::world &ecs, const Grid* map, int currentX, int curre
     int maxIter = map_width * map_height -1;
 
 
-    //std::cout << "Path-Finding Testing" << std::endl;
     // Define variables
     templateGrid<bool> visitedGrid = templateGrid<bool>(map_width, map_height);
     templateGrid<float> costGrid = templateGrid<float>(map_width, map_height);
@@ -241,15 +244,15 @@ flecs::id_t pathfind(flecs::world &ecs, const Grid* map, int currentX, int curre
     auto thisCell = flecs::entity(ecs, map->get(x,y));
     costGrid.set(x, y, 0);  // First cell has zero cost
     for (int i=0; i<maxIter; i++){
-        //std::cout << thisCell.name() << " (" << x << ", " << y << ")" << std::endl;
+        logger->trace("{} ({}, {})", std::string(thisCell.path()), x, y);
         // Mark the current grid as visisted
         visitedGrid.set(x, y, true);
-        //std::cout << "\tVisited self? " << visitedGrid.get(x, y) << std::endl;
-        //std::cout << "\tVisited 8, 7? " << visitedGrid.get(8, 7) << std::endl;
+        logger->trace("\tVisited self? {}", visitedGrid.get(x, y));
+        logger->trace("\tVisited 8, 7? {}", visitedGrid.get(8, 7));
 
         // Get the the links from the current cell. Use a filter because it doesn't need to last
         // TODO: Fix this
-        std::cout << "FIX BROKEN FLECS 4.0 Upgrade" << std::endl;
+        logger->trace("FIX BROKEN FLECS 4.0 Upgrade");
         
        auto queryTest = ecs.query_builder<GridConnected, GridCellStatic>("Getting next cell query")
             .term_at(0).second(flecs::Wildcard)
@@ -261,20 +264,20 @@ flecs::id_t pathfind(flecs::world &ecs, const Grid* map, int currentX, int curre
             auto e = it.entity(index);
             auto thisCell = it.pair(0).second();
 
-            //std::cout << "\t" << nextCellStatic.x << ", " << nextCellStatic.y << std::endl;
-            //std::cout << "\t" << conn.weight << std::endl;
+            logger->trace("\t{}, {}", nextCellStatic.x, nextCellStatic.y);
+            logger->trace("\tWeight: {}", conn.weight);
 
             auto nextX = nextCellStatic.x;
             auto nextY = nextCellStatic.y;
             if (!visitedGrid.get(nextX, nextY)) {
                 // IF the neighbouring cell hasn't already been visited,
                 //  check if it's cost an be lowered
-                //std::cout << "\t\tUnvisisted" << std::endl;
+                logger->trace("\t\tUnvisited");
                 auto potentialCost = conn.weight + costGrid.get(x, y);
                 if (potentialCost < costGrid.get(nextX, nextY)) {
                     // If the cost can be lowered, lower it, and set it's previous cell
                     //  to the current cell
-                    //std::cout << "\t\t" << "Updating cost to " << potentialCost << std::endl;
+                    logger->trace("\t\tUpdating cost to {}", potentialCost);
                     costGrid.set(nextX, nextY, potentialCost);
                     prevGrid.set(nextX, nextY, thisCell);
                 }

@@ -47,7 +47,10 @@ struct PtTest {
 };
 
 
-
+    struct MyGrid{
+        int x;
+        int y;
+    };
 
 
 
@@ -69,6 +72,9 @@ int main(int, char *[]) {
                 *data = value; // Assign new value to std::string
             });
 
+    ecs.component<MyGrid>("MyGrid")
+        .member<int>("x")
+        .member<int>("y");
 
     
     // Logger imported first as the other modules use it on their import
@@ -79,12 +85,13 @@ int main(int, char *[]) {
     ecs.import<Render::module>();  // Must be before building & other modules for observers to work
 
     ecs.import<Coordinates::module>();
-    ecs.import<Map::module>();
-    ecs.import<LogicPawn::module>();  // Must be before Pawn::module for the logging
-    ecs.import<Pawn::module>();
     ecs.import<Building::module>();
-    ecs.import<fdis::module>();
-    ecs.import<Pathfinding::module>();
+
+    //ecs.import<Map::module>();
+    //ecs.import<Pawn::module>();
+    //ecs.import<LogicPawn::module>();
+    //ecs.import<fdis::module>();
+    //ecs.import<Pathfinding::module>();
 
     // TODO: Determine if this is required to be done after the loggers created
     spdlog::flush_on(spdlog::level::trace);
@@ -92,7 +99,7 @@ int main(int, char *[]) {
 
 
     // Export positions to DIS - this is how playback/recording will work.
-    ecs.add<Coordinates::Converter>();
+    //ecs.add<Coordinates::Converter>();
     // TODO: Something to do with the DisConnection isn't working
     //fdis::DisConnection con("localhost", 3500, 1);
     //ecs.set<fdis::DisConnection>({"localhost", 3500, 1, nullptr});
@@ -100,15 +107,120 @@ int main(int, char *[]) {
 
     
     // Register UI components so I can see them in the flecs explorer
+    /*
     ecs.component<UiPawnJobs>()
         .member<int>("unemployed")
         .member<int>("woodcutter");
-
+    */
 
     // Global
+    /*
     auto ui = ecs.entity("UI Things")
         .add<Building::Resources>()
         .add<UiPawnJobs>();
+    */
+
+    // Generate pawns
+    //  Randomly distribute starting & target positions
+    /*
+    std::mt19937 rng;
+    rng.seed(20231104);
+    flecs::entity mapEntity;
+    const Map::Grid* map = Map::mapEntity.get<Map::Grid>();
+    std::cout << "Map size: " << map->m_width << "x" << map->m_height << std::endl;
+    std::cout << "Map:" << map << std::endl;
+    std::uniform_int_distribution<int> xDist(0, map->m_width-1);
+    std::uniform_int_distribution<int> yDist(0, map->m_height-1);
+    std::uniform_real_distribution<float> speedDist(0.7, 0.9);
+    std::cout << "Random distributions created" << std::endl;
+    */
+
+    /*
+    constexpr int numPawns = 1;
+    for (int pawnNumber=0; pawnNumber < numPawns; pawnNumber++){
+        int targetX = xDist(rng);
+        int targetY = yDist(rng);
+        int myX = xDist(rng);
+        int myY = yDist(rng);
+        float speed = (float) speedDist(rng);
+        char pawnName[200];
+        sprintf(pawnName, "Pawn%d", pawnNumber);  // TODO: Replace with std::format
+        flecs::entity pawn = ecs.entity(pawnName)
+            .child_of(Pawn::pawnsParent)
+            .is_a<Pawn::Pawn_Prefab>();
+        std::cout << myX << ", " << myY << " -> " << targetX << ", " << targetY << std::endl;
+        //pawn.set<Coordinates::Grid>({myX, myY});
+        pawn.set<Coordinates::Grid>({3, 3});
+        std::cout << "Pawn Grid set: " << pawn.path() << std::endl;
+        pawn.set<Coordinates::Cell>({0, 0});
+        std::cout << "Pawn Coordinates set: " << pawn.path() << std::endl;
+        pawn.set<Coordinates::CellVelocity>({0, 0});
+        pawn.add<Coordinates::GridBase>();
+        pawn.set<Pawn::PawnAbilityTraits>({0, speed});
+        std::cout << "First part of pawn created: " << pawn.path() << std::endl;
+
+        // For each possible State, put the timing info in. Note that this must be
+        // done before the FSM is created, otherwise it will not be able to access
+        // the timing info.
+        pawn.set<LogicPawn::StateTiming, LogicPawn::Alive>({0, 0});
+        pawn.set<LogicPawn::StateTiming, LogicPawn::Idle>({0, 0});
+        pawn.set<LogicPawn::StateTiming, LogicPawn::Walking>({0, 0});
+        pawn.set<LogicPawn::StateTiming, LogicPawn::Working>({0, 0});
+        pawn.set<LogicPawn::StateTiming, LogicPawn::Fleeing>({0, 0});
+        pawn.set<LogicPawn::StateTiming, LogicPawn::Combat>({0, 0});
+        pawn.set<LogicPawn::StateTiming, LogicPawn::Dead>({0, 0});
+        pawn.set<LogicPawn::StateTiming, LogicPawn::PawnOccupationUnemployed>({0, 0});
+        pawn.set<LogicPawn::StateTiming, LogicPawn::PawnOccupationWoodcutter>({0, 0});
+        pawn.set<LogicPawn::StateTiming, LogicPawn::PawnWoodcutterStateWalkingTo>({0, 0});
+        pawn.set<LogicPawn::StateTiming, LogicPawn::PawnWoodcutterStateReturning>({0, 0});
+        pawn.set<LogicPawn::StateTiming, LogicPawn::PawnWoodcutterStateChopping>({0, 0});
+
+
+        LogicPawn::Context blah{pawn.id(), ecs};  // No idea why this has to be a separate variable, but it does, so bugger it
+        pawn.set<Pawn::PawnFSMContainer>({std::shared_ptr<LogicPawn::PawnFSM::Instance>(new LogicPawn::PawnFSM::Instance(blah))});
+
+
+
+
+        // Set a destination
+        //  This is just for test purposes
+        pawn.add<Pawn::PawnPathfindingGoal>(flecs::entity(ecs, map->get(0, 0)));
+
+
+    }
+    */
+
+    //logger->trace("Created pawns");
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -155,7 +267,7 @@ int main(int, char *[]) {
     */
     
 
-    
+    /*
     ecs.system("SaveWorld")
         .interval(10)
         .run([&ecs](flecs::iter& it){
@@ -171,7 +283,7 @@ int main(int, char *[]) {
                 outfile.close();
             }
         });
-    
+    */
 
     std::cout << "Systems in main.cpp defined" << std::endl;
 
@@ -198,6 +310,13 @@ int main(int, char *[]) {
 
     ecs_script_run_file(ecs, "../../src/config.flecs");
     std::cout << "Flecs script loaded" << std::endl;
+
+
+    flecs::entity e = ecs.entity("test")
+        .set<MyGrid>({33, 2});
+    std::cout << "Test Entity Created: " << e.path() << std::endl;
+    e.set<Coordinates::Grid>({32, 3});
+
 
 
     std::cout << "Just before run" << std::endl;

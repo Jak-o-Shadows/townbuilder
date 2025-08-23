@@ -14,12 +14,16 @@ class FlecsOrbitSimConan(ConanFile):
     settings = "os", "compiler", "build_type", "arch"
     generators = "CMakeToolchain", "CMakeDeps"
 
+    def build_requirements(self):
+        self.build_requires("cmake/3.27.6")
+
     def requirements(self):
         self.requires("flecs/4.0.4")
         self.requires("tracy/0.9.1")
-        self.requires("spdlog/1.15.0")
+        self.requires("spdlog/1.15.0", options={"use_std_fmt": True})
         self.requires("eigen/3.4.0")
         self.requires("hfsm2/2.5.2")
+        self.requires("rapidcsv/8.84")
 
         # Game Things
         self.requires("recastnavigation/1.6.0")
@@ -37,7 +41,7 @@ class FlecsOrbitSimConan(ConanFile):
              "res", "bindings"), os.path.join(self.source_folder, "bindings"))
         copy(self, "*opengl3*", os.path.join(self.dependencies["imgui"].package_folder,
              "res", "bindings"), os.path.join(self.source_folder, "bindings"))
-
+        
     def layout(self):
         cmake_layout(self)
 
