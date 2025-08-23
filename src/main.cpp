@@ -88,10 +88,10 @@ int main(int, char *[]) {
     ecs.import<Building::module>();
 
     ecs.import<Map::module>();
-    //ecs.import<Pawn::module>();
-    //ecs.import<LogicPawn::module>();
+    ecs.import<Pawn::module>();
+    ecs.import<LogicPawn::module>();
     //ecs.import<fdis::module>();
-    //ecs.import<Pathfinding::module>();
+    ecs.import<Pathfinding::module>();
 
     // TODO: Determine if this is required to be done after the loggers created
     spdlog::flush_on(spdlog::level::trace);
@@ -212,7 +212,7 @@ int main(int, char *[]) {
         char pawnName[200];
         sprintf(pawnName, "Pawn%d", pawnNumber);  // TODO: Replace with std::format
         flecs::entity pawn = ecs.entity(pawnName)
-            .child_of(Pawn::pawnsParent)
+            .child_of(Pawn::pawnsParent)  // TODO: Put the IsAPawn into the prefab
             .is_a<Pawn::Pawn_Prefab>();
         std::cout << myX << ", " << myY << " -> " << targetX << ", " << targetY << std::endl;
         //pawn.set<Coordinates::Grid>({myX, myY});

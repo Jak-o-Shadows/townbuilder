@@ -49,8 +49,6 @@ module::module(flecs::world& ecs) {
     pawnsParent = ecs.entity("pawns");
 
 
-    
-    const Map::Grid* map = ecs.get<Map::Grid>();
 
    
     // Put systems in
@@ -70,10 +68,16 @@ module::module(flecs::world& ecs) {
     });
     
     ecs.observer<const Coordinates::Grid>("Observer_PawnOccupying")
+        .with<IsAPawn>()
         .term_at(0).in()
         .event(flecs::OnSet)
-        .each([&map](flecs::entity pawn, const Coordinates::Grid& grid){
+        .each([&ecs](flecs::entity pawn, const Coordinates::Grid& grid){
             ZoneScopedN("Observer_PawnOccupying");
+            const Map::Grid* map = ecs.get<Map::Grid>();
+            if (!map) {
+                logger->error("Map not found when setting PawnOccupying");
+                return;
+            }
             pawn.add<PawnOccupying>(flecs::entity(pawn.world(), map->get(grid.x, grid.y)));
         });
 

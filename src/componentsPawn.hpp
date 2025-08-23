@@ -18,6 +18,7 @@ struct module {
 extern flecs::entity pawnsParent;
 
 struct Pawn_Prefab {};
+struct IsAPawn {};
 
 struct PawnLifeTraits {
     float hunger;
