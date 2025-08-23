@@ -73,70 +73,11 @@ module::module(flecs::world& ecs) {
         .member<int>("y")
         .member<int>("height");
 
-
-
-    // Define the map
-    //  This is defined early because it isn't properly in the ECS, so initialisation order matters mroe
-    // Have a base entity - lets the map class be accssible from the ECS, and is a parent,
-    //   making it show nicer in the explorer
-    /*
-    mapEntity = ecs.entity("map");
-    //  Each cell of the map is an entity
-    const int map_width = 50;
-    const int map_height = 25;
-    // Stored in a vector for each access
-    mapEntity.emplace<Grid>(map_width, map_height, &ecs, mapEntity);
-    const Grid* map = mapEntity.get<Grid>();
-    //  Initially, fully connected
-    for (int x = 0; x<map_width; x++){
-        for (int y = 0; y<map_height; y++){
-            setCellConnectivity(ecs, map, x, y, 1, 2, 6, 3, false);
-        }
-    }
-
-
-    // Need to give the entities a parent so they show nicer in the flecs explorer
-    resourcesParent = ecs.entity("resources");
-
-
-    // Map random-generation is VERY VERY primitive right now
-    std::mt19937 rngMap;
-    rngMap.seed(11223344);
-    std::bernoulli_distribution treeDist(0.2);
-
-    // Define trees
-    for (int x = 0; x<map_width; x++){
-        for (int y = 0; y<map_height; y++){
-            // Rectangular grid is simply connected if no trees
-                // TODO: This currently lets you go onto tree-cells, but not out. Is that smart?
-            //flecs::entity thisCell = flecs::entity(ecs, map.get(x,y));
-            if (treeDist(rngMap)){
-                auto tree = ecs.entity()
-                    .child_of(resourcesParent)
-                    .is_a<Tree_Prefab>()
-                    .set<Building::Location>({x, y})
-                    .set<Building::Resources>({0, 100, 0})
-                    .add<Building::NatureType>();
-            }
-        }
-    }
-    */
-
-    // Update the map by making the cells unaccessible
-    //  TODO: This should be an observer on the children 
-    //  TODO: Not really marking as inaccessible because the pathfinding currently will break
-    /*resourcesParent.children([&ecs, map](flecs::entity resource){
-        // Get location
-        const Building::Location* loc = resource.get<Building::Location>();
-        float weight = 9999999999;
-        setCellConnectivity(ecs, map, loc->x, loc->y, weight, weight, weight, weight, true);
-    });*/
-    
-
-
-
+    logger->trace("Components Registered");
 
 }
+
+
 // Have a normal vector of the the cells of the grid.
 //  This makes it easier than having them all as entities, as otherwise
 //  would need to query all the time just to get a cell reference

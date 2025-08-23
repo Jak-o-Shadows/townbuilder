@@ -87,7 +87,7 @@ int main(int, char *[]) {
     ecs.import<Coordinates::module>();
     ecs.import<Building::module>();
 
-    //ecs.import<Map::module>();
+    ecs.import<Map::module>();
     //ecs.import<Pawn::module>();
     //ecs.import<LogicPawn::module>();
     //ecs.import<fdis::module>();
@@ -107,33 +107,99 @@ int main(int, char *[]) {
 
     
     // Register UI components so I can see them in the flecs explorer
-    /*
+    
     ecs.component<UiPawnJobs>()
         .member<int>("unemployed")
         .member<int>("woodcutter");
-    */
+    
 
     // Global
-    /*
+    
     auto ui = ecs.entity("UI Things")
         .add<Building::Resources>()
         .add<UiPawnJobs>();
-    */
+    
 
     // Generate pawns
     //  Randomly distribute starting & target positions
-    /*
+    
     std::mt19937 rng;
     rng.seed(20231104);
-    flecs::entity mapEntity;
-    const Map::Grid* map = Map::mapEntity.get<Map::Grid>();
+
+
+    // Define the map
+    //  This is defined early because it isn't properly in the ECS, so initialisation order matters mroe
+    // Have a base entity - lets the map class be accssible from the ECS, and is a parent,
+    //   making it show nicer in the explorer
+    
+    flecs::entity mapEntity = ecs.entity("map");
+    //  Each cell of the map is an entity
+    const int map_width = 50;
+    const int map_height = 25;
+    // Stored in a vector for each access
+    mapEntity.emplace<Map::Grid>(map_width, map_height, &ecs, mapEntity);
+    const Map::Grid* map = mapEntity.get<Map::Grid>();
+    //  Initially, fully connected
+    for (int x = 0; x<map_width; x++){
+        for (int y = 0; y<map_height; y++){
+            Map::setCellConnectivity(ecs, map, x, y, 1, 2, 6, 3, false);
+        }
+    }
+
+
+    // Need to give the entities a parent so they show nicer in the flecs explorer
+    Map::resourcesParent = ecs.entity("resources");
+
+
+    // Map random-generation is VERY VERY primitive right now
+    std::mt19937 rngMap;
+    rngMap.seed(11223344);
+    std::bernoulli_distribution treeDist(0.2);
+
+    // Define trees
+    for (int x = 0; x<map_width; x++){
+        for (int y = 0; y<map_height; y++){
+            // Rectangular grid is simply connected if no trees
+                // TODO: This currently lets you go onto tree-cells, but not out. Is that smart?
+            //flecs::entity thisCell = flecs::entity(ecs, map.get(x,y));
+            if (treeDist(rngMap)){
+                auto tree = ecs.entity()
+                    .child_of(Map::resourcesParent)
+                    .is_a<Map::Tree_Prefab>()
+                    .set<Building::Location>({x, y})
+                    .set<Building::Resources>({0, 100, 0})
+                    .add<Building::NatureType>();
+            }
+        }
+    }
+    
+
+    // Update the map by making the cells unaccessible
+    //  TODO: This should be an observer on the children 
+    //  TODO: Not really marking as inaccessible because the pathfinding currently will break
+    /*resourcesParent.children([&ecs, map](flecs::entity resource){
+        // Get location
+        const Building::Location* loc = resource.get<Building::Location>();
+        float weight = 9999999999;
+        setCellConnectivity(ecs, map, loc->x, loc->y, weight, weight, weight, weight, true);
+    });*/
+
+
+
+
+
+
+
+
+
+
     std::cout << "Map size: " << map->m_width << "x" << map->m_height << std::endl;
     std::cout << "Map:" << map << std::endl;
     std::uniform_int_distribution<int> xDist(0, map->m_width-1);
     std::uniform_int_distribution<int> yDist(0, map->m_height-1);
     std::uniform_real_distribution<float> speedDist(0.7, 0.9);
     std::cout << "Random distributions created" << std::endl;
-    */
+    
 
     /*
     constexpr int numPawns = 1;
