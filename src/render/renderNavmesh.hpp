@@ -23,7 +23,7 @@
 #include <recastnavigation/Recast.h>
 #include <imgui.h>
 
-#include "pathfinding.hpp"
+#include "pathfinding/module.hpp"
 
 
 namespace Render {

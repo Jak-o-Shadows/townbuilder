@@ -1,4 +1,4 @@
-#include "msgLogging.hpp"
+#include "msgLogging/module.hpp"
 
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/basic_file_sink.h>

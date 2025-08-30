@@ -2,9 +2,6 @@
 
 #include <flecs.h>
 
-#include "msgLogging.hpp"
-
-
 namespace Building{
 
 struct module {

@@ -1,13 +1,13 @@
 #include <tracy/Tracy.hpp>
 
-#include "pathfinding.hpp"
-#include "msgLogging.hpp"
+#include "pathfinding/module.hpp"
+#include "msgLogging/module.hpp"
 
 #include <recastnavigation/Recast.h>
 
 #include <iostream>
 
-#include "gridMap.hpp"
+#include "map/module2.hpp"
 
 
 namespace Pathfinding{

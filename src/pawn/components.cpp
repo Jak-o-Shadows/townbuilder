@@ -1,6 +1,6 @@
-#include "componentsPawn.hpp"
-#include "ticks.hpp"
-#include "coordinates.hpp"
+#include "pawn/module.hpp"
+#include "ticks/module.hpp"
+#include "coordinates/module.hpp"
 
 #include <random>
 

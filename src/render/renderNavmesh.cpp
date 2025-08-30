@@ -15,10 +15,10 @@
 //    misrepresented as being the original software.
 // 3. This notice may not be removed or altered from any source distribution.
 //
-#include "renderNavmesh.hpp"
+#include "render/renderNavmesh.hpp"
 
 #include <math.h>
-#include "renderBasics.hpp"
+#include "render/renderBasic.hpp"
 #include <recastnavigation/Recast.h>
 
 #include <iostream>
