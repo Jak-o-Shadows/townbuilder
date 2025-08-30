@@ -7,32 +7,27 @@ project(townbuilder LANGUAGES C CXX)
 set(DIR_DEPS ${CMAKE_CURRENT_LIST_DIR}/deps)
 add_executable(${PROJECT_NAME} src/main.cpp)
 message("deps " ${DIR_DEPS})
-target_sources(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/gridMap.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/logicPawn.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/componentsPawn.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/ticks.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/render.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/renderBasics.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/renderNavmesh.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/componentsBuilding.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/msgLogging.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/coordinates.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/dis.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/pathfinding.cpp
+target_sources(${PROJECT_NAME} PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/buildings/components.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src//coordinates/components.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/dis/components.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/map/components.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/msgLogging/components.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/pawn/components.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/render/components.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/ticks/components.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/ui/components.cpp
     ${DIR_DEPS}/flecs_components_cglm.c
     ${DIR_DEPS}/flecs_components_geometry.c
     ${DIR_DEPS}/flecs_components_graphics.c
     ${DIR_DEPS}/flecs_components_gui.c
-#    ${DIR_DEPS}/flecs_components_input.c
     ${DIR_DEPS}/flecs_components_physics.c
     ${DIR_DEPS}/flecs_components_transform.c
-#    ${DIR_DEPS}/flecs_systems_physics.c
-#    ${DIR_DEPS}/flecs_systems_transform.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/simdis/Angle.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/simdis/CoordinateConverter.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/simdis/CoordinateSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/simdis/Math.cpp
-)# "$<$<CONFIG:Release>:${CMAKE_CURRENT_SOURCE_DIR}/src/gridMap.cpp>")
+)
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_include_directories(${PROJECT_NAME} PRIVATE ${DIR_DEPS})
 

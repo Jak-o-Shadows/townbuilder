@@ -1,11 +1,11 @@
 
-#include "gridMap.hpp"
+#include "map/module.hpp"
 
 #include "flecs_components_transform.h"
 #include "flecs_components_graphics.h"
 #include "flecs_components_geometry.h"
 
-#include "componentsBuilding.hpp"
+#include "buildings/module.hpp"
 
 #include <random>
 

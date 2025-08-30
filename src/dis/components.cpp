@@ -1,7 +1,7 @@
 #include <tracy/Tracy.hpp>
 
-#include "dis.hpp"
-#include "msgLogging.hpp"
+#include "dis/module.hpp"
+#include "msgLogging/module.hpp"
 
 #include <KDIS/DataTypes/EntityType.hpp>
 #include <KDIS/DataTypes/Enums/EnumEntityInfoInteraction.hpp>

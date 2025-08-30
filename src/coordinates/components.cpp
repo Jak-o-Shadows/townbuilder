@@ -1,9 +1,9 @@
 #include <tracy/Tracy.hpp>
 
-#include "coordinates.hpp"
+#include "coordinates/module.hpp"
 
-#include "msgLogging.hpp"
-#include "componentsPawn.hpp"
+#include "msgLogging/module.hpp"
+#include "pawn/module.hpp"
 
 #include <format>
 #include <iostream>
