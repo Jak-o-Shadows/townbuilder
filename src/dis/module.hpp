@@ -25,9 +25,12 @@ struct DisConnection{
 
 
 
-struct module {
-    module(flecs::world& ecs);
+struct components {
+    components(flecs::world& ecs);
 };
 
+struct systems {
+    systems(flecs::world& ecs);
+};
 
 }

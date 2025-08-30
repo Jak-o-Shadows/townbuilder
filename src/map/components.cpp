@@ -4,8 +4,10 @@
 #include "flecs_components_transform.h"
 #include "flecs_components_graphics.h"
 #include "flecs_components_geometry.h"
+#include <tracy/Tracy.hpp>
 
 #include "buildings/module.hpp"
+#include "msgLogging/module.hpp"
 
 #include <random>
 
@@ -14,6 +16,8 @@ namespace Map{
 
 // Handle extern entities
 flecs::entity resourcesParent;
+
+
 std::shared_ptr<spdlog::logger> logger;
 
 
@@ -54,16 +58,16 @@ void setCellConnectivity(flecs::world& ecs, const Grid* map, int x, int y, float
 
 
 
-module::module(flecs::world& ecs) {
+components::components(flecs::world& ecs) {
     // Register module with world. The module entity will be created with the
     // same hierarchy as the C++ namespaces (e.g. simple::module)
-    flecs::entity m = ecs.module<module>();
+    flecs::entity m = ecs.module<components>();
     logger = Logging::init_module_logger(m, ecs.get<Logging::LoggerSink>()->sink);
     // Before using logger, must set the level so the observer can handle it
     m.set<Logging::LoggerControls>({spdlog::level::warn});
     logger->trace("Module Created");
     
-    //ecs.import<Building::module>();
+    //ecs.import<Buildings::module>();
 
     ecs.prefab<GridCell_Prefab>();
 

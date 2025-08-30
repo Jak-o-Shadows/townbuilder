@@ -110,8 +110,8 @@ void doLog(const rcLogCategory category, const char* msg, const int len) {
 
 
 
-struct module {
-    module(flecs::world& ecs);
+struct components {
+    components(flecs::world& ecs);
 };
 
 

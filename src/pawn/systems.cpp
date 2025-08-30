@@ -1,0 +1,130 @@
+#include "pawn/module.hpp"
+
+#include "msgLogging/module.hpp"
+#include "ticks/module.hpp"
+#include "coordinates/module.hpp"
+#include "map/module.hpp"
+
+namespace Pawn{
+
+std::shared_ptr<spdlog::logger> systemsLogger;
+std::shared_ptr<spdlog::logger> fsmLogger;
+
+systems::systems(flecs::world& ecs){
+    // Register module with world. The module entity will be created with the
+    // same hierarchy as the C++ namespaces (e.g. simple::module)
+    flecs::entity m = ecs.module<systems>();
+    systemsLogger = Logging::init_module_logger(m, ecs.get<Logging::LoggerSink>()->sink);
+    // Before using logger, must set the level so the observer can handle it
+    m.set<Logging::LoggerControls>({spdlog::level::trace});
+    systemsLogger->trace("Module Created");
+
+    // The logger for the FSM is defined differently so header-only can access it.
+    //  TODO: Should I just put this in a different flecs module for consistency?
+    fsmLogger = std::make_shared<spdlog::logger>(std::string(m.path()) + ".fsm", ecs.get<Logging::LoggerSink>()->sink);
+    fsmLogger->set_level(spdlog::level::trace);
+    spdlog::register_logger(fsmLogger);
+
+
+
+
+
+   
+    // Put systems in
+    auto move_sys = ecs.system<Coordinates::Cell, Coordinates::CellVelocity>("System_IntraCellMovement")
+    .tick_source(Ticks::tick_pawn_behaviour)
+    .run([](flecs::iter& it){
+        ZoneScopedN("System_IntraCellMovement");
+        while (it.next()){
+            auto p = it.field<Coordinates::Cell>(0);
+            auto v = it.field<Coordinates::CellVelocity>(1);
+            for (auto i: it){
+                p[i].x += v[i].x * it.delta_system_time();
+                p[i].y += v[i].y * it.delta_system_time();
+                systemsLogger->trace("Position: {}, {} @ Velocity: {}, {}", p[i].x, p[i].y, v[i].x, v[i].y);
+            }
+        }
+    });
+    
+    ecs.observer<const Coordinates::Grid>("Observer_PawnOccupying")
+        .with<IsAPawn>()
+        .term_at(0).in()
+        .event(flecs::OnSet)
+        .each([&ecs](flecs::entity pawn, const Coordinates::Grid& grid){
+            ZoneScopedN("Observer_PawnOccupying");
+            const Map::Grid* map = ecs.get<Map::Grid>();
+            if (!map) {
+                systemsLogger->error("Map not found when setting PawnOccupying");
+                return;
+            }
+            pawn.add<PawnOccupying>(flecs::entity(pawn.world(), map->get(grid.x, grid.y)));
+        });
+
+
+
+
+    // State actions
+    /*
+    auto blah_sys = ecs.system<>("ASDF")
+        .with<PawnWoodcutterState>(ecs.component<PawnWoodcutterStateIdle>())
+        .tick_source(tick_pawn_behaviour)
+        .multi_threaded()
+        .iter([](flecs::iter it){
+            ZoneScopedN("Pawn Woodctuter Idle State Actions");
+            for (int i: it){
+                flecs::entity e = it.entity(i);
+                // If they are idle, get them to find the nearest wood and path-find towards it
+                
+            }
+    });
+    */
+
+
+    /*
+    ecs.system<Pawn::PawnPathfindingGoal>("Pawn_Walk")
+        //.with<LogicPawn::Walking>()//.or_().with<LogicPawn::PawnWoodcutterStateWalkingTo>().or_().with<LogicPawn::PawnWoodcutterStateReturning>()
+        //.term_at(0).second("$goal")
+        //.term_at(0).in()
+        //.tick_source(Ticks::tick_pawn_behaviour)
+        .each([](flecs::entity e){
+            ZoneScopedN("Pawn_Walk");
+            //flecs::entity dest = e.target_for<Pawn::PawnPathfindingGoal>(flecs::ChildOf);
+            //std::cout << e.path() << " : " << dest.path() << std::endl;
+        });
+    */
+   
+   ecs.system<Coordinates::Grid, Pawn::PawnPathfindingGoal>("Pawn_Walk")
+        .term_at(0).in()
+        .term_at(1).second("$goal")
+        .term_at(1).in()
+        .tick_source(Ticks::tick_pawn_behaviour)
+        .each([](flecs::entity e, const Coordinates::Grid& grid, const Pawn::PawnPathfindingGoal& goal) {
+            ZoneScopedN("Pawn_Walk");
+            flecs::entity dest = e.target_for<Pawn::PawnPathfindingGoal>(flecs::ChildOf);
+            systemsLogger->trace("Pawn {} walking to {}", std::string(e.path()), std::string(dest.path()));
+        });
+    
+
+
+
+
+    
+    ecs.system<StateTiming>("Increment_StateTiming")
+        .term_at(0).second("$state")
+        .with("$state")
+        .tick_source(Ticks::tick_pawn_behaviour)
+        .each([](StateTiming& timing) {
+            ZoneScopedN("Increment_StateTiming");
+            float dt = 0.01;//it.delta_system_time();  // TODO: This needs to be the it.delta_system_time(), but not working
+            timing.timeInState_s += dt;
+            timing.culmulativeTimeInState_s += dt;
+        });
+
+
+
+
+    systemsLogger->trace("Systems Registered");
+
+};
+
+}

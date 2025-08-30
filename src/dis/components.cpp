@@ -1,5 +1,3 @@
-#include <tracy/Tracy.hpp>
-
 #include "dis/module.hpp"
 #include "msgLogging/module.hpp"
 
@@ -10,16 +8,16 @@
 
 namespace fdis{
 
-std::shared_ptr<spdlog::logger> logger;
+std::shared_ptr<spdlog::logger> componentsLogger;
 
-module::module(flecs::world& ecs){
+components::components(flecs::world& ecs){
     // Register module with world. The module entity will be created with the
     // same hierarchy as the C++ namespaces (e.g. simple::module)
-    flecs::entity m = ecs.module<module>();
-    logger = Logging::init_module_logger(m, ecs.get<Logging::LoggerSink>()->sink);
+    flecs::entity m = ecs.module<components>();
+    componentsLogger = Logging::init_module_logger(m, ecs.get<Logging::LoggerSink>()->sink);
     // Before using logger, must set the level so the observer can handle it
     m.set<Logging::LoggerControls>({spdlog::level::trace});
-    logger->trace("Module Created");
+    componentsLogger->trace("Module Created");
 
     ecs.component<DisConnection>()
         .member<KDIS::KString>("sendAddress")
@@ -68,20 +66,7 @@ module::module(flecs::world& ecs){
 
 
 
-   ecs.observer<DisConnection>("Obs_DisConnectionConnect")
-        .event(flecs::OnSet)
-        .each([](DisConnection& con) {
-            ZoneScopedN("Obs_DisConnectionConnect");
-            //KDIS::UTILS::FactoryFilterExerciseID pduFilter(con.exerciseID);
-            //std::cout << "filter created" << std::endl;
-            //KDIS::UTILS::PDU_Factory pduFactory;
-            //std::cout << "pdu factory created" << std::endl;
-            //pduFactory.AddFilter(&pduFilter);
-            //std::cout << "added filter" << std::endl;
-            //con.con = std::unique_ptr<KDIS::NETWORK::Connection>(new KDIS::NETWORK::Connection(con.sendAddress, con.port));
-            //std::cout << "connection created" << std::endl;
-            logger->info("Dis Connected");
-    });
+
 
 
 

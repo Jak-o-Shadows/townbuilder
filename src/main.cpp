@@ -1,18 +1,16 @@
 //#define TRACY_ON_DEMAND
 
-#include "gridMap.hpp"
+#include "msgLogging/module.hpp"
+#include "ticks/module.hpp"
+#include "render/module.hpp"
+#include "coordinates/module.hpp"
+//#include "dis/module.hpp"
+#include "pawn/module.hpp"
+#include "map/module.hpp"
+#include "buildings/module.hpp"
+#include "pathfinding/module.hpp"
+#include "ui/module.hpp"
 
-#include "componentsPawn.hpp"
-#include "componentsMap.hpp"
-#include "componentsBuilding.hpp"
-#include "componentsUi.hpp"
-#include "logicPawn2.hpp"
-#include "ticks.hpp"
-#include "render.hpp"
-#include "msgLogging.hpp"
-#include "coordinates.hpp"
-#include "dis.hpp"
-#include "pathfinding.hpp"
 
 #include "tracy_zones.hpp"
 
@@ -78,20 +76,30 @@ int main(int, char *[]) {
 
     
     // Logger imported first as the other modules use it on their import
-    ecs.import<Logging::module>();
+    ecs.import<Logging::components>();
+    ecs.import<Logging::systems>();
+    std::cout << "Logger imported" << std::endl;
 
-    ecs.import<Logging::examplemodule>();
+    // Then import all the comopnents
+    ecs.import<Buildings::components>();
+    ecs.import<Coordinates::components>();
+    //ecs.import<fdis::components>();
+    ecs.import<Map::components>();
+    ecs.import<Pathfinding::components>();
+    ecs.import<Pawn::components>();
+    ecs.import<Render::components>();
+    ecs.import<UI::components>();
+
+    // Systems next
+    ecs.import<Coordinates::systems>();
+    //ecs.import<fdis::systems>();
+    ecs.import<Pawn::systems>();
+    ecs.import<Render::systems>();
+
+    // Ticks is kinda odd one out
     ecs.import<Ticks::module>();
-    ecs.import<Render::module>();  // Must be before building & other modules for observers to work
+    std::cout << "Modules imported" << std::endl;
 
-    ecs.import<Coordinates::module>();
-    ecs.import<Building::module>();
-
-    ecs.import<Map::module>();
-    ecs.import<Pawn::module>();
-    ecs.import<LogicPawn::module>();
-    //ecs.import<fdis::module>();
-    ecs.import<Pathfinding::module>();
 
     // TODO: Determine if this is required to be done after the loggers created
     spdlog::flush_on(spdlog::level::trace);
@@ -106,23 +114,19 @@ int main(int, char *[]) {
     //ecs.get_mut<fdis::DisConnection>()->connect();
 
     
-    // Register UI components so I can see them in the flecs explorer
-    
-    ecs.component<UiPawnJobs>()
-        .member<int>("unemployed")
-        .member<int>("woodcutter");
+
     
 
     // Global
-    
+    /*
     auto ui = ecs.entity("UI Things")
-        .add<Building::Resources>()
-        .add<UiPawnJobs>();
-    
+        .add<Buildings::Resources>()
+        .add<UI::PawnJobs>();
+    */
 
     // Generate pawns
     //  Randomly distribute starting & target positions
-    
+    /*
     std::mt19937 rng;
     rng.seed(20231104);
 
@@ -166,12 +170,13 @@ int main(int, char *[]) {
                 auto tree = ecs.entity()
                     .child_of(Map::resourcesParent)
                     .is_a<Map::Tree_Prefab>()
-                    .set<Building::Location>({x, y})
-                    .set<Building::Resources>({0, 100, 0})
-                    .add<Building::NatureType>();
+                    .set<Buildings::Location>({x, y})
+                    .set<Buildings::Resources>({0, 100, 0})
+                    .add<Buildings::NatureType>();
             }
         }
     }
+    */
     
 
     // Update the map by making the cells unaccessible
@@ -179,7 +184,7 @@ int main(int, char *[]) {
     //  TODO: Not really marking as inaccessible because the pathfinding currently will break
     /*resourcesParent.children([&ecs, map](flecs::entity resource){
         // Get location
-        const Building::Location* loc = resource.get<Building::Location>();
+        const Buildings::Location* loc = resource.get<Buildings::Location>();
         float weight = 9999999999;
         setCellConnectivity(ecs, map, loc->x, loc->y, weight, weight, weight, weight, true);
     });*/
@@ -192,14 +197,14 @@ int main(int, char *[]) {
 
 
 
-
+    /*
     std::cout << "Map size: " << map->m_width << "x" << map->m_height << std::endl;
     std::cout << "Map:" << map << std::endl;
     std::uniform_int_distribution<int> xDist(0, map->m_width-1);
     std::uniform_int_distribution<int> yDist(0, map->m_height-1);
     std::uniform_real_distribution<float> speedDist(0.7, 0.9);
     std::cout << "Random distributions created" << std::endl;
-    
+    */
 
     /*
     constexpr int numPawns = 1;
@@ -294,14 +299,14 @@ int main(int, char *[]) {
     //  A system is used here because it doesn't need to update at the same
     //  (probably faster) rate as the things are taken down
     /*
-    auto updateResourceUI_sys = ecs.system<Building::Resources>("System_Update Resource UI")
-        .with<Building::BuildingType>()  // TODO: Want this to also consider the resources that pawns are carrying
+    auto updateResourceUI_sys = ecs.system<Buildings::Resources>("System_Update Resource UI")
+        .with<Buildings::BuildingType>()  // TODO: Want this to also consider the resources that pawns are carrying
         .tick_source(Ticks::tick_ui)
         .run([&ui](flecs::iter it){
             ZoneScopedN("System_Update Resource UI");
             while (it.next()){
-                auto r = it.field<Building::Resources>(0);
-                Building::Resources sum{0, 0, 0};
+                auto r = it.field<Buildings::Resources>(0);
+                Buildings::Resources sum{0, 0, 0};
                 for (int i: it) {
                     // TODO: Replace with the reflection interface?
                     sum.fish += r[i].fish;
@@ -312,7 +317,7 @@ int main(int, char *[]) {
                 //std::cout << "\t fish: "  << sum.fish << std::endl;
                 //std::cout << "\t stone: " << sum.stone << std::endl;
                 //std::cout << "\t wood: "  << sum.wood << std::endl;
-                ui.set<Building::Resources>(sum);
+                ui.set<Buildings::Resources>(sum);
             }
         });
     */
@@ -374,15 +379,15 @@ int main(int, char *[]) {
     ecs.defer_end();
     */
 
-    ecs_script_run_file(ecs, "../../src/config.flecs");
-    std::cout << "Flecs script loaded" << std::endl;
+    //ecs_script_run_file(ecs, "../../src/config.flecs");
+    //std::cout << "Flecs script loaded" << std::endl;
 
-
+    /*
     flecs::entity e = ecs.entity("test")
         .set<MyGrid>({33, 2});
     std::cout << "Test Entity Created: " << e.path() << std::endl;
     e.set<Coordinates::Grid>({32, 3});
-
+    */
 
 
     std::cout << "Just before run" << std::endl;

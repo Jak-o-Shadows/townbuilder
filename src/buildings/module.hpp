@@ -2,13 +2,14 @@
 
 #include <flecs.h>
 
-namespace Building{
+#include <stdint.h>
 
-struct module {
-    module(flecs::world& ecs);
+namespace Buildings{
+
+struct components {
+    components(flecs::world& ecs);
 };
 
-extern flecs::entity buildingsParent;
 
 struct Granary_Prefab {};
 

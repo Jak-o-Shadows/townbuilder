@@ -27,8 +27,12 @@ struct Logger {
 
 std::shared_ptr<spdlog::logger> init_module_logger(flecs::entity& module, std::shared_ptr<spdlog::sinks::sink> sink);
 
-struct module {
-    module(flecs::world& ecs);
+struct components {
+    components(flecs::world& ecs);
+};
+
+struct systems {
+    systems(flecs::world& ecs);
 };
 
 struct examplemodule {

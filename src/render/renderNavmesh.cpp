@@ -18,7 +18,7 @@
 #include "render/renderNavmesh.hpp"
 
 #include <math.h>
-#include "render/renderBasic.hpp"
+#include "render/renderBasics.hpp"
 #include <recastnavigation/Recast.h>
 
 #include <iostream>

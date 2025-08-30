@@ -10,12 +10,20 @@ message("deps " ${DIR_DEPS})
 target_sources(${PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src/buildings/components.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src//coordinates/components.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/coordinates/systems.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/dis/components.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/dis/systems.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/map/components.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/msgLogging/components.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/msgLogging/systems.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/pathfinding/components.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pawn/components.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/pawn/systems.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/render/components.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/ticks/components.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/render/systems.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/render/renderNavmesh.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/render/renderBasics.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/ticks/module.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ui/components.cpp
     ${DIR_DEPS}/flecs_components_cglm.c
     ${DIR_DEPS}/flecs_components_geometry.c
@@ -98,3 +106,7 @@ find_package(cglm REQUIRED CONFIG)
 target_link_libraries(${PROJECT_NAME} cglm::cglm)
 # The flecs libraries are written to #include "cglm.h", hence requiring this manual addition
 target_include_directories(${PROJECT_NAME} PRIVATE ${cglm_INCLUDE_DIRS}/cglm)
+
+
+# SonarQube: Generate compilation database for analysis
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
