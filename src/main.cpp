@@ -126,7 +126,7 @@ int main(int, char *[]) {
 
     // Generate pawns
     //  Randomly distribute starting & target positions
-    /*
+    
     std::mt19937 rng;
     rng.seed(20231104);
 
@@ -176,7 +176,7 @@ int main(int, char *[]) {
             }
         }
     }
-    */
+    
     
 
     // Update the map by making the cells unaccessible
