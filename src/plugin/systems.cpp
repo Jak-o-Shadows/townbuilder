@@ -106,7 +106,7 @@ systems::systems(flecs::world& ecs) {
         .each([](flecs::entity e, const PluginGuid& g) {
             ZoneScopedN("TickPluginEntity");
             systemsLogger->trace("PluginGuid: {}", g.id);
-            TickInput input;
+            TickInput input({0.0, {{nullptr, 0}, {nullptr, 0}, {nullptr, 0}, {nullptr, 0}}});
             plugin_tick_ptr(g.id, input);
         });
     
@@ -117,7 +117,7 @@ systems::systems(flecs::world& ecs) {
             ZoneScopedN("GetPluginResults");
             systemsLogger->trace("Getting Results for PluginGuid: {}", g.id);
             PluginResults results = plugin_get_results_ptr(g.id);
-            systemsLogger->trace("PluginResults: {}", results.success);
+            systemsLogger->trace("PluginResults: {}", results.success, results.max_location);
         });
 
 };

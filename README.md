@@ -1,11 +1,13 @@
 # townbuilder
 
+## Getting Started
+1. Install conan from pip or Conda
+2. conan profile detect
+3. conan build . --build=missing
 
-conan profile detect --force
 
-conan install . --output-folder=build --build=missing
+## Notes
+ * Needs C++ 20
+ * Only tested on MSVC on Windows
 
-cd build
-cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=conan_toolchain.cmake -G "Visual Studio 16 2019"
 
-cmake --build . --config Release
