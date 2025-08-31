@@ -3,6 +3,8 @@ import os
 from conan import ConanFile
 from conan.tools.cmake import CMake, cmake_layout
 from conan.tools.files import copy
+from conan.tools.cmake import CMakeToolchain
+from conan.tools.cmake import CMakeDeps
 
 
 class FlecsOrbitSimConan(ConanFile):
@@ -12,10 +14,9 @@ class FlecsOrbitSimConan(ConanFile):
     url = ""
     description = ""
     settings = "os", "compiler", "build_type", "arch"
-    generators = "CMakeToolchain", "CMakeDeps"
 
     def build_requirements(self):
-        self.build_requires("cmake/3.27.6")
+        self.build_requires("cmake/4.1.1")
 
     def requirements(self):
         self.requires("flecs/4.0.4")
@@ -41,11 +42,18 @@ class FlecsOrbitSimConan(ConanFile):
              "res", "bindings"), os.path.join(self.source_folder, "bindings"))
         copy(self, "*opengl3*", os.path.join(self.dependencies["imgui"].package_folder,
              "res", "bindings"), os.path.join(self.source_folder, "bindings"))
+        #self.env_info.CMAKE_EXPORT_COMPILE_COMMANDS = "ON"  # For SonarQube
         
+        toolchain = CMakeToolchain(self)
+        toolchain.variables["CMAKE_EXPORT_COMPILE_COMMANDS"] = True  # For SonarQube
+        toolchain.generate()
+        cmake_deps = CMakeDeps(self)
+        cmake_deps.generate()
+
     def layout(self):
         cmake_layout(self)
 
     def build(self):
         cmake = CMake(self)
-        cmake.configure()
+        cmake.configure({"CMAKE_EXPORT_COMPILE_COMMANDS": "ON"})  # For SonarQube
         cmake.build()

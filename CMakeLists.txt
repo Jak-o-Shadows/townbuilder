@@ -1,8 +1,10 @@
 cmake_minimum_required(VERSION 3.26.4)
 cmake_policy(SET CMP0063 NEW)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 project(townbuilder LANGUAGES C CXX)
-
+# SonarQube: Generate compilation database for analysis
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 set(DIR_DEPS ${CMAKE_CURRENT_LIST_DIR}/deps)
 add_executable(${PROJECT_NAME} src/main.cpp)
@@ -108,5 +110,3 @@ target_link_libraries(${PROJECT_NAME} cglm::cglm)
 target_include_directories(${PROJECT_NAME} PRIVATE ${cglm_INCLUDE_DIRS}/cglm)
 
 
-# SonarQube: Generate compilation database for analysis
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
