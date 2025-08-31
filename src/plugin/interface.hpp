@@ -33,6 +33,7 @@ struct TickInput {
 };
 struct PluginResults {
     bool success;
+    int max_location;
 };
 
 // Exported functions

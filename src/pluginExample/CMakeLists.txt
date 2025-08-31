@@ -17,4 +17,9 @@ target_include_directories(plugin PRIVATE
 find_package(flecs REQUIRED)
 target_link_libraries(plugin PRIVATE flecs::flecs_static)
 
+# Eigen
+find_package(Eigen3 REQUIRED CONFIG)
+target_link_libraries(plugin PRIVATE Eigen3::Eigen)
+
+
 target_compile_definitions(plugin PRIVATE PLUGIN_BUILD_DLL)

@@ -67,6 +67,13 @@ module::module(flecs::world& ecs) {
                 FrameMarkNamed("Pawn Behaviour");
         });
 
+        ecs.system("Tracy Plugin Frame")
+            .kind(flecs::OnUpdate)
+            .tick_source(tick_plugin)
+            .run([](flecs::iter& it) {
+                FrameMarkNamed("Plugin");
+        });
+
         ecs.system("Tracy UI Frame")
             .kind(flecs::OnUpdate)
             .tick_source(tick_ui)

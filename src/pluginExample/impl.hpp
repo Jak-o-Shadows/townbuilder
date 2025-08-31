@@ -19,4 +19,8 @@ public:
 
 extern PluginState g_state;
 
+struct module {
+    module(flecs::world& ecs);
+};
+
 } // namespace plugin_example

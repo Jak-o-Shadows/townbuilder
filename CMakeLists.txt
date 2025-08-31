@@ -111,7 +111,7 @@ target_link_libraries(${PROJECT_NAME} cglm::cglm)
 # The flecs libraries are written to #include "cglm.h", hence requiring this manual addition
 target_include_directories(${PROJECT_NAME} PRIVATE ${cglm_INCLUDE_DIRS}/cglm)
 
-
+# Example Plugin
 add_subdirectory(src/pluginExample)
 add_dependencies(${PROJECT_NAME} plugin)
 add_custom_command(TARGET ${PROJECT_NAME}
@@ -120,4 +120,15 @@ add_custom_command(TARGET ${PROJECT_NAME}
         $<TARGET_FILE:plugin>
         $<TARGET_FILE_DIR:${PROJECT_NAME}>
     COMMENT "Copying pluginExample to build directory"
+)
+
+# Python Binding
+add_subdirectory(src/pluginPythonBinding)
+add_dependencies(pluginPythonBinding plugin)
+add_custom_command(TARGET ${PROJECT_NAME}
+    POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        $<TARGET_FILE:plugin>
+        $<TARGET_FILE_DIR:pluginPythonBinding>
+    COMMENT "Copying pluginExample to build directory for python binding"
 )

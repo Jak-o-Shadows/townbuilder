@@ -26,9 +26,9 @@ void* pluginLibrary = nullptr;
 #endif
 
 typedef void (*PluginInitFunc)();
-typedef void (*PluginTickFunc)(int, struct TickInput);
-typedef PluginResults (*PluginGetResultsFunc)(int);
-typedef void (*EntityInitFunc)(int);
+typedef void (*PluginTickFunc)(GUID, struct TickInput);
+typedef PluginResults (*PluginGetResultsFunc)(GUID);
+typedef void (*EntityInitFunc)(GUID);
 
 PluginInitFunc plugin_init_ptr = nullptr;
 PluginTickFunc plugin_tick_ptr = nullptr;

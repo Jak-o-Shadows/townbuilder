@@ -37,6 +37,11 @@ class FlecsOrbitSimConan(ConanFile):
         # Leftover flecs GUI things
         self.requires("cglm/0.9.1")
 
+
+        # For Python bindings
+        self.requires("pybind11/3.0.1")
+
+
     def generate(self):
         copy(self, "*glfw*", os.path.join(self.dependencies["imgui"].package_folder,
              "res", "bindings"), os.path.join(self.source_folder, "bindings"))
