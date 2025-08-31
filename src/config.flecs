@@ -1,49 +1,24 @@
-Logging.examplemodule {
-    Logging.module.LoggerControls: {info}
-}
+// Log Levels
+Buildings.components {Logging.components.LoggerControls: {info}}
+Coordinates.components {Logging.components.LoggerControls: {info}}
+Coordinates.systems    {Logging.components.LoggerControls: {info}}
+//fdis.components {Logging.components.LoggerControls: {info}}
+//fdis.systems     {Logging.components.LoggerControls: {info}}
+Map.components {Logging.components.LoggerControls: {info}}
+Pathfinding.components {Logging.components.LoggerControls: {info}}
+Pawn.components {Logging.components.LoggerControls: {info}}
+Pawn.systems    {Logging.components.LoggerControls: {info}}
+Plugin.components {Logging.components.LoggerControls: {info}}
+Plugin.systems    {Logging.components.LoggerControls: {info}}
+Render.components {Logging.components.LoggerControls: {info}}
+Render.systems    {Logging.components.LoggerControls: {info}}
+UI.components {Logging.components.LoggerControls: {info}}
+// and the odd ones out
+Ticks.module {Logging.components.LoggerControls: {info}}
 
-Ticks.module{
-    Logging.module.LoggerControls: {info}
-}
-
-Coordinates.module{
-    Logging.module.LoggerControls: {debug}
-}
-
-Building.module {
-    Logging.module.LoggerControls: {info}
-}
-
-/*
-Map.module {
-    Logging.module.LoggerControls: {info}
-}
-
-Render.module  {
-    Logging.module.LoggerControls: {info}
-}
-
-
-
-Pawn.module {
-    Logging.module.LoggerControls: {info}
-}
-
-
-
-
-
-Pathfinding.module{
-    Logging.module.LoggerControls: {info}
-}
-
-LogicPawn.module{
-    Logging.module.LoggerControls: {trace}
-}
-*/
 
 // Buildings
-
+/*
 Building.module.buildings.Granary1: Building.module.buildings.Granary_Prefab {
     Building.Location: {3, 8}
 }
@@ -51,7 +26,11 @@ Building.module.buildings.Granary1: Building.module.buildings.Granary_Prefab {
 Building.module.buildings.Granary2: Building.module.buildings.Granary_Prefab {
     Building.Location: {5, 10}
 }
+*/
 
+myplugin_entity {
+    Plugin.components.PluginGuid: {20250831}
+}
 
 
 /*
@@ -61,3 +40,7 @@ Coordinates.module.System_CoordPrint { Disabled }
 SaveWorld {Disabled}
 
 */
+
+
+
+

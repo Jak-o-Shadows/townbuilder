@@ -12,6 +12,7 @@ namespace Ticks{
 
 flecs::entity tick_100_Hz;
 flecs::entity tick_pawn_behaviour;
+flecs::entity tick_plugin;
 flecs::entity tick_ui;
 flecs::entity tick_render;
 std::shared_ptr<spdlog::logger> logger;
@@ -32,6 +33,9 @@ module::module(flecs::world& ecs) {
     // Pawn behaviour
     tick_pawn_behaviour = ecs.timer("Timer_Pawn Behaviour")
         .rate(4, tick_100_Hz);  // 4 ticks @ 100 Hz => 25 Hz
+    // Plugin
+    tick_plugin = ecs.timer("Timer_Plugin")
+        .rate(4, tick_100_Hz);  // 4 tick @ 100 Hz => 25 Hz
     // UI Updates
     tick_ui = ecs.timer("Timer_UI Update")
         .rate(8, tick_100_Hz);  // 8 ticks @ 100 Hz => 12.5 Hz

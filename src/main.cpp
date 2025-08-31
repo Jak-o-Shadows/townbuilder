@@ -8,6 +8,7 @@
 #include "pawn/module.hpp"
 #include "map/module.hpp"
 #include "buildings/module.hpp"
+#include "plugin/module.hpp"
 #include "pathfinding/module.hpp"
 #include "ui/module.hpp"
 
@@ -57,7 +58,7 @@ struct PtTest {
 int main(int, char *[]) {
 
     flecs::world ecs;
-    ecs.set<flecs::Rest>({});
+    ecs.set<flecs::Rest>({});// {.port=27751});  // TODO: Get multiple ports working so the plugin can listen too
     ecs.import<flecs::stats>(); // Enable statistics in explorer
 
     ecs.component<std::string>()
@@ -87,6 +88,7 @@ int main(int, char *[]) {
     ecs.import<Map::components>();
     ecs.import<Pathfinding::components>();
     ecs.import<Pawn::components>();
+    ecs.import<Plugin::components>();
     ecs.import<Render::components>();
     ecs.import<UI::components>();
 
@@ -94,7 +96,9 @@ int main(int, char *[]) {
     ecs.import<Coordinates::systems>();
     //ecs.import<fdis::systems>();
     ecs.import<Pawn::systems>();
+    ecs.import<Plugin::systems>();
     ecs.import<Render::systems>();
+
 
     // Ticks is kinda odd one out
     ecs.import<Ticks::module>();
@@ -379,8 +383,8 @@ int main(int, char *[]) {
     ecs.defer_end();
     */
 
-    //ecs_script_run_file(ecs, "../../src/config.flecs");
-    //std::cout << "Flecs script loaded" << std::endl;
+    ecs_script_run_file(ecs, "../../src/config.flecs");
+    std::cout << "Flecs script loaded" << std::endl;
 
     /*
     flecs::entity e = ecs.entity("test")

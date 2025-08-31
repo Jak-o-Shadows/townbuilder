@@ -11,10 +11,10 @@ namespace plugin_example {
 class PluginState {
 public:
     flecs::world ecs;
-    std::unordered_map<townbuilder::plugin::GUID, flecs::entity> guid_map;
+    std::unordered_map<Plugin::GUID, flecs::entity> guid_map;
     PluginState();
     ~PluginState();
-    flecs::entity get_or_create_entity(townbuilder::plugin::GUID guid);
+    flecs::entity get_or_create_entity(Plugin::GUID guid);
 };
 
 extern PluginState g_state;

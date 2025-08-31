@@ -4,7 +4,19 @@
 #include <cstdint>
 #include <complex>
 
-namespace townbuilder::plugin {
+// Define PLUGIN_API for exporting symbols from the DLL when building it,
+// and for importing them when another project uses the DLL.
+#if defined(_WIN32)
+    #if defined(PLUGIN_BUILD_DLL)
+        #define PLUGIN_API __declspec(dllexport)
+    #else
+        #define PLUGIN_API __declspec(dllimport)
+    #endif
+#else
+    #define PLUGIN_API
+#endif
+
+namespace Plugin {
 
 // Define GUID type (customize as needed)
 using GUID = uint64_t;
@@ -27,22 +39,22 @@ struct PluginResults {
 extern "C" {
 
 // Initialize the plugin
-void plugin_init();
+PLUGIN_API void plugin_init();
 
 // Initialize entity with a GUID
-void entity_init(const GUID id);
+PLUGIN_API void entity_init(const GUID id);
 
 // Close the plugin with a GUID
-void plugin_close(const GUID id);
+PLUGIN_API void plugin_close(const GUID id);
 
 // Tick function with input struct
-void plugin_tick(const GUID id, const TickInput& input);
+PLUGIN_API void plugin_tick(const GUID id, const TickInput& input);
 
 // Get results from the plugin
-PluginResults plugin_get_results(const GUID id);
+PLUGIN_API PluginResults plugin_get_results(const GUID id);
 
 } // extern "C"
 
-} // namespace townbuilder::plugin
+} // namespace townbuilder::Plugin
 
 #endif // TOWNBUILDER_PLUGIN_INTERFACE_HPP

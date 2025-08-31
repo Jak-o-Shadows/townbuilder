@@ -21,6 +21,8 @@ target_sources(${PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pathfinding/components.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pawn/components.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pawn/systems.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/plugin/components.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/plugin/systems.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/render/components.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/render/systems.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/render/renderNavmesh.cpp
@@ -119,4 +121,3 @@ add_custom_command(TARGET ${PROJECT_NAME}
         $<TARGET_FILE_DIR:${PROJECT_NAME}>
     COMMENT "Copying pluginExample to build directory"
 )
-
