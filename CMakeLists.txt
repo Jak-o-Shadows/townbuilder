@@ -110,3 +110,13 @@ target_link_libraries(${PROJECT_NAME} cglm::cglm)
 target_include_directories(${PROJECT_NAME} PRIVATE ${cglm_INCLUDE_DIRS}/cglm)
 
 
+add_subdirectory(src/pluginExample)
+add_dependencies(${PROJECT_NAME} plugin)
+add_custom_command(TARGET ${PROJECT_NAME}
+    POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        $<TARGET_FILE:plugin>
+        $<TARGET_FILE_DIR:${PROJECT_NAME}>
+    COMMENT "Copying pluginExample to build directory"
+)
+
