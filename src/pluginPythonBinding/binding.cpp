@@ -240,7 +240,8 @@ PYBIND11_MODULE(pluginPythonBinding, m) {
                     self.channels[i] = seq[i].cast<Plugin::ComplexChannel>();
                 }
                 self_obj.attr("_channels_owner") = seq;
-            }, "A tuple of 4 ComplexChannel objects. Can be assigned from a list or tuple.");
+            }, "A tuple of 4 ComplexChannel objects. Can be assigned from a list or tuple.")
+        .def_readwrite("time", &Plugin::TickInput::time)
 
     pybind11::class_<PluginLoader>(m, "PluginLoader", "Loads a plugin DLL and provides access to its functions")
         .def(pybind11::init<>(), "Loads the plugin from 'plugin.dll' or 'plugin.so' in the current directory.")
