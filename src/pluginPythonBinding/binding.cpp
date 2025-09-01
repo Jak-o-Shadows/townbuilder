@@ -111,6 +111,7 @@ struct PluginLoader {
     }
 };
 
+
 PYBIND11_MODULE(pluginPythonBinding, m) {
     m.doc() = "Python binding for TownBuilder plugin system"; // optional module docstring
 
@@ -216,6 +217,7 @@ PYBIND11_MODULE(pluginPythonBinding, m) {
         .finalize();
 
     
+
     pybind11::class_<Plugin::TickInput>(m, "TickInput", "Input for a plugin tick, contains time and channel data", pybind11::dynamic_attr())
         .def(pybind11::init<>())
         .def_readwrite("mode", &Plugin::TickInput::mode)
@@ -242,6 +244,7 @@ PYBIND11_MODULE(pluginPythonBinding, m) {
                 self_obj.attr("_channels_owner") = seq;
             }, "A tuple of 4 ComplexChannel objects. Can be assigned from a list or tuple.")
         .def_readwrite("time", &Plugin::TickInput::time)
+        .def_readwrite("map", &Plugin::TickInput::map);
 
     pybind11::class_<PluginLoader>(m, "PluginLoader", "Loads a plugin DLL and provides access to its functions")
         .def(pybind11::init<>(), "Loads the plugin from 'plugin.dll' or 'plugin.so' in the current directory.")

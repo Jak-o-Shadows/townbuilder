@@ -32,8 +32,8 @@ if __name__ == "__main__":
         # Create a numpy array and assign it. This allocates memory
         # on the Python side and makes the C++ side point to it.
         numpy_data = np.array([channel_idx/2+1j, channel_idx+0j, 0 + channel_idx*1j], dtype=np.complex128)
-        print(numpy_data)
-        print(hex(numpy_data.ctypes.data))
+        #print(numpy_data)
+        #print(hex(numpy_data.ctypes.data))
         channel.data = numpy_data
 
         # The 'count' member is automatically updated
@@ -50,14 +50,14 @@ if __name__ == "__main__":
         (np.random.rand(rows, cols) + 1j * np.random.rand(rows, cols)).astype(np.complex128)
         for _ in range(4)
     ]
-    for arr in random_arrays:
-        print(hex(arr.ctypes.data))
-    print("of the list of arrays", hex(id(random_arrays)))
+    #for arr in random_arrays:
+    #    print(hex(arr.ctypes.data))
+    #print("of the list of arrays", hex(id(random_arrays)))
     # Assign the numpy arrays to the data property.
     # The C++ object will now point to the memory of these numpy arrays.
     complex_map.data = random_arrays
     print(f"\nComplex map rows: {complex_map.rows}, cols: {complex_map.cols}")
-    tick_input.complex_map = complex_map
+    tick_input.map = complex_map
 
 
     # Test out the plugin interface
