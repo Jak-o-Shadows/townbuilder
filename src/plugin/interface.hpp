@@ -27,13 +27,34 @@ struct ComplexChannel {
     std::size_t count;
 };
 
+struct ComplexMapArray {
+    std::complex<double>* data[4];
+    std::size_t rows;
+    std::size_t cols;
+};
+
+enum Mode {
+    a,
+    b,
+    c
+};
+
 struct TickInput {
     double time;
     ComplexChannel channels[4];
+    Mode mode;
+    ComplexMapArray map;
 };
+
 struct PluginResults {
     bool success;
-    int max_location;
+    int max_location1;
+    int max_location2;
+    int max_location3;
+    int max_location4;
+    std::complex<double> first_elem;
+    size_t num_rows;
+    size_t num_cols;
 };
 
 // Exported functions

@@ -53,10 +53,21 @@ module::module(flecs::world& ecs) {
         .term_at(0).in()
         .each([](flecs::entity e, const Plugin::TickInput& input) {
             //std::cout << std::format("PluginTick System called for entity {}", std::string(e.path())) << std::endl;
-            Eigen::Map<const Eigen::VectorXcd> channel0(input.channels[0].data, input.channels[0].count);
-            int max_loc = -1;
-            channel0.cwiseAbs().maxCoeff(&max_loc);  // cwiseAbs2 may be more efficient, but who cares
-            e.set<Plugin::PluginResults>({true, max_loc});
+            int max_loc[4];
+            for (int ch_idx=0;ch_idx<4;ch_idx++){
+                max_loc[ch_idx] = -1;  // Initialise to -1 to make sure we're not getting confused
+                Eigen::Map<const Eigen::VectorXcd> channel(input.channels[ch_idx].data, input.channels[ch_idx].count);
+                std::cout << std::format("####### Channel {} ########", ch_idx) << std::endl;
+                std::cout << input.channels[ch_idx].data << std::endl;
+                std::cout << channel << std::endl;
+                channel.cwiseAbs().maxCoeff(&max_loc[ch_idx]);  // cwiseAbs2 may be more efficient, but who cares
+                std::cout << std::format("Max Location is {}", max_loc[ch_idx]) << std::endl;
+            }
+            std::cout << input.map.data[0] << std::endl;
+            std::cout << input.map.rows << ", " << input.map.cols << std::endl;
+            std::complex<double> first_elem = input.map.data[0][0];
+            std::cout << std::format("first elem is: {} + {}j", first_elem.real(), first_elem.imag()) << std::endl;
+            e.set<Plugin::PluginResults>({true, max_loc[0], max_loc[1], max_loc[2], max_loc[3], first_elem, input.map.rows, input.map.cols});
         });
 
     ecs.system("EveryFrame")
