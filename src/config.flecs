@@ -28,10 +28,14 @@ Building.module.buildings.Granary2: Building.module.buildings.Granary_Prefab {
 }
 */
 
-myplugin_entity {
-    Plugin.components.PluginGuid: {20250831}
-}
+// Disabled because not actually providing it valid data yet
+//myplugin_entity {
+//    Plugin.components.PluginGuid: {20250831}
+//}
 
+myCurveEntity {
+    Statemachine.components.CurveFile: {"../../state1.csv"}
+}
 
 /*
 // Debug Systems

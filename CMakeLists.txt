@@ -27,6 +27,8 @@ target_sources(${PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src/render/systems.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/render/renderNavmesh.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/render/renderBasics.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/statemachine/components.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/statemachine/systems.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ticks/module.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ui/components.cpp
     ${DIR_DEPS}/flecs_components_cglm.c

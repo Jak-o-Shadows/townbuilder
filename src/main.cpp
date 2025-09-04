@@ -11,6 +11,7 @@
 #include "plugin/module.hpp"
 #include "pathfinding/module.hpp"
 #include "ui/module.hpp"
+#include "statemachine/module.hpp"
 
 
 #include "tracy_zones.hpp"
@@ -90,6 +91,7 @@ int main(int, char *[]) {
     ecs.import<Pawn::components>();
     ecs.import<Plugin::components>();
     ecs.import<Render::components>();
+    ecs.import<Statemachine::components>();
     ecs.import<UI::components>();
 
     // Systems next
@@ -98,6 +100,8 @@ int main(int, char *[]) {
     ecs.import<Pawn::systems>();
     ecs.import<Plugin::systems>();
     ecs.import<Render::systems>();
+    ecs.import<Statemachine::systems>();
+
 
 
     // Ticks is kinda odd one out
