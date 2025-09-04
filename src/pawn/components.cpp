@@ -44,10 +44,6 @@ components::components(flecs::world& ecs) {
     ecs.component<PawnAbilityTraits>()
         .member<float>("strength")
         .member<float>("speed");
-    ecs.component<StateTiming>()
-        .member<float>("timeInState_s")
-        .member<float>("culmulativeTimeInState_s");
-
     componentsLogger->trace("Components Registered");
     
     // Need to give the entities a parent so they show nicer in the flecs explorer

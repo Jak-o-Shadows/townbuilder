@@ -19,6 +19,11 @@ systems::systems(flecs::world& ecs){
     m.set<Logging::LoggerControls>({spdlog::level::trace});
     systemsLogger->trace("Module Created");
 
+    ecs.import<Statemachine::components>();
+
+    systemsLogger->trace("Other flecs modules imported");
+
+
     // The logger for the FSM is defined differently so header-only can access it.
     //  TODO: Should I just put this in a different flecs module for consistency?
     fsmLogger = std::make_shared<spdlog::logger>(std::string(m.path()) + ".fsm", ecs.get<Logging::LoggerSink>()->sink);
@@ -109,11 +114,11 @@ systems::systems(flecs::world& ecs){
 
 
     
-    ecs.system<StateTiming>("Increment_StateTiming")
+    ecs.system<Statemachine::StateTiming>("Increment_StateTiming")
         .term_at(0).second("$state")
         .with("$state")
         .tick_source(Ticks::tick_pawn_behaviour)
-        .each([](StateTiming& timing) {
+        .each([](Statemachine::StateTiming& timing) {
             ZoneScopedN("Increment_StateTiming");
             float dt = 0.01;//it.delta_system_time();  // TODO: This needs to be the it.delta_system_time(), but not working
             timing.timeInState_s += dt;
