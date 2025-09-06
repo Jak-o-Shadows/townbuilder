@@ -9,6 +9,7 @@
 #include "map/module.hpp"
 #include "buildings/module.hpp"
 #include "plugin/module.hpp"
+#include "pythonEcsBinding/module.hpp"
 #include "pathfinding/module.hpp"
 #include "ui/module.hpp"
 #include "statemachine/module.hpp"
@@ -90,6 +91,7 @@ int main(int, char *[]) {
     ecs.import<Pathfinding::components>();
     ecs.import<Pawn::components>();
     ecs.import<Plugin::components>();
+    ecs.import<Python::components>();
     ecs.import<Render::components>();
     ecs.import<Statemachine::components>();
     ecs.import<UI::components>();
@@ -99,6 +101,7 @@ int main(int, char *[]) {
     //ecs.import<fdis::systems>();
     ecs.import<Pawn::systems>();
     ecs.import<Plugin::systems>();
+    ecs.import<Python::systems>();
     ecs.import<Render::systems>();
     ecs.import<Statemachine::systems>();
 
@@ -397,10 +400,11 @@ int main(int, char *[]) {
     e.set<Coordinates::Grid>({32, 3});
     */
 
-
     std::cout << "Just before run" << std::endl;
     // set the debug level so i can see the system order
+    Render::Window* w = ecs.get_mut<Render::Window>();
     while (true) {
+        if (!w->alive) break;
         ecs.progress();
         FrameMarkNamed("Frame");
     }

@@ -25,6 +25,7 @@ class FlecsOrbitSimConan(ConanFile):
         self.requires("eigen/3.4.0")
         self.requires("hfsm2/2.5.2")
         self.requires("rapidcsv/8.84")
+        self.requires("pybind11/3.0.1")  # Python bindings & embedded python
 
         # Game Things
         self.requires("recastnavigation/1.6.0")
@@ -37,9 +38,8 @@ class FlecsOrbitSimConan(ConanFile):
         # Leftover flecs GUI things
         self.requires("cglm/0.9.1")
 
-
-        # For Python bindings
-        self.requires("pybind11/3.0.1")
+        # For Swig bindings
+        self.requires("swig/4.3.0")
 
 
     def generate(self):

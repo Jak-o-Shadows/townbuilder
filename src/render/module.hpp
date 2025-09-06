@@ -16,6 +16,7 @@ void part3(GLFWwindow *window);
 
 struct Window{
     GLFWwindow* window;
+    bool alive = true;
 };
 
 

@@ -10,8 +10,12 @@ Pawn.components {Logging.components.LoggerControls: {info}}
 Pawn.systems    {Logging.components.LoggerControls: {info}}
 Plugin.components {Logging.components.LoggerControls: {info}}
 Plugin.systems    {Logging.components.LoggerControls: {info}}
+Python.components {Logging.components.LoggerControls: {trace}}
+Python.systems    {Logging.components.LoggerControls: {trace}}
 Render.components {Logging.components.LoggerControls: {info}}
 Render.systems    {Logging.components.LoggerControls: {info}}
+Statemachine.components {Logging.components.LoggerControls: {info}}
+Statemachine.systems    {Logging.components.LoggerControls: {info}}
 UI.components {Logging.components.LoggerControls: {info}}
 // and the odd ones out
 Ticks.module {Logging.components.LoggerControls: {info}}
@@ -35,6 +39,10 @@ Building.module.buildings.Granary2: Building.module.buildings.Granary_Prefab {
 
 myCurveEntity {
     Statemachine.components.CurveFile: {"../../state1.csv"}
+}
+
+myPythonEntity {
+    Python.components.PythonFile: {"../../embedExample.py"}
 }
 
 /*

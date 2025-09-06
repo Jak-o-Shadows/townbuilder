@@ -168,6 +168,10 @@ systems::systems(flecs::world& ecs) {
         ZoneScopedN("RenderImGui");
         systemsLogger->trace("RenderImGui");
 
+        if (glfwWindowShouldClose(w.window)) {
+            w.alive = false;
+        }
+
 		// Render dear imgui into screen
 		ImGui::Render();
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());

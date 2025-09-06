@@ -1,0 +1,1 @@
+This module allows a python plugin to interact with ALL the ECS components and entities, using the tcod-ecs library.

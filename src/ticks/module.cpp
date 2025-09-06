@@ -13,6 +13,7 @@ namespace Ticks{
 flecs::entity tick_100_Hz;
 flecs::entity tick_pawn_behaviour;
 flecs::entity tick_plugin;
+flecs::entity tick_python;
 flecs::entity tick_ui;
 flecs::entity tick_render;
 std::shared_ptr<spdlog::logger> logger;
@@ -35,6 +36,9 @@ module::module(flecs::world& ecs) {
         .rate(4, tick_100_Hz);  // 4 ticks @ 100 Hz => 25 Hz
     // Plugin
     tick_plugin = ecs.timer("Timer_Plugin")
+        .rate(4, tick_100_Hz);  // 4 tick @ 100 Hz => 25 Hz
+    // Plugin
+    tick_plugin = ecs.timer("Timer_Python")
         .rate(4, tick_100_Hz);  // 4 tick @ 100 Hz => 25 Hz
     // UI Updates
     tick_ui = ecs.timer("Timer_UI Update")
@@ -72,6 +76,13 @@ module::module(flecs::world& ecs) {
             .tick_source(tick_plugin)
             .run([](flecs::iter& it) {
                 FrameMarkNamed("Plugin");
+        });
+
+        ecs.system("Tracy Python Frame")
+            .kind(flecs::OnUpdate)
+            .tick_source(tick_python)
+            .run([](flecs::iter& it) {
+                FrameMarkNamed("Python");
         });
 
         ecs.system("Tracy UI Frame")

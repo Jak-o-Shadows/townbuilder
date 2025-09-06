@@ -23,6 +23,8 @@ target_sources(${PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pawn/systems.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/plugin/components.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/plugin/systems.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/pythonEcsBinding/components.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/pythonEcsBinding/systems.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/render/components.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/render/systems.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/render/renderNavmesh.cpp
@@ -112,6 +114,13 @@ find_package(cglm REQUIRED CONFIG)
 target_link_libraries(${PROJECT_NAME} cglm::cglm)
 # The flecs libraries are written to #include "cglm.h", hence requiring this manual addition
 target_include_directories(${PROJECT_NAME} PRIVATE ${cglm_INCLUDE_DIRS}/cglm)
+
+# PyBind11 is used for both the python embedded interpreter, and the
+#   Python bindings to the plugin system
+find_package(pybind11 REQUIRED CONFIG)
+target_link_libraries(${PROJECT_NAME} pybind11::embed)
+
+
 
 # Example Plugin
 add_subdirectory(src/pluginExample)
