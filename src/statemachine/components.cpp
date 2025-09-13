@@ -20,9 +20,12 @@ components::components(flecs::world& ecs) {
 
     ecs.component<CurveFile>("CurveFile")
         .member<std::string>("filename");
+    ecs.component<Curve>();
     ecs.component<StateTiming>()
         .member<float>("timeInState_s")
         .member<float>("culmulativeTimeInState_s");
+    ecs.component<StateUtility>()
+        .member<float>("utility");
     componentsLogger->trace("Components Registered");
 
 

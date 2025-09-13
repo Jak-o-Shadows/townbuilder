@@ -110,24 +110,6 @@ systems::systems(flecs::world& ecs){
         });
     
 
-
-
-
-    
-    ecs.system<Statemachine::StateTiming>("Increment_StateTiming")
-        .term_at(0).second("$state")
-        .with("$state")
-        .tick_source(Ticks::tick_pawn_behaviour)
-        .each([](Statemachine::StateTiming& timing) {
-            ZoneScopedN("Increment_StateTiming");
-            float dt = 0.01;//it.delta_system_time();  // TODO: This needs to be the it.delta_system_time(), but not working
-            timing.timeInState_s += dt;
-            timing.culmulativeTimeInState_s += dt;
-        });
-
-
-
-
     systemsLogger->trace("Systems Registered");
 
 };

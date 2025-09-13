@@ -208,16 +208,16 @@ int main(int, char *[]) {
 
 
 
-    /*
+    
     std::cout << "Map size: " << map->m_width << "x" << map->m_height << std::endl;
     std::cout << "Map:" << map << std::endl;
     std::uniform_int_distribution<int> xDist(0, map->m_width-1);
     std::uniform_int_distribution<int> yDist(0, map->m_height-1);
     std::uniform_real_distribution<float> speedDist(0.7, 0.9);
     std::cout << "Random distributions created" << std::endl;
-    */
+    
 
-    /*
+    
     constexpr int numPawns = 1;
     for (int pawnNumber=0; pawnNumber < numPawns; pawnNumber++){
         int targetX = xDist(rng);
@@ -243,23 +243,36 @@ int main(int, char *[]) {
 
         // For each possible State, put the timing info in. Note that this must be
         // done before the FSM is created, otherwise it will not be able to access
-        // the timing info.
-        pawn.set<LogicPawn::StateTiming, LogicPawn::Alive>({0, 0});
-        pawn.set<LogicPawn::StateTiming, LogicPawn::Idle>({0, 0});
-        pawn.set<LogicPawn::StateTiming, LogicPawn::Walking>({0, 0});
-        pawn.set<LogicPawn::StateTiming, LogicPawn::Working>({0, 0});
-        pawn.set<LogicPawn::StateTiming, LogicPawn::Fleeing>({0, 0});
-        pawn.set<LogicPawn::StateTiming, LogicPawn::Combat>({0, 0});
-        pawn.set<LogicPawn::StateTiming, LogicPawn::Dead>({0, 0});
-        pawn.set<LogicPawn::StateTiming, LogicPawn::PawnOccupationUnemployed>({0, 0});
-        pawn.set<LogicPawn::StateTiming, LogicPawn::PawnOccupationWoodcutter>({0, 0});
-        pawn.set<LogicPawn::StateTiming, LogicPawn::PawnWoodcutterStateWalkingTo>({0, 0});
-        pawn.set<LogicPawn::StateTiming, LogicPawn::PawnWoodcutterStateReturning>({0, 0});
-        pawn.set<LogicPawn::StateTiming, LogicPawn::PawnWoodcutterStateChopping>({0, 0});
+        // the timing info, which it does on entry to each state
+        pawn.set<Statemachine::StateTiming, Pawn::Alive>({0, 0});
+        pawn.set<Statemachine::StateTiming, Pawn::Idle>({0, 0});
+        pawn.set<Statemachine::StateTiming, Pawn::Walking>({0, 0});
+        pawn.set<Statemachine::StateTiming, Pawn::Working>({0, 0});
+        pawn.set<Statemachine::StateTiming, Pawn::Fleeing>({0, 0});
+        pawn.set<Statemachine::StateTiming, Pawn::Combat>({0, 0});
+        pawn.set<Statemachine::StateTiming, Pawn::Dead>({0, 0});
+        pawn.set<Statemachine::StateTiming, Pawn::PawnOccupationUnemployed>({0, 0});
+        pawn.set<Statemachine::StateTiming, Pawn::PawnOccupationWoodcutter>({0, 0});
+        pawn.set<Statemachine::StateTiming, Pawn::PawnWoodcutterStateWalkingTo>({0, 0});
+        pawn.set<Statemachine::StateTiming, Pawn::PawnWoodcutterStateReturning>({0, 0});
+        pawn.set<Statemachine::StateTiming, Pawn::PawnWoodcutterStateChopping>({0, 0});
+        // Set the utility for each
+        pawn.set<Statemachine::StateUtility, Pawn::Alive>({0});
+        pawn.set<Statemachine::StateUtility, Pawn::Idle>({0});
+        pawn.set<Statemachine::StateUtility, Pawn::Walking>({0});
+        pawn.set<Statemachine::StateUtility, Pawn::Working>({0});
+        pawn.set<Statemachine::StateUtility, Pawn::Fleeing>({0});
+        pawn.set<Statemachine::StateUtility, Pawn::Combat>({0});
+        pawn.set<Statemachine::StateUtility, Pawn::Dead>({0});
+        pawn.set<Statemachine::StateUtility, Pawn::PawnOccupationUnemployed>({0});
+        pawn.set<Statemachine::StateUtility, Pawn::PawnOccupationWoodcutter>({0});
+        pawn.set<Statemachine::StateUtility, Pawn::PawnWoodcutterStateWalkingTo>({0});
+        pawn.set<Statemachine::StateUtility, Pawn::PawnWoodcutterStateReturning>({0});
+        pawn.set<Statemachine::StateUtility, Pawn::PawnWoodcutterStateChopping>({0});
 
 
-        LogicPawn::Context blah{pawn.id(), ecs};  // No idea why this has to be a separate variable, but it does, so bugger it
-        pawn.set<Pawn::PawnFSMContainer>({std::shared_ptr<LogicPawn::PawnFSM::Instance>(new LogicPawn::PawnFSM::Instance(blah))});
+        Statemachine::Context blah{pawn.id(), ecs};  // No idea why this has to be a separate variable, but it does, so bugger it
+        pawn.set<Pawn::PawnFSMContainer>({std::shared_ptr<Pawn::PawnFSM::Instance>(new Pawn::PawnFSM::Instance(blah))});
 
 
 
@@ -270,7 +283,7 @@ int main(int, char *[]) {
 
 
     }
-    */
+    
 
     //logger->trace("Created pawns");
 

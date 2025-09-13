@@ -10,8 +10,8 @@ Pawn.components {Logging.components.LoggerControls: {info}}
 Pawn.systems    {Logging.components.LoggerControls: {info}}
 Plugin.components {Logging.components.LoggerControls: {info}}
 Plugin.systems    {Logging.components.LoggerControls: {info}}
-Python.components {Logging.components.LoggerControls: {trace}}
-Python.systems    {Logging.components.LoggerControls: {trace}}
+Python.components {Logging.components.LoggerControls: {info}}
+Python.systems    {Logging.components.LoggerControls: {info}}
 Render.components {Logging.components.LoggerControls: {info}}
 Render.systems    {Logging.components.LoggerControls: {info}}
 Statemachine.components {Logging.components.LoggerControls: {info}}

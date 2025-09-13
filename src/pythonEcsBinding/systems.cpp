@@ -43,7 +43,6 @@ systems::systems(flecs::world& ecs) {
             interpreters.emplace_back(pybind11::subinterpreter().create());
             pf.interpreter_idx = interpreters.size() - 1;
             pybind11::subinterpreter_scoped_activate (interpreters.at(pf.interpreter_idx));
-            pybind11::exec(R"(print("Hello from subinterpreter"))");
             systemsLogger->trace("Interpreter created for PythonFile on entity {}", std::string(e.path()));
         });
 
@@ -53,7 +52,7 @@ systems::systems(flecs::world& ecs) {
             ZoneScopedN("TickPythonFile");
             systemsLogger->trace("Ticking PythonFile on entity {}", std::string(e.path()));
             pybind11::subinterpreter_scoped_activate (interpreters.at(pf.interpreter_idx));
-            pybind11::exec(R"(print("Hello from subinterpreter"))");
+            pybind11::eval_file(pf.filepath);
         });
 
     systemsLogger->trace("Systems Registered");

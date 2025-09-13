@@ -1,6 +1,7 @@
 #include "statemachine/module.hpp"
 
 #include "msgLogging/module.hpp"
+#include "ticks/module.hpp"
 
 #include <tracy/Tracy.hpp>
 #include <rapidcsv.h>
@@ -18,6 +19,10 @@ systems::systems(flecs::world& ecs) {
     // Before using logger, must set the level so the observer can handle it
     m.set<Logging::LoggerControls>({spdlog::level::trace});
     systemsLogger->trace("Module Created");
+
+    ecs.import<Ticks::module>();
+    ecs.import<Statemachine::components>();
+    systemsLogger->trace("Other flecs modules imported");
 
     
     ecs.observer<CurveFile>("Observer_LoadCurveFile")
@@ -53,7 +58,30 @@ systems::systems(flecs::world& ecs) {
 
         });
 
+
+    ecs.system<Statemachine::StateTiming>("Increment_StateTiming")
+        .term_at(0).second("$state")
+        .with("$state")
+        .tick_source(Ticks::tick_pawn_behaviour)
+        .each([](Statemachine::StateTiming& timing) {
+            ZoneScopedN("Increment_StateTiming");
+            float dt = 0.01;//it.delta_system_time();  // TODO: This needs to be the it.delta_system_time(), but not working
+            timing.timeInState_s += dt;
+            timing.culmulativeTimeInState_s += dt;
+        });
+
+
 };
+
+float utility_calc(const Curve& curve, const std::vector<float>& x) {
+    ZoneScopedN("utility_calc");
+    float total_utility = 0.0f;
+    for (size_t i=0; i<x.size(); i++) {
+        total_utility += curve.interpolate(i, x[i]);
+    }
+    return total_utility;
+}
+
 
 
 }

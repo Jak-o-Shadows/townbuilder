@@ -145,6 +145,15 @@ struct BasePawnState : PawnFSM::State {
         fsmLogger->trace("Pawn {} exiting state {}", std::string(e.path()), Statemachine::TypeName<TemplateState>());
         e.remove<TemplateState>();
     }
+    /*void utility(FullControl& control) {
+        flecs::entity e = flecs::entity(control.context().ecs, control.context().id);
+        const Statemachine::StateUtility* util = e.get<Statemachine::StateUtility, TemplateState>();
+        if (util != nullptr) {
+            return util->utility;
+        } else {
+            return 0.0f;
+        }
+    }*/
 };
 
 

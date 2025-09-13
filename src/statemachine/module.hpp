@@ -33,7 +33,6 @@ struct Curve{
     };
 };
 
-
 struct Context {
 	flecs::id_t id;
 	flecs::world& ecs;
@@ -42,6 +41,10 @@ struct Context {
 struct StateTiming{
 	float timeInState_s = 0;
 	float culmulativeTimeInState_s = 0;
+};
+
+struct StateUtility{
+    float utility = 0.0f;
 };
 
 
@@ -106,6 +109,8 @@ struct components {
 struct systems {
     systems(flecs::world& ecs);
 };
+
+float utility_calc(const Curve& curve, const std::vector<float>& x);
 
 
 }
