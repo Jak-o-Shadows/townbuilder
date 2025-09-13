@@ -257,6 +257,7 @@ int main(int, char *[]) {
         pawn.set<Statemachine::StateTiming, Pawn::PawnWoodcutterStateReturning>({0, 0});
         pawn.set<Statemachine::StateTiming, Pawn::PawnWoodcutterStateChopping>({0, 0});
         // Set the utility for each
+        //  TODO: This should only be done for utilitarian states, but haven't got utilitarian states in yet, so doing for all
         pawn.set<Statemachine::StateUtility, Pawn::Alive>({0});
         pawn.set<Statemachine::StateUtility, Pawn::Idle>({0});
         pawn.set<Statemachine::StateUtility, Pawn::Walking>({0});

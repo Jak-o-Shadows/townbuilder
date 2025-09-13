@@ -145,7 +145,13 @@ struct BasePawnState : PawnFSM::State {
         fsmLogger->trace("Pawn {} exiting state {}", std::string(e.path()), Statemachine::TypeName<TemplateState>());
         e.remove<TemplateState>();
     }
-    /*void utility(FullControl& control) {
+};
+
+// As the `utility` function is only defined for utilitarian states, need a separate
+//  base class for those states
+template <typename TemplateState>
+struct BaseUtilityState : BasePawnState<TemplateState> {
+    float utility(typename PawnFSM::Control& control) {
         flecs::entity e = flecs::entity(control.context().ecs, control.context().id);
         const Statemachine::StateUtility* util = e.get<Statemachine::StateUtility, TemplateState>();
         if (util != nullptr) {
@@ -153,7 +159,7 @@ struct BasePawnState : PawnFSM::State {
         } else {
             return 0.0f;
         }
-    }*/
+    }
 };
 
 
