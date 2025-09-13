@@ -8,11 +8,10 @@
  
 namespace Python {
 
-//extern std::vector<pybind11::subinterpreter> interpreters;
 
 struct PythonFile {
     std::string filepath;
-   size_t interpreter_idx;  // Couldn't get any kind of direct or pointer working, so bugger it
+    size_t interpreter_idx;  // Couldn't get any kind of direct or pointer working, so bugger it
 };
 
 struct components {

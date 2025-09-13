@@ -133,7 +133,8 @@ add_custom_command(TARGET ${PROJECT_NAME}
     COMMENT "Copying pluginExample to build directory"
 )
 
-# Python Binding
+# Python Plugin Binding
+#   Be able to test the plugin via Python
 add_subdirectory(src/pluginPythonBinding)
 add_dependencies(pluginPythonBinding plugin)
 add_custom_command(TARGET ${PROJECT_NAME}
@@ -143,3 +144,6 @@ add_custom_command(TARGET ${PROJECT_NAME}
         $<TARGET_FILE_DIR:pluginPythonBinding>
     COMMENT "Copying pluginExample to build directory for python binding"
 )
+
+# Python embedding - Pybind module for writing Python scripts
+add_subdirectory(src/pythonEcsBinding)

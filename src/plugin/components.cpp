@@ -1,4 +1,4 @@
- #include "plugin/module.hpp"
+#include "plugin/module.hpp"
  
 #include "msgLogging/module.hpp"
 

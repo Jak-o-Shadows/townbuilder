@@ -4,6 +4,8 @@
 
 #include <tracy/Tracy.hpp>
 
+#include <math.h>
+
 namespace Coordinates {
 
 std::shared_ptr<spdlog::logger> systemsLogger;

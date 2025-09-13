@@ -1,11 +1,11 @@
- #pragma once
- 
- #include "plugin/interface.hpp"
+#pragma once
 
- #include <flecs.h>
- 
- namespace Plugin {
- 
+#include "plugin/interface.hpp"
+
+#include <flecs.h>
+
+namespace Plugin {
+
 struct PluginGuid {
     GUID id;
 };
