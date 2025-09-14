@@ -58,10 +58,12 @@ struct PtTest {
 ////////////////////////////////////////////////////////////////////////////////
 
 int main(int, char *[]) {
+    std::cout << "Starting main" << std::endl;
 
     flecs::world ecs;
     ecs.set<flecs::Rest>({});// {.port=27751});  // TODO: Get multiple ports working so the plugin can listen too
     ecs.import<flecs::stats>(); // Enable statistics in explorer
+    std::cout << "World created" << std::endl;
 
     ecs.component<std::string>()
         .opaque(flecs::String) // Opaque type that maps to string
@@ -236,7 +238,7 @@ int main(int, char *[]) {
         std::cout << "Pawn Grid set: " << pawn.path() << std::endl;
         pawn.set<Coordinates::Cell>({0, 0});
         std::cout << "Pawn Coordinates set: " << pawn.path() << std::endl;
-        pawn.set<Coordinates::CellVelocity>({0, 0});
+        pawn.set<Coordinates::CellVelocity>({0.5, 0});
         pawn.add<Coordinates::GridBase>();
         pawn.set<Pawn::PawnAbilityTraits>({0, speed});
         std::cout << "First part of pawn created: " << pawn.path() << std::endl;

@@ -36,20 +36,6 @@ systems::systems(flecs::world& ecs){
 
    
     // Put systems in
-    auto move_sys = ecs.system<Coordinates::Cell, Coordinates::CellVelocity>("System_IntraCellMovement")
-    .tick_source(Ticks::tick_pawn_behaviour)
-    .run([](flecs::iter& it){
-        ZoneScopedN("System_IntraCellMovement");
-        while (it.next()){
-            auto p = it.field<Coordinates::Cell>(0);
-            auto v = it.field<Coordinates::CellVelocity>(1);
-            for (auto i: it){
-                p[i].x += v[i].x * it.delta_system_time();
-                p[i].y += v[i].y * it.delta_system_time();
-                systemsLogger->trace("Position: {}, {} @ Velocity: {}, {}", p[i].x, p[i].y, v[i].x, v[i].y);
-            }
-        }
-    });
     
     ecs.observer<const Coordinates::Grid>("Observer_PawnOccupying")
         .with<IsAPawn>()

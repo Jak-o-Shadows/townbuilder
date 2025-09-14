@@ -30,8 +30,8 @@ components::components(flecs::world& ecs) {
         .member<int>("y");
     
     ecs.component<Cell>("Cell")
-        .member<int>("x")
-        .member<int>("y")
+        .member<float>("x")
+        .member<float>("y")
         .set_doc_brief("Location within the grid cell. Limited to [-1, 1]");
     ecs.component<CellVelocity>("CellVelocity")
         .member<float>("x")

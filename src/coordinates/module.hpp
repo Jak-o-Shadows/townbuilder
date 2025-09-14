@@ -8,17 +8,19 @@
 namespace Coordinates {
 
 
-
+    // Grid is the location on the map - which location it is
     struct Grid{
         int x;
         int y;
     };
 
+    // Cell is the location within a grid square/unit - for movement
     struct Cell {
-        int x;
-        int y;
+        float x;
+        float y;
     };
 
+    // CellVelocity is the velocity within a grid square/unit - for movement
     struct CellVelocity{
         float x;
         float y;
@@ -44,10 +46,10 @@ namespace Coordinates {
     };
 
     // Tags to set what the base coordinate system is for the position
-    struct GridBase {};
-    struct NedBase {};
-    struct LlaBase {};
-    struct EcefBase {};
+    struct GridBase {};  // Motion is driven by grid changes
+    struct NedBase {};  // Motion is driven by NED changes
+    struct LlaBase {};  // Motion is driven by LLA changes
+    struct EcefBase {};  // Motion is driven by ECEF changes
 
 
 struct Converter {
