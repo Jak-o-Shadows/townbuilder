@@ -242,40 +242,8 @@ int main(int, char *[]) {
         pawn.add<Coordinates::GridBase>();
         pawn.set<Pawn::PawnAbilityTraits>({0, speed});
         std::cout << "First part of pawn created: " << pawn.path() << std::endl;
-
-        // For each possible State, put the timing info in. Note that this must be
-        // done before the FSM is created, otherwise it will not be able to access
-        // the timing info, which it does on entry to each state
-        pawn.set<Statemachine::StateTiming, Pawn::Alive>({0, 0});
-        pawn.set<Statemachine::StateTiming, Pawn::Idle>({0, 0});
-        pawn.set<Statemachine::StateTiming, Pawn::Walking>({0, 0});
-        pawn.set<Statemachine::StateTiming, Pawn::Working>({0, 0});
-        pawn.set<Statemachine::StateTiming, Pawn::Fleeing>({0, 0});
-        pawn.set<Statemachine::StateTiming, Pawn::Combat>({0, 0});
-        pawn.set<Statemachine::StateTiming, Pawn::Dead>({0, 0});
-        pawn.set<Statemachine::StateTiming, Pawn::PawnOccupationUnemployed>({0, 0});
-        pawn.set<Statemachine::StateTiming, Pawn::PawnOccupationWoodcutter>({0, 0});
-        pawn.set<Statemachine::StateTiming, Pawn::PawnWoodcutterStateWalkingTo>({0, 0});
-        pawn.set<Statemachine::StateTiming, Pawn::PawnWoodcutterStateReturning>({0, 0});
-        pawn.set<Statemachine::StateTiming, Pawn::PawnWoodcutterStateChopping>({0, 0});
-        // Set the utility for each
-        //  TODO: This should only be done for utilitarian states, but haven't got utilitarian states in yet, so doing for all
-        pawn.set<Statemachine::StateUtility, Pawn::Alive>({0});
-        pawn.set<Statemachine::StateUtility, Pawn::Idle>({0});
-        pawn.set<Statemachine::StateUtility, Pawn::Walking>({0});
-        pawn.set<Statemachine::StateUtility, Pawn::Working>({0});
-        pawn.set<Statemachine::StateUtility, Pawn::Fleeing>({0});
-        pawn.set<Statemachine::StateUtility, Pawn::Combat>({0});
-        pawn.set<Statemachine::StateUtility, Pawn::Dead>({0});
-        pawn.set<Statemachine::StateUtility, Pawn::PawnOccupationUnemployed>({0});
-        pawn.set<Statemachine::StateUtility, Pawn::PawnOccupationWoodcutter>({0});
-        pawn.set<Statemachine::StateUtility, Pawn::PawnWoodcutterStateWalkingTo>({0});
-        pawn.set<Statemachine::StateUtility, Pawn::PawnWoodcutterStateReturning>({0});
-        pawn.set<Statemachine::StateUtility, Pawn::PawnWoodcutterStateChopping>({0});
         // Set utility curves
         pawn.set<Statemachine::CurveFile, Pawn::Alive>({"../../state1.csv"});
-
-
 
         Statemachine::Context blah{pawn.id(), ecs};  // No idea why this has to be a separate variable, but it does, so bugger it
         pawn.set<Pawn::PawnFSMContainer>({std::shared_ptr<Pawn::PawnFSM::Instance>(new Pawn::PawnFSM::Instance(blah))});

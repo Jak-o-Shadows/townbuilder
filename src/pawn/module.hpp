@@ -135,8 +135,14 @@ struct BasePawnState : PawnFSM::State {
     void enter(Control& control) {
         flecs::entity e = flecs::entity(control.context().ecs, control.context().id);
         fsmLogger->trace("Pawn {} entering state {}", std::string(e.path()), Statemachine::TypeName<TemplateState>());
+          // TODO: Try to replace this with e.ensure
+        Statemachine::StateTiming* timing;
+        timing = e.get_mut<Statemachine::StateTiming, TemplateState>();
+        if (!timing) {
+            e.set<Statemachine::StateTiming, TemplateState>({0, 0});
+            timing = e.get_mut<Statemachine::StateTiming, TemplateState>();
+        }
         // Reset how long we've been in this state
-        Statemachine::StateTiming* timing = e.get_mut<Statemachine::StateTiming, TemplateState>();
         timing->timeInState_s = 0;
         e.add<TemplateState>();
     }

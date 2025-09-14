@@ -30,7 +30,27 @@ systems::systems(flecs::world& ecs){
     fsmLogger->set_level(spdlog::level::trace);
     spdlog::register_logger(fsmLogger);
 
-
+    ecs.observer<PawnFSMContainer>("Observer_PawnFsmContainer")
+        .event(flecs::OnAdd)
+        .each([](flecs::entity pawn, PawnFSMContainer&) {
+            ZoneScopedN("Observer_PawnFsmContainer");
+            systemsLogger->trace("Creating extra components for Pawn FSM {}", std::string(pawn.path()));
+            // Set the utility for each
+            //  TODO: This should only be done for utilitarian states, but haven't got utilitarian states in yet, so doing for all
+            pawn.set<Statemachine::StateUtility, Pawn::Alive>({0});
+            pawn.set<Statemachine::StateUtility, Pawn::Idle>({0});
+            pawn.set<Statemachine::StateUtility, Pawn::Walking>({0});
+            pawn.set<Statemachine::StateUtility, Pawn::Working>({0});
+            pawn.set<Statemachine::StateUtility, Pawn::Fleeing>({0});
+            pawn.set<Statemachine::StateUtility, Pawn::Combat>({0});
+            pawn.set<Statemachine::StateUtility, Pawn::Dead>({0});
+            pawn.set<Statemachine::StateUtility, Pawn::PawnOccupationUnemployed>({0});
+            pawn.set<Statemachine::StateUtility, Pawn::PawnOccupationWoodcutter>({0});
+            pawn.set<Statemachine::StateUtility, Pawn::PawnWoodcutterStateWalkingTo>({0});
+            pawn.set<Statemachine::StateUtility, Pawn::PawnWoodcutterStateReturning>({0});
+            pawn.set<Statemachine::StateUtility, Pawn::PawnWoodcutterStateChopping>({0});
+            systemsLogger->trace("Created extra components for Pawn FSM {}", std::string(pawn.path()));
+    });
 
 
 

@@ -4,6 +4,7 @@
 #include <Eigen/Dense>
 
 #include <string>
+#include <limits>
 
 
 namespace Statemachine {
@@ -30,7 +31,8 @@ struct Curve{
                 return points(i-1,1) + t * (points(i,1) - points(i-1,1));
             }
         }
-    };
+        return std::numeric_limits<float>::signaling_NaN();
+    }
 };
 
 struct Context {
