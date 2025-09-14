@@ -117,6 +117,13 @@ systems::systems(flecs::world& ecs){
             systemsLogger->trace("Pawn {} Alive utility: {}", std::string(e.path()), util.utility);
         });
 
+    ecs.system<PawnFSMContainer>("System_PawnFSM_Update")
+        .tick_source(Ticks::tick_pawn_behaviour)
+        .each([](flecs::entity e, PawnFSMContainer& fsmc){
+            ZoneScopedN("System_PawnFSM_Update");
+            fsmc.machine->update();
+        });
+
 
         
 
