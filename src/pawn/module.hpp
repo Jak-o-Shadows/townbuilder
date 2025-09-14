@@ -106,7 +106,7 @@ struct PawnWoodcutterStateChopping;
 
 using PawnFSM = M::PeerRoot<
                 // sub-machine ..
-                M::Composite<Alive,
+                M::Utilitarian<Alive,
                     // .. with 4 sub-states
                     Idle,
                     M::Composite<Working,
@@ -151,7 +151,7 @@ struct BasePawnState : PawnFSM::State {
 //  base class for those states
 template <typename TemplateState>
 struct BaseUtilityState : BasePawnState<TemplateState> {
-    float utility(typename PawnFSM::Control& control) {
+    float utility(const typename PawnFSM::Control& control) const {
         flecs::entity e = flecs::entity(control.context().ecs, control.context().id);
         const Statemachine::StateUtility* util = e.get<Statemachine::StateUtility, TemplateState>();
         if (util != nullptr) {
@@ -165,29 +165,29 @@ struct BaseUtilityState : BasePawnState<TemplateState> {
 
 // Overall Pawn States
 
-struct Alive : BasePawnState<Alive> {
+struct Alive : BaseUtilityState<Alive> {
 };
 
-struct Idle : BasePawnState<Idle> {
+struct Idle : BaseUtilityState<Idle> {
     void react(const Destination_Event& event, FullControl& control);
 };
 
-struct Working : BasePawnState<Working> {
+struct Working : BaseUtilityState<Working> {
 };
 
-struct Walking : BasePawnState<Walking> {
+struct Walking : BaseUtilityState<Walking> {
     void react(const Destination_Event& event, FullControl& control);
     void react(const Arrived_Event&, FullControl& control);
 };
 
-struct Combat : BasePawnState<Combat> {
+struct Combat : BaseUtilityState<Combat> {
     void update(FullControl& control) {};
 };
 
-struct Fleeing : BasePawnState<Fleeing> {
+struct Fleeing : BaseUtilityState<Fleeing> {
 };
 
-struct Dead : BasePawnState<Dead> {
+struct Dead : BaseUtilityState<Dead> {
 };
 
 

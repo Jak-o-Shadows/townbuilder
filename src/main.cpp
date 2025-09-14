@@ -272,6 +272,9 @@ int main(int, char *[]) {
         pawn.set<Statemachine::StateUtility, Pawn::PawnWoodcutterStateWalkingTo>({0});
         pawn.set<Statemachine::StateUtility, Pawn::PawnWoodcutterStateReturning>({0});
         pawn.set<Statemachine::StateUtility, Pawn::PawnWoodcutterStateChopping>({0});
+        // Set utility curves
+        pawn.set<Statemachine::CurveFile, Pawn::Alive>({"../../state1.csv"});
+
 
 
         Statemachine::Context blah{pawn.id(), ecs};  // No idea why this has to be a separate variable, but it does, so bugger it

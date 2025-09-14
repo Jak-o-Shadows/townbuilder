@@ -24,12 +24,16 @@ systems::systems(flecs::world& ecs) {
     ecs.import<Statemachine::components>();
     systemsLogger->trace("Other flecs modules imported");
 
-    
-    ecs.observer<CurveFile>("Observer_LoadCurveFile")
+    ecs.observer<const CurveFile>("Observer_LoadCurveFile")
+        .term_at(0).second(flecs::Wildcard)
         .event(flecs::OnSet)
-        .each([](flecs::entity e, const CurveFile& cf){
+        .each([](flecs::iter& it, size_t i, const CurveFile& cf) {
             ZoneScopedN("Observer_LoadCurveFile");
             systemsLogger->debug("Loading curve file: {}", cf.filename);
+
+            flecs::entity e= it.entity(i);
+            flecs::entity target = it.pair(0).second();
+
             rapidcsv::Document doc(cf.filename, 
                 rapidcsv::LabelParams(0, -1),  // Column headers, no row headers
                 rapidcsv::SeparatorParams(),  // Required for argument ordering so ConverterParams is there
@@ -54,7 +58,7 @@ systems::systems(flecs::world& ecs) {
                 systemsLogger->trace("Loaded curve with {} points", x_vec.size());
             }
             systemsLogger->trace("Loaded {} curves from file {} into comopnent", curveComponent.curves.size(), cf.filename);
-            e.set<Curve>(std::move(curveComponent));
+            e.set<Curve>(target, std::move(curveComponent));
 
         });
 
@@ -63,9 +67,9 @@ systems::systems(flecs::world& ecs) {
         .term_at(0).second("$state")
         .with("$state")
         .tick_source(Ticks::tick_pawn_behaviour)
-        .each([](Statemachine::StateTiming& timing) {
+        .each([](flecs::iter& it, size_t i, Statemachine::StateTiming& timing) {
             ZoneScopedN("Increment_StateTiming");
-            float dt = 0.01;//it.delta_system_time();  // TODO: This needs to be the it.delta_system_time(), but not working
+            float dt = it.delta_system_time();
             timing.timeInState_s += dt;
             timing.culmulativeTimeInState_s += dt;
         });

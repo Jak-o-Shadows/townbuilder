@@ -54,6 +54,7 @@ systems::systems(flecs::world& ecs){
 
 
 
+
     // State actions
     /*
     auto blah_sys = ecs.system<>("ASDF")
@@ -95,6 +96,36 @@ systems::systems(flecs::world& ecs){
             systemsLogger->trace("Pawn {} walking to {}", std::string(e.path()), std::string(dest.path()));
         });
     
+    ecs.system<Statemachine::StateUtility,
+              const Statemachine::StateTiming,
+              const Statemachine::Curve>("System_UtilityPawnAlive")
+        .term_at(0).out()
+        .term_at(0).second<Alive>()
+        .term_at(1).in()
+        .term_at(1).second<Alive>()
+        .term_at(2).in()
+        .term_at(2).second<Alive>()
+        .tick_source(Ticks::tick_pawn_behaviour)
+        .each([](flecs::entity e,
+                 Statemachine::StateUtility& util,
+                 const Statemachine::StateTiming& timing,
+                 const Statemachine::Curve &curve){
+            ZoneScopedN("System_UtilityPawnAlive");
+            std::vector<float> testPoints = {timing.timeInState_s, timing.culmulativeTimeInState_s};
+            util.utility = Statemachine::utility_calc(curve, testPoints);
+            // The longer we've been alive, the less useful it is to stay alive
+            systemsLogger->trace("Pawn {} Alive utility: {}", std::string(e.path()), util.utility);
+        });
+
+
+        
+
+
+
+
+
+
+
 
     systemsLogger->trace("Systems Registered");
 
