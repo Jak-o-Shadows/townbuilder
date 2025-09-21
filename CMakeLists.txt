@@ -13,6 +13,8 @@ target_sources(${PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src/buildings/components.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src//coordinates/components.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/coordinates/systems.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/database/components.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/database/systems.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/dis/components.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/dis/systems.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/map/components.cpp
@@ -76,6 +78,9 @@ target_link_libraries(${PROJECT_NAME} Eigen3::Eigen)
 find_package(rapidcsv REQUIRED CONFIG)
 target_link_libraries(${PROJECT_NAME} rapidcsv::rapidcsv)
 
+# SOCI
+find_package(soci REQUIRED)
+target_link_libraries(${PROJECT_NAME} soci::soci)
 
 #RecastNavigation
 find_package(recastnavigation REQUIRED)

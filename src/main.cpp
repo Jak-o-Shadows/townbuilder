@@ -3,6 +3,7 @@
 #include "msgLogging/module.hpp"
 #include "ticks/module.hpp"
 #include "render/module.hpp"
+#include "database/module.hpp"
 #include "coordinates/module.hpp"
 //#include "dis/module.hpp"
 #include "pawn/module.hpp"
@@ -88,6 +89,7 @@ int main(int, char *[]) {
     // Then import all the comopnents
     ecs.import<Buildings::components>();
     ecs.import<Coordinates::components>();
+    ecs.import<Database::components>();
     //ecs.import<fdis::components>();
     ecs.import<Map::components>();
     ecs.import<Pathfinding::components>();
@@ -100,6 +102,7 @@ int main(int, char *[]) {
 
     // Systems next
     ecs.import<Coordinates::systems>();
+    ecs.import<Database::systems>();
     //ecs.import<fdis::systems>();
     ecs.import<Pawn::systems>();
     ecs.import<Plugin::systems>();
@@ -117,6 +120,10 @@ int main(int, char *[]) {
     // TODO: Determine if this is required to be done after the loggers created
     spdlog::flush_on(spdlog::level::trace);
     spdlog::flush_every(std::chrono::seconds(1));
+
+    // Add an empty Connection singleton. The observer will populate it.
+    ecs.set<Database::Connection>({nullptr});
+
 
 
     // Export positions to DIS - this is how playback/recording will work.
