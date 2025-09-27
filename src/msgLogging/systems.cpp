@@ -52,9 +52,9 @@ systems::systems(flecs::world& ecs){
     ecs.observer<LoggerControls>("UpdateLogLevel")
         .event(flecs::OnSet)
         .each([](flecs::entity e, LoggerControls& c){
-            const Logger *lg = e.get<Logger>();
-            lg->logger->set_level(c.level);
-            lg->logger->trace("Changing log level for {} to {}", std::string(e.path()), spdlog::level::to_string_view(c.level));
+            const Logger& lg = e.get<Logger>();
+            lg.logger->set_level(c.level);
+            lg.logger->trace("Changing log level for {} to {}", std::string(e.path()), spdlog::level::to_string_view(c.level));
         });
 
 }
@@ -64,7 +64,7 @@ std::shared_ptr<spdlog::logger> logger;
 
 examplemodule::examplemodule(flecs::world& ecs) {
     flecs::entity m = ecs.module<examplemodule>();
-    logger = Logging::init_module_logger(m, ecs.get<Logging::LoggerSink>()->sink);
+    logger = Logging::init_module_logger(m, ecs.get<Logging::LoggerSink>().sink);
     // Before using logger, must set the level so the observer can handle it
     m.set<Logging::LoggerControls>({spdlog::level::err});
     logger->trace("Module Created");

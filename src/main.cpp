@@ -162,7 +162,7 @@ int main(int, char *[]) {
     const int map_height = 25;
     // Stored in a vector for each access
     mapEntity.emplace<Map::Grid>(map_width, map_height, &ecs, mapEntity);
-    const Map::Grid* map = mapEntity.get<Map::Grid>();
+    const Map::Grid& map = mapEntity.get<Map::Grid>();
     //  Initially, fully connected
     for (int x = 0; x<map_width; x++){
         for (int y = 0; y<map_height; y++){
@@ -218,10 +218,10 @@ int main(int, char *[]) {
 
 
     
-    std::cout << "Map size: " << map->m_width << "x" << map->m_height << std::endl;
-    std::cout << "Map:" << map << std::endl;
-    std::uniform_int_distribution<int> xDist(0, map->m_width-1);
-    std::uniform_int_distribution<int> yDist(0, map->m_height-1);
+    std::cout << "Map size: " << map.m_width << "x" << map.m_height << std::endl;
+    //std::cout << "Map:" << map << std::endl;
+    std::uniform_int_distribution<int> xDist(0, map.m_width-1);
+    std::uniform_int_distribution<int> yDist(0, map.m_height-1);
     std::uniform_real_distribution<float> speedDist(0.7, 0.9);
     std::cout << "Random distributions created" << std::endl;
     
@@ -260,7 +260,7 @@ int main(int, char *[]) {
 
         // Set a destination
         //  This is just for test purposes
-        pawn.add<Pawn::PawnPathfindingGoal>(flecs::entity(ecs, map->get(0, 0)));
+        pawn.add<Pawn::PawnPathfindingGoal>(flecs::entity(ecs, map.get(0, 0)));
 
 
     }
@@ -396,9 +396,9 @@ int main(int, char *[]) {
 
     std::cout << "Just before run" << std::endl;
     // set the debug level so i can see the system order
-    Render::Window* w = ecs.get_mut<Render::Window>();
+    Render::Window& w = ecs.get_mut<Render::Window>();
     while (true) {
-        if (!w->alive) break;
+        if (!w.alive) break;
         ecs.progress();
         FrameMarkNamed("Frame");
     }

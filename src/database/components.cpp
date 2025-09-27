@@ -7,9 +7,13 @@ std::shared_ptr<spdlog::logger> componentsLogger;
 
 components::components(flecs::world& ecs) {
     flecs::entity m = ecs.module<components>();
-    componentsLogger = Logging::init_module_logger(m, ecs.get<Logging::LoggerSink>()->sink);
+    componentsLogger = Logging::init_module_logger(m, ecs.get<Logging::LoggerSink>().sink);
     m.set<Logging::LoggerControls>({spdlog::level::trace});
     componentsLogger->trace("Database components module created");
+
+    ecs.component<Connection>()
+        .add(flecs::Singleton);
+    componentsLogger->trace("Components Registered");
 
 };
 

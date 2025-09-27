@@ -14,7 +14,7 @@ systems::systems(flecs::world& ecs){
     // Register module with world. The module entity will be created with the
     // same hierarchy as the C++ namespaces (e.g. simple::module)
     flecs::entity m = ecs.module<systems>();
-    systemsLogger = Logging::init_module_logger(m, ecs.get<Logging::LoggerSink>()->sink);
+    systemsLogger = Logging::init_module_logger(m, ecs.get<Logging::LoggerSink>().sink);
     // Before using logger, must set the level so the observer can handle it
     m.set<Logging::LoggerControls>({spdlog::level::trace});
     systemsLogger->trace("Module Created");
@@ -26,7 +26,7 @@ systems::systems(flecs::world& ecs){
 
     // The logger for the FSM is defined differently so header-only can access it.
     //  TODO: Should I just put this in a different flecs module for consistency?
-    fsmLogger = std::make_shared<spdlog::logger>(std::string(m.path()) + ".fsm", ecs.get<Logging::LoggerSink>()->sink);
+    fsmLogger = std::make_shared<spdlog::logger>(std::string(m.path()) + ".fsm", ecs.get<Logging::LoggerSink>().sink);
     fsmLogger->set_level(spdlog::level::trace);
     spdlog::register_logger(fsmLogger);
 
@@ -63,12 +63,8 @@ systems::systems(flecs::world& ecs){
         .event(flecs::OnSet)
         .each([&ecs](flecs::entity pawn, const Coordinates::Grid& grid){
             ZoneScopedN("Observer_PawnOccupying");
-            const Map::Grid* map = ecs.get<Map::Grid>();
-            if (!map) {
-                systemsLogger->error("Map not found when setting PawnOccupying");
-                return;
-            }
-            pawn.add<PawnOccupying>(flecs::entity(pawn.world(), map->get(grid.x, grid.y)));
+            const Map::Grid& map = ecs.get<Map::Grid>();
+            pawn.add<PawnOccupying>(flecs::entity(pawn.world(), map.get(grid.x, grid.y)));
         });
 
 

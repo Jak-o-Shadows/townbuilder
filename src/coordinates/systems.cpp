@@ -17,7 +17,7 @@ systems::systems(flecs::world& ecs) {
     // Register module with world. The module entity will be created with the
     // same hierarchy as the C++ namespaces (e.g. simple::module)
     flecs::entity m = ecs.module<systems>();
-    systemsLogger = Logging::init_module_logger(m, ecs.get<Logging::LoggerSink>()->sink);
+    systemsLogger = Logging::init_module_logger(m, ecs.get<Logging::LoggerSink>().sink);
     // Before using logger, must set the level so the observer can handle it
     m.set<Logging::LoggerControls>({spdlog::level::trace});
     systemsLogger->trace("Module Created");
@@ -47,7 +47,6 @@ systems::systems(flecs::world& ecs) {
     ecs.system<const NED, LLA, Converter>("System_NEDtoLLA")
         .term_at(0).in()
         .term_at(1).out()
-        .term_at(2).singleton()
         .with<NedBase>().or_().with<GridBase>()
         .each([](const NED& ned, LLA& lla, Converter& converter){
             ZoneScopedN("System_NEDtoLLA");
@@ -58,7 +57,6 @@ systems::systems(flecs::world& ecs) {
     ecs.system<const NED, ECEF, Converter>("System_NEDtoECEF")
         .term_at(0).in()
         .term_at(1).out()
-        .term_at(2).singleton()
         .with<NedBase>().or_().with<GridBase>()
         .each([](const NED& ned, ECEF& ecef, Converter& converter){
             ZoneScopedN("System_NEDtoECEF");
@@ -69,7 +67,6 @@ systems::systems(flecs::world& ecs) {
     ecs.system<const ECEF, NED, Converter>("System_ECEFtoNED")
         .term_at(0).in()
         .term_at(1).out()
-        .term_at(2).singleton()
         .with<EcefBase>()
         .each([](const ECEF& ecef, NED& ned, Converter& converter){
             ZoneScopedN("System_ECEFtoNED");
@@ -80,7 +77,6 @@ systems::systems(flecs::world& ecs) {
     ecs.system<const ECEF, LLA, Converter>("System_ECEFtoLLA")
         .term_at(0).in()
         .term_at(1).out()
-        .term_at(2).singleton()
         .with<EcefBase>()
         .each([](const ECEF& ecef, LLA& lla, Converter& converter){
             ZoneScopedN("System_ECEFtoLLA");
@@ -91,7 +87,6 @@ systems::systems(flecs::world& ecs) {
     ecs.system<const LLA, NED, Converter>("System_LLAtoNED")
         .term_at(0).in()
         .term_at(1).out()
-        .term_at(2).singleton()
         .with<LlaBase>()
         .each([](const LLA& lla, NED& ned, Converter& converter){
             ZoneScopedN("System_LLAtoNED");
@@ -102,7 +97,6 @@ systems::systems(flecs::world& ecs) {
     ecs.system<const LLA, ECEF, Converter>("System_LLAtoECEF")
         .term_at(0).in()
         .term_at(1).out()
-        .term_at(2).singleton()
         .with<LlaBase>()
         .each([](const LLA& lla, ECEF& ecef, Converter& converter){
             ZoneScopedN("System_LLAtoECEF");

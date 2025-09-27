@@ -132,7 +132,7 @@ void plugin_tick(const Plugin::GUID id, const Plugin::TickInput& input) {
 Plugin::PluginResults plugin_get_results(const Plugin::GUID id) {
     flecs::entity e = plugin_example::g_state.get_or_create_entity(id);
     //std::cout << std::format("Getting results for entity {} with guid {}", std::string(e.path()), id) << std::endl;
-    const Plugin::PluginResults* results = e.get<Plugin::PluginResults>();
+    const Plugin::PluginResults* results = e.try_get<Plugin::PluginResults>();
     if (results) {
         return *results;
     } else {

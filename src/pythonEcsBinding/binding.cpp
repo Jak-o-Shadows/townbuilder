@@ -42,18 +42,14 @@ void bind_component(py::module_ &m) {
     component_class.def(py::init<>());
 
 
-    const EcsType* type = comp.get<EcsType>();
-    if (type == nullptr) {
-        std::cout << "No reflection data for component: " << component_name << std::endl;
-        return;
-    }
-    if (type->kind == ecs_type_kind_t::EcsStructType){
+    const EcsType& type = comp.get<EcsType>();
+    if (type.kind == ecs_type_kind_t::EcsStructType){
         std::cout << "Binding struct component: " << component_name << std::endl;
-        const EcsStruct* struct_info = comp.get<EcsStruct>();
-        if (struct_info->members.count > 0) {
-            std::cout << "  Members found: " << struct_info->members.count << std::endl;
-            for (size_t memberIdx=0; memberIdx < struct_info->members.count; memberIdx++) {
-            const ecs_member_t* member = (const ecs_member_t*)ecs_vec_get_t(&struct_info->members, ecs_member_t, memberIdx);
+        const EcsStruct& struct_info = comp.get<EcsStruct>();
+        if (struct_info.members.count > 0) {
+            std::cout << "  Members found: " << struct_info.members.count << std::endl;
+            for (size_t memberIdx=0; memberIdx < struct_info.members.count; memberIdx++) {
+            const ecs_member_t* member = (const ecs_member_t*)ecs_vec_get_t(&struct_info.members, ecs_member_t, memberIdx);
                 const char* member_name = member->name;
                 ecs_entity_t member_type_ent = member->type;
                 int member_offset = member->offset;

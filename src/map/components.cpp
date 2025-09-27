@@ -21,10 +21,10 @@ flecs::entity resourcesParent;
 std::shared_ptr<spdlog::logger> logger;
 
 
-void setCellRelationship(flecs::world& ecs, const Grid* map, int x, int y, int second_x, int second_y, float weight, bool reversible) {
+void setCellRelationship(flecs::world& ecs, const Grid& map, int x, int y, int second_x, int second_y, float weight, bool reversible) {
     logger->trace("Setting ({}, {}) --> ({}, {}) to {}", x, y, second_x, second_y, weight);
-    flecs::entity thisCell = flecs::entity(ecs, map->get(x,y));
-    flecs::entity secondCell = flecs::entity(ecs, map->get(second_x, second_y));
+    flecs::entity thisCell = flecs::entity(ecs, map.get(x,y));
+    flecs::entity secondCell = flecs::entity(ecs, map.get(second_x, second_y));
     thisCell.set<GridConnected>(secondCell.id(), {weight});
     if (reversible) {
         secondCell.set<GridConnected>(thisCell.id(), {weight});
@@ -33,13 +33,13 @@ void setCellRelationship(flecs::world& ecs, const Grid* map, int x, int y, int s
 }
 
 
-void setCellConnectivity(flecs::world& ecs, const Grid* map, int x, int y, float left, float right, float up, float down, bool reversible) {
+void setCellConnectivity(flecs::world& ecs, const Grid& map, int x, int y, float left, float right, float up, float down, bool reversible) {
 
     if (x > 0) {
         // Left valid
         setCellRelationship(ecs, map, x, y, x-1, y, left, reversible);
     }
-    if (x < map->m_width-1) {
+    if (x < map.m_width-1) {
         // Right valid
         setCellRelationship(ecs, map, x, y, x+1, y, right, reversible);
     }
@@ -47,7 +47,7 @@ void setCellConnectivity(flecs::world& ecs, const Grid* map, int x, int y, float
         // Up valid
         setCellRelationship(ecs, map, x, y, x, y-1, up, reversible);
     }
-    if (y < map->m_height-1) {
+    if (y < map.m_height-1) {
         // Down valid
         setCellRelationship(ecs, map, x, y, x, y+1, down, reversible);
     }
@@ -62,7 +62,7 @@ components::components(flecs::world& ecs) {
     // Register module with world. The module entity will be created with the
     // same hierarchy as the C++ namespaces (e.g. simple::module)
     flecs::entity m = ecs.module<components>();
-    logger = Logging::init_module_logger(m, ecs.get<Logging::LoggerSink>()->sink);
+    logger = Logging::init_module_logger(m, ecs.get<Logging::LoggerSink>().sink);
     // Before using logger, must set the level so the observer can handle it
     m.set<Logging::LoggerControls>({spdlog::level::warn});
     logger->trace("Module Created");
@@ -157,17 +157,17 @@ public:
 
 
 
-flecs::id_t pathfind(flecs::world &ecs, const Grid* map, int currentX, int currentY, int targetX, int targetY){
+flecs::id_t pathfind(flecs::world &ecs, const Grid& map, int currentX, int currentY, int targetX, int targetY){
     ZoneScopedN("Function_Pathfind");
 
-    return map->get(targetX, targetY);
+    return map.get(targetX, targetY);
 
     int x = currentX;
     int y = currentY;
 
     // Alias these to avoid having to change the working bit of code.
-    int map_width = map->m_width;
-    int map_height = map->m_height;
+    int map_width = map.m_width;
+    int map_height = map.m_height;
     int maxIter = map_width * map_height -1;
 
 
@@ -186,7 +186,7 @@ flecs::id_t pathfind(flecs::world &ecs, const Grid* map, int currentX, int curre
 
     // Start performing Dijkstra's Algorithm
     
-    auto thisCell = flecs::entity(ecs, map->get(x,y));
+    auto thisCell = flecs::entity(ecs, map.get(x,y));
     costGrid.set(x, y, 0);  // First cell has zero cost
     for (int i=0; i<maxIter; i++){
         logger->trace("{} ({}, {})", std::string(thisCell.path()), x, y);
@@ -247,7 +247,7 @@ flecs::id_t pathfind(flecs::world &ecs, const Grid* map, int currentX, int curre
         if (minCost != 9999999999) {
             x = minCostX;
             y = minCostY;
-            thisCell = flecs::entity(ecs, map->get(x,y));
+            thisCell = flecs::entity(ecs, map.get(x,y));
         } else {
             // No remaining cells
             break;
@@ -261,14 +261,14 @@ flecs::id_t pathfind(flecs::world &ecs, const Grid* map, int currentX, int curre
     
     x = targetX;
     y = targetY;
-    flecs::id_t thisSpot = map->get(x, y);
+    flecs::id_t thisSpot = map.get(x, y);
     flecs::id_t prevSpot = thisSpot;  // Handle final case where there is just one link
     for (int i = 0; i <= maxIter; i++) { // Theoretically the path could use all cells
         thisSpot = prevGrid.get(x, y);
         //std::cout << x << ", " << y << " of id" << thisSpot << std::endl;
         auto blah = flecs::entity(ecs, thisSpot).get<GridCellStatic>();
-        x = blah->x;
-        y = blah->y;
+        x = blah.x;
+        y = blah.y;
         if ((x == currentX) && (y == currentY)){
             break;
         }

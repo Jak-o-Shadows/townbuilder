@@ -137,10 +137,10 @@ struct BasePawnState : PawnFSM::State {
         fsmLogger->trace("Pawn {} entering state {}", std::string(e.path()), Statemachine::TypeName<TemplateState>());
           // TODO: Try to replace this with e.ensure
         Statemachine::StateTiming* timing;
-        timing = e.get_mut<Statemachine::StateTiming, TemplateState>();
+        timing = e.try_get_mut<Statemachine::StateTiming, TemplateState>();
         if (!timing) {
             e.set<Statemachine::StateTiming, TemplateState>({0, 0});
-            timing = e.get_mut<Statemachine::StateTiming, TemplateState>();
+            timing = e.try_get_mut<Statemachine::StateTiming, TemplateState>();
         }
         // Reset how long we've been in this state
         timing->timeInState_s = 0;
@@ -159,7 +159,7 @@ template <typename TemplateState>
 struct BaseUtilityState : BasePawnState<TemplateState> {
     float utility(const typename PawnFSM::Control& control) const {
         flecs::entity e = flecs::entity(control.context().ecs, control.context().id);
-        const Statemachine::StateUtility* util = e.get<Statemachine::StateUtility, TemplateState>();
+        const Statemachine::StateUtility* util = e.try_get<Statemachine::StateUtility, TemplateState>();  // try_get so I can be lazy and not have it defined for all
         if (util != nullptr) {
             return util->utility;
         } else {

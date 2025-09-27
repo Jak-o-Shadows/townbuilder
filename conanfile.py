@@ -19,7 +19,7 @@ class FlecsOrbitSimConan(ConanFile):
         self.build_requires("cmake/4.1.1")
 
     def requirements(self):
-        self.requires("flecs/4.0.4")
+        self.requires("flecs/4.1.1")
         self.requires("tracy/0.9.1")
         self.requires("spdlog/1.15.0", options={"use_std_fmt": True})
         self.requires("eigen/3.4.0")
