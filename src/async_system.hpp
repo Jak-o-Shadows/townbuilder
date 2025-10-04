@@ -56,7 +56,6 @@ void create_async_system(
     // System 1: System to kick off the task. It will not run if one is pending
     std::string start_name = std::string(name) + "_Start";
     world.system<const RequestComponent>(start_name.c_str())
-        .event(flecs::OnSet)
         .without(future_component) // Don't start if a task is already running
         .tick_source(tick_source)
         .each([=](flecs::entity e, const RequestComponent&) {
