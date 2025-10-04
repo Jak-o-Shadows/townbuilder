@@ -414,36 +414,25 @@ int main(int, char *[]) {
 
     // Example of the async system
 // --- Simple Async System Example ---
-    // 1. Define the work to be done on a background thread.
-    //    It reads from AsyncTestInputData and returns a std::string.
-    std::function<std::string(flecs::entity)> async_work =
-        [](flecs::entity e) -> std::string {
-        // It's safe to read component data here. The entity is valid, but
-        // the component data might change on the main thread. Copy what you need.
-        const AsyncTestInputData* req = e.try_get<AsyncTestInputData>();
-        float input_val = req ? req->value : 0.0f;
-
-        std::cout << "[Async] Starting long work for entity: " << e.name() << " with value " << input_val << std::endl;
+    // 1. Define the work function. It takes input components by const reference
+    //    and returns a std::tuple of the result components.
+    //    This function is now thread-safe as it operates on copies of the data.
+    std::string async_work = [](const AsyncTestInputData& req) -> std::tuple<AsyncTestOutputData> {
+        std::cout << "[Async] Starting long work with value " << req.value << std::endl;
         std::this_thread::sleep_for(std::chrono::seconds(10));
-        std::cout << "[Async] Finished long work for entity: " << e.name() << std::endl;
-        return "Processed value: " + std::to_string(input_val);
+        std::cout << "[Async] Finished long work." << std::endl;
+        return { { "Processed value: " + std::to_string(req.value) } };
     };
 
-    // 2. Define the handler for when the work is complete. This runs on the main thread.
-    //    It adds the result as a new AsyncTestOutputData component.
-    std::function<void(flecs::entity, std::string)> async_result_handler =
-        [](flecs::entity e, std::string result) {
-        std::cout << "[MainThread] Async result for " << e.name() << " is ready." << std::endl;
-        e.set<AsyncTestOutputData>({result});
-    };
-
-    // 3. Create the async system.
-    Async::create_async_system<AsyncTestInputData, std::string>(
+    // 2. Create the async system.
+    //    - RequestComponent: AsyncTestInputData (triggers the task)
+    //    - ResultComponents: AsyncTestOutputData
+    //    - InputComponents: AsyncTestInputData
+    Async::create_async_system<AsyncTestOutputData, AsyncTestInputData>(
         ecs,
-        "AsyncTestSystem",
         async_work,
-        async_result_handler,
-        Ticks::tick_ui
+        Ticks::tick_ui,
+        "AsyncTestSystem"
     );
 
 
