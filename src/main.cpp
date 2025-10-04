@@ -428,10 +428,11 @@ int main(int, char *[]) {
     // Create the async system, passing our standalone function as the worker.
     // The template arguments define the signature of the worker function:
     //    - ResultComponents: AsyncTestOutputData
-    //    - InputComponents: AsyncTestInputData
-    Async::create_async_system<AsyncTestOutputData, AsyncTestInputData>(
+    //    - InputComponents are now automatically deduced from the function signature.
+    std::function<std::tuple<AsyncTestOutputData>(const AsyncTestInputData&)> work_fn = async_test_work;
+    Async::create_async_system<AsyncTestOutputData>(
         ecs,
-        async_test_work, // Pass the regular function
+        work_fn,
         Ticks::tick_ui,
         "AsyncTestSystem"
     );
