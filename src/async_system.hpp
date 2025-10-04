@@ -34,9 +34,8 @@ struct Future {
  * This design ensures that the worker function is pure and thread-safe, as it
  * operates on copies of the data and does not need access to the world.
  *
- * @tparam RequestComponent Component that triggers the async task. Can be a tag or a component with data.
+ * @tparam InputComponents... A pack of component types that trigger the async task when on an entity
  * @tparam ResultComponents... A pack of component types that the work function will return as a std::tuple.
- * @tparam InputComponents... A pack of component types to be copied and passed as arguments to the work function.
  *
  * @param world The flecs::world instance.
  * @param work_function The function to execute on a background thread.
@@ -49,10 +48,10 @@ void create_async_system(
     flecs::world& world,
     std::function<std::tuple<ResultComponents...>(const InputComponents&...)> work_function,
     flecs::entity tick_source = {},
-    std::string system_name_prefix
+    std::string system_name_prefix = "AsyncSystem"
 ) {
     using ResultTuple = std::tuple<ResultComponents...>;
-    using InputTuple = std::tuple<InputComponents...>;
+    static_assert(sizeof...(InputComponents) > 0, "Async system must have at least one input component to act as a trigger.");
 
     // Use the request component's name to create a unique future component name
     std::string future_name = std::format("{}_Future", system_name_prefix);
@@ -65,13 +64,14 @@ void create_async_system(
     world.system<const InputComponents...>(start_name.c_str())
         .without(future_component) // Don't start if a task is already running
         .tick_source(tick_source)
--       .each([=](flecs::entity e, const InputComponents&... inputs) {
+        .each([=](flecs::entity e, const InputComponents&... inputs) {
             // Create a tuple of copies of the input components. This is the key
             // to making the worker function thread-safe.
-            auto inputs_tuple = std::make_tuple(others...);
+            auto inputs_tuple = std::make_tuple(InputComponents(inputs)...);
 
             // Launch the async task. `std::apply` unpacks the tuple of inputs
-            // into arguments for the work_function.
+            // into arguments for the work_function. The lambda wrapper is necessary
+            // to defer the execution of std::apply to the new thread.
             std::future<ResultTuple> fut = std::async(std::launch::async, [=] {
                 return std::apply(work_function, inputs_tuple);
             });
@@ -88,12 +88,13 @@ void create_async_system(
             if (fut_comp.future.wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
                 ResultTuple result_tuple = fut_comp.future.get();
 
-                // Helper to set components from the result tuple.
-                // We use a fold expression over a comma operator to iterate the tuple.
-                // This is a C++17 trick.
-                ( (e.set(std::get<ResultComponents>(result_tuple))), ... );
+                // Set all the result components on the entity.
+                // We use std::apply to unpack the result tuple and set each component.
+                std::apply([&](const auto&... components) {
+                    (e.set(components), ...);
+                }, result_tuple);
 
-                // The task is complete, so remove the request and future components.
+                // The task is complete, so remove the future component.
                 // The slightly not great performance of removing components is ok
                 // here since by definition this should be a low frequency operation
                 e.remove(future_component);

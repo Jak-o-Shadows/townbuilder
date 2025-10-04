@@ -64,6 +64,18 @@ struct AsyncTestOutputData {
     std::string msg;
 };
 
+/**
+ * @brief A standalone function to perform long-running work for the async system example.
+ * 
+ * @param req The input data component, passed by const reference.
+ * @return A std::tuple containing the result component(s).
+ */
+std::tuple<AsyncTestOutputData> async_test_work(const AsyncTestInputData& req) {
+    std::cout << "[Async] Starting long work with value " << req.value << std::endl;
+    std::this_thread::sleep_for(std::chrono::seconds(10));
+    std::cout << "[Async] Finished long work." << std::endl;
+    return { { "Processed value: " + std::to_string(req.value) } };
+}
 
 
 
@@ -413,37 +425,16 @@ int main(int, char *[]) {
 
 
     // Example of the async system
-// --- Simple Async System Example ---
-    // 1. Define the work function. It takes input components by const reference
-    //    and returns a std::tuple of the result components.
-    //    This function is now thread-safe as it operates on copies of the data.
-    std::string async_work = [](const AsyncTestInputData& req) -> std::tuple<AsyncTestOutputData> {
-        std::cout << "[Async] Starting long work with value " << req.value << std::endl;
-        std::this_thread::sleep_for(std::chrono::seconds(10));
-        std::cout << "[Async] Finished long work." << std::endl;
-        return { { "Processed value: " + std::to_string(req.value) } };
-    };
-
-    // 2. Create the async system.
-    //    - RequestComponent: AsyncTestInputData (triggers the task)
+    // Create the async system, passing our standalone function as the worker.
+    // The template arguments define the signature of the worker function:
     //    - ResultComponents: AsyncTestOutputData
     //    - InputComponents: AsyncTestInputData
     Async::create_async_system<AsyncTestOutputData, AsyncTestInputData>(
         ecs,
-        async_work,
+        async_test_work, // Pass the regular function
         Ticks::tick_ui,
         "AsyncTestSystem"
     );
-
-
-
-
-
-
-
-
-
-
 
     std::cout << "Systems in main.cpp defined" << std::endl;
 
