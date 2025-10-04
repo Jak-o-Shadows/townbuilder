@@ -53,20 +53,18 @@ void create_async_system(
     std::string future_name = std::string("Async::Future<") + request_name + ">";
     flecs::component<Async::Future<ResultType>> future_component = world.component<Async::Future<ResultType>>(future_name.c_str());
 
-    // System 1: Observer to kick off the task
+    // System 1: System to kick off the task. It will not run if one is pending
     std::string start_name = std::string(name) + "_Start";
-    world.observer<const RequestComponent>(start_name.c_str())
+    world.system<const RequestComponent>(start_name.c_str())
         .event(flecs::OnSet)
         .without(future_component) // Don't start if a task is already running
+        .tick_source(tick_source)
         .each([=](flecs::entity e, const RequestComponent&) {
             // Launch the async task, capturing necessary data.
             // The work_function is expected to handle its own data needs.
             std::future<ResultType> fut = std::async(std::launch::async, work_function, e);
-
             // Add the future component to the entity to track it.
             e.set<Async::Future<ResultType>>(future_component, {std::move(fut)});
-            // The request has been handled, so we can remove it.
-            e.remove<RequestComponent>();
         });
 
     // System 2: Polling system to check for results
@@ -78,6 +76,7 @@ void create_async_system(
             if (fut_comp.future.wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
                 ResultType result = fut_comp.future.get();
                 result_function(e, std::move(result));
+                // Adding & removing this component shouldn't happen too often, so who cares about performance
                 e.remove(future_component);
             }
         });
