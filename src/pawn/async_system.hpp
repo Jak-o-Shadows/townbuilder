@@ -38,8 +38,7 @@ struct Future {
  * @param name A base name for the created systems.
  * @param work_function The function to execute asynchronously.
  * @param result_function The function to call with the result on the main thread.
- * @param tick_source (Optional) The tick source entity for the polling system. If 0,
- *                    the system uses the default tick source (runs every frame).
+ * @param tick_source The tick source entity for the polling system.
  */
 template<typename RequestComponent, typename ResultType, typename WorkFn, typename ResultFn>
 void create_async_system(
@@ -58,8 +57,8 @@ void create_async_system(
     std::string start_name = std::string(name) + "_Start";
     world.observer<const RequestComponent>(start_name.c_str())
         .event(flecs::OnSet)
-        .not_if(future_component) // Don't start if a task is already running
-        .each(= {
+        .without(future_component) // Don't start if a task is already running
+        .each([=](flecs::entity e, const RequestComponent&) {
             // Launch the async task, capturing necessary data.
             // The work_function is expected to handle its own data needs.
             std::future<ResultType> fut = std::async(std::launch::async, work_function, e);
@@ -72,14 +71,10 @@ void create_async_system(
 
     // System 2: Polling system to check for results
     std::string check_name = std::string(name) + "_Check";
-    flecs::system<Async::Future<ResultType>> sys = world.system<Async::Future<ResultType>>(check_name.c_str())
-        .term_at(0).id(future_component); // Ensure we query for the correct future type
-
-    if (tick_source.is_valid()) {
-        sys.tick_source(tick_source);
-    }
-    
-    sys.each(= {
+    flecs::entity future_system = world.system<Async::Future<ResultType>>(check_name.c_str())
+        .term_at(0).id(future_component) // Ensure we query for the correct future type
+        .tick_source(tick_source)
+        .each([=](flecs::entity e, Async::Future<ResultType>& fut_comp) {
             if (fut_comp.future.wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
                 ResultType result = fut_comp.future.get();
                 result_function(e, std::move(result));

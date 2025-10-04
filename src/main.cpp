@@ -14,6 +14,7 @@
 #include "pathfinding/module.hpp"
 #include "ui/module.hpp"
 #include "statemachine/module.hpp"
+#include "pawn/async_system.hpp"
 
 
 #include "tracy_zones.hpp"
@@ -55,6 +56,15 @@ struct PtTest {
         int y;
     };
 
+struct AsyncTestInputData {
+    float value;
+};
+
+struct AsyncTestOutputData {
+    std::string msg;
+};
+
+
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -62,7 +72,6 @@ struct PtTest {
 // Performance tracing hooks for Flecs
 static void trace_push(const char *file, size_t line, const char *name) {
     ZoneScopedN("trace_push");
-static void trace_push(const char *file, int32_t line, const char *name) {
     // The returned context must be stored thread-locally to handle nested zones.
     //___tracy_source_location_data srcloc = { name, __FUNCTION__, file, (uint32_t)line, 0 };
     //static thread_local std::vector<TracyCZoneCtx> tracy_context_stack;
@@ -75,7 +84,6 @@ static void trace_push(const char *file, int32_t line, const char *name) {
 
 static void trace_pop(const char *file, size_t line, const char *name) {
     ZoneScopedN("trace_pop");
-static void trace_pop(const char *file, int32_t line, const char *name) {
     // Pop the context from our thread-local stack and end the Tracy zone.
     //static thread_local std::vector<TracyCZoneCtx> tracy_context_stack;
     //if (!tracy_context_stack.empty()) {
@@ -93,13 +101,13 @@ int main(int, char *[]) {
     std::cout << "Starting main" << std::endl;
 
     // Link the tracing functionality into tracy
-    ecs_os_set_api_defaults();
-    ecs_os_api_t os_api = ecs_os_get_api();
-    os_api.perf_trace_push_ = trace_push;
-    os_api.perf_trace_pop_ = trace_pop;
-    ecs_os_set_api(&os_api);
-    std::cout << "Flecs performance tracing hooks set for Tracy" << std::endl;
-    std::cout << os_api.perf_trace_push_ << ", " << os_api.perf_trace_pop_ << std::endl;
+//    ecs_os_set_api_defaults();
+//    ecs_os_api_t os_api = ecs_os_get_api();
+//    os_api.perf_trace_push_ = trace_push;
+//    os_api.perf_trace_pop_ = trace_pop;
+//    ecs_os_set_api(&os_api);
+//    std::cout << "Flecs performance tracing hooks set for Tracy" << std::endl;
+//    std::cout << os_api.perf_trace_push_ << ", " << os_api.perf_trace_pop_ << std::endl;
 
     flecs::world ecs;
     ecs.set<flecs::Rest>({});// {.port=27751});  // TODO: Get multiple ports working so the plugin can listen too
@@ -123,6 +131,11 @@ int main(int, char *[]) {
     ecs.component<MyGrid>("MyGrid")
         .member<int>("x")
         .member<int>("y");
+
+    ecs.component<AsyncTestInputData>("AsyncTestInputData")
+        .member<float>("value");
+    ecs.component<AsyncTestOutputData>("AsyncTestOutputData")
+        .member<std::string>("msg");
 
     
     // Logger imported first as the other modules use it on their import
@@ -398,6 +411,51 @@ int main(int, char *[]) {
         });
     */
 
+
+    // Example of the async system
+// --- Simple Async System Example ---
+    // 1. Define the work to be done on a background thread.
+    //    It reads from AsyncTestInputData and returns a std::string.
+    std::function<std::string(flecs::entity)> async_work =
+        [](flecs::entity e) -> std::string {
+        // It's safe to read component data here. The entity is valid, but
+        // the component data might change on the main thread. Copy what you need.
+        const AsyncTestInputData* req = e.try_get<AsyncTestInputData>();
+        float input_val = req ? req->value : 0.0f;
+
+        std::cout << "[Async] Starting long work for entity: " << e.name() << " with value " << input_val << std::endl;
+        std::this_thread::sleep_for(std::chrono::seconds(10));
+        std::cout << "[Async] Finished long work for entity: " << e.name() << std::endl;
+        return "Processed value: " + std::to_string(input_val);
+    };
+
+    // 2. Define the handler for when the work is complete. This runs on the main thread.
+    //    It adds the result as a new AsyncTestOutputData component.
+    std::function<void(flecs::entity, std::string)> async_result_handler =
+        [](flecs::entity e, std::string result) {
+        std::cout << "[MainThread] Async result for " << e.name() << " is ready." << std::endl;
+        e.set<AsyncTestOutputData>({result});
+    };
+
+    // 3. Create the async system.
+    Async::create_async_system<AsyncTestInputData, std::string>(
+        ecs,
+        "AsyncTestSystem",
+        async_work,
+        async_result_handler,
+        Ticks::tick_ui
+    );
+
+
+
+
+
+
+
+
+
+
+
     std::cout << "Systems in main.cpp defined" << std::endl;
 
     
@@ -430,6 +488,11 @@ int main(int, char *[]) {
     std::cout << "Test Entity Created: " << e.path() << std::endl;
     e.set<Coordinates::Grid>({32, 3});
     */
+
+    ecs.entity("AsyncTester")
+        .set<AsyncTestInputData>({42.0f});
+
+
 
     std::cout << "Just before run" << std::endl;
     // set the debug level so i can see the system order

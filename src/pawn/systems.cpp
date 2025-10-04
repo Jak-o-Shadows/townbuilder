@@ -59,16 +59,16 @@ systems::systems(flecs::world& ecs){
     // This will be executed on a background thread.
     std::function<std::vector<flecs::id_t>(flecs::entity)> pathfinding_work =
         [](flecs::entity e) -> std::vector<flecs::id_t> {
-        ZoneScopedN(ts_PawnPathfindingUpdate);
+        ZoneScopedN("delayedSystem_pathfinding_work");
         flecs::world world = e.world();
 
         // Safely get data from the main thread's world.
         // NOTE: This is safe because we are only reading. The entity 'e' is valid.
         // Be very careful not to store pointers/references to components that might
         // be invalidated. Copying data is safest.
-        const Coordinates::Grid* start_pos = e.get<Coordinates::Grid>();
+        const Coordinates::Grid* start_pos = e.try_get<Coordinates::Grid>();
         flecs::entity target_cell = e.target<PathfindRequest>();
-        const Map::GridCellStatic* target_pos = target_cell.get<Map::GridCellStatic>();
+        const Map::GridCellStatic* target_pos = target_cell.try_get<Map::GridCellStatic>();
 
         // Simulate a long computation.
         systemsLogger->trace("Async pathfinding started for {}", std::string(e.path()));
@@ -89,7 +89,13 @@ systems::systems(flecs::world& ecs){
     };
 
     // Create the "async system" for pathfinding.
-    Async::create_async_system<PathfindRequest, std::vector<flecs::id_t>>(ecs, "AsyncPathfinding", pathfinding_work, pathfinding_result_handler, Ticks::tick_pawn_behaviour);
+    Async::create_async_system<PathfindRequest, std::vector<flecs::id_t>>(
+        ecs,
+        "AsyncPathfinding",
+        pathfinding_work,
+        pathfinding_result_handler,
+        Ticks::tick_pawn_behaviour
+    );
 
 
    
