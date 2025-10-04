@@ -300,13 +300,6 @@ int main(int, char *[]) {
         pawn.set<Pawn::PawnFSMContainer>({std::shared_ptr<Pawn::PawnFSM::Instance>(new Pawn::PawnFSM::Instance(blah))});
 
 
-
-
-        // Set a destination
-        //  This is just for test purposes
-        pawn.add<Pawn::PawnPathfindingGoal>(flecs::entity(ecs, map.get(0, 0)));
-
-
     }
     
 

@@ -28,11 +28,13 @@ components::components(flecs::world& ecs) {
     // Modify pathfinding components
     // Each pawn can only occupy a single cell, so make exclusive
     ecs.component<PawnOccupying>().add(flecs::Exclusive);
-    // Each pawn can only have a single target cell, so make exclusive
-    ecs.component<PawnPathfindingGoal>().add(flecs::Exclusive);
     // Each pawn can only have a single next cell, so make exclusive
     ecs.component<PawnNextCell>().add(flecs::Exclusive);
     
+    // Pathfinding components
+    ecs.component<PathfindRequest>().add(flecs::Exclusive);
+    ecs.component<Path>();
+
 
    
     // Register components with reflection data & documentation

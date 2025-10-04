@@ -45,7 +45,14 @@ struct PawnAbilityTraits {
     float speed;
 };
 
-struct PawnPathfindingGoal {};
+// A component to request a path to a target entity.
+// The target entity should be a grid cell.
+struct PathfindRequest {};
+
+// A component to hold the result of a pathfinding calculation.
+struct Path {
+    std::vector<flecs::id_t> waypoints;
+};
 
 struct PawnOccupying {};
 

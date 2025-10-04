@@ -28,23 +28,18 @@ void Idle::update(FullControl& control) {
 void Walking::react(const Destination_Event& dest, FullControl& control) {
     flecs::entity e = flecs::entity(control.context().ecs, control.context().id);
     flecs::world& ecs = control.context().ecs;
-
-    //  Each cell of the map is an entity
-    // Stored in a vector for each access
-    const Map::Grid* map = ecs.get<Map::Grid>();
-   
-    flecs::id_t id2 = map->get(dest.x, dest.y);
-    flecs::entity e2 = flecs::entity(ecs, id2);
-    e.add<Pawn::PawnPathfindingGoal>(e2);
-    fsmLogger->trace("Walking::react(Destination_Event) called for entity {} with destination ({}, {}): {}", std::string(e.path()), dest.x, dest.y, std::string(e2.path()));
+    // The event itself is now the destination, which will be picked up by the
+    // OnEnterWalkingState_RequestPath observer.
+    e.set<Destination_Event>(dest);
+    fsmLogger->trace("Walking::react(Destination_Event) called for entity {} with destination ({}, {})", std::string(e.path()), dest.x, dest.y);
 }
 
 void Walking::react(const Arrived_Event&, FullControl& control){
     flecs::entity e = flecs::entity(control.context().ecs, control.context().id);
-    flecs::world& ecs = control.context().ecs;
 
     // We arrived -> remove the destination
-    e.remove<Pawn::PawnPathfindingGoal>();
+    e.remove<Pawn::PathfindRequest>();
+    e.remove<Destination_Event>();
 
     control.changeTo<Idle>();
 }

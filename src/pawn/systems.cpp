@@ -1,10 +1,13 @@
 #include "pawn/module.hpp"
 
 #include "msgLogging/module.hpp"
+#include "tracy_zones.hpp"
 #include "ticks/module.hpp"
 #include "coordinates/module.hpp"
 #include "map/module.hpp"
 
+#include <functional>
+#include "pawn/async_system.hpp"
 namespace Pawn{
 
 std::shared_ptr<spdlog::logger> systemsLogger;
@@ -52,6 +55,41 @@ systems::systems(flecs::world& ecs){
             systemsLogger->trace("Created extra components for Pawn FSM {}", std::string(pawn.path()));
     });
 
+    // Define the long-running pathfinding logic.
+    // This will be executed on a background thread.
+    std::function<std::vector<flecs::id_t>(flecs::entity)> pathfinding_work =
+        [](flecs::entity e) -> std::vector<flecs::id_t> {
+        ZoneScopedN(ts_PawnPathfindingUpdate);
+        flecs::world world = e.world();
+
+        // Safely get data from the main thread's world.
+        // NOTE: This is safe because we are only reading. The entity 'e' is valid.
+        // Be very careful not to store pointers/references to components that might
+        // be invalidated. Copying data is safest.
+        const Coordinates::Grid* start_pos = e.get<Coordinates::Grid>();
+        flecs::entity target_cell = e.target<PathfindRequest>();
+        const Map::GridCellStatic* target_pos = target_cell.get<Map::GridCellStatic>();
+
+        // Simulate a long computation.
+        systemsLogger->trace("Async pathfinding started for {}", std::string(e.path()));
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
+
+        // For now, returning a dummy path that just contains the target cell.
+        std::vector<flecs::id_t> result_path;
+        result_path.push_back(target_cell.id());
+        systemsLogger->trace("Async pathfinding finished for {}", std::string(e.path()));
+        return result_path;
+    };
+
+    // Define what to do with the result on the main thread.
+    std::function<void(flecs::entity, std::vector<flecs::id_t>)> pathfinding_result_handler = 
+        [](flecs::entity e, std::vector<flecs::id_t> waypoints) {
+        systemsLogger->trace("Pathfinding result is ready for pawn {}", std::string(e.path()));
+        e.set<Pawn::Path>({std::move(waypoints)});
+    };
+
+    // Create the "async system" for pathfinding.
+    Async::create_async_system<PathfindRequest, std::vector<flecs::id_t>>(ecs, "AsyncPathfinding", pathfinding_work, pathfinding_result_handler, Ticks::tick_pawn_behaviour);
 
 
    
@@ -87,28 +125,16 @@ systems::systems(flecs::world& ecs){
     });
     */
 
-
-    /*
-    ecs.system<Pawn::PawnPathfindingGoal>("Pawn_Walk")
-        //.with<LogicPawn::Walking>()//.or_().with<LogicPawn::PawnWoodcutterStateWalkingTo>().or_().with<LogicPawn::PawnWoodcutterStateReturning>()
-        //.term_at(0).second("$goal")
-        //.term_at(0).in()
-        //.tick_source(Ticks::tick_pawn_behaviour)
-        .each([](flecs::entity e){
-            ZoneScopedN("Pawn_Walk");
-            //flecs::entity dest = e.target_for<Pawn::PawnPathfindingGoal>(flecs::ChildOf);
-            //std::cout << e.path() << " : " << dest.path() << std::endl;
-        });
-    */
-   
-   ecs.system<Coordinates::Grid, Pawn::PawnPathfindingGoal>("Pawn_Walk")
+    // This system is a placeholder to request a path. In a real scenario,
+    // this would be triggered by game logic (e.g., FSM state change).
+    ecs.system<Coordinates::Grid>("Pawn_Request_Path_Test")
         .term_at(0).in()
-        .term_at(1).second("$goal")
-        .term_at(1).in()
+        .with<IsAPawn>()
         .tick_source(Ticks::tick_pawn_behaviour)
-        .each([](flecs::entity e, const Coordinates::Grid& grid, const Pawn::PawnPathfindingGoal& goal) {
+        .each([](flecs::entity e, const Coordinates::Grid& grid) {
             ZoneScopedN("Pawn_Walk");
-            flecs::entity dest = e.target_for<Pawn::PawnPathfindingGoal>(flecs::ChildOf);
+            flecs::entity dest = e.world().lookup("map/0_0"); // Hardcoded destination for testing
+            e.add<PathfindRequest>(dest); // Use the new request component
             systemsLogger->trace("Pawn {} walking to {}", std::string(e.path()), std::string(dest.path()));
         });
     
@@ -127,7 +153,7 @@ systems::systems(flecs::world& ecs){
                  const Statemachine::StateTiming& timing,
                  const Statemachine::Curve &curve){
             ZoneScopedN("System_UtilityPawnAlive");
-            std::vector<float> testPoints = {timing.timeInState_s, timing.culmulativeTimeInState_s};
+            const std::vector<float> testPoints = {timing.timeInState_s, timing.culmulativeTimeInState_s};
             util.utility = Statemachine::utility_calc(curve, testPoints);
             // The longer we've been alive, the less useful it is to stay alive
             systemsLogger->trace("Pawn {} Alive utility: {}", std::string(e.path()), util.utility);
