@@ -20,6 +20,7 @@
 
 #include <flecs.h>
 #include <tracy/Tracy.hpp>
+#include <tracy/TracyC.h>
 
 #include <iostream>
 #include <fstream>
@@ -58,13 +59,56 @@ struct PtTest {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+// Performance tracing hooks for Flecs
+static void trace_push(const char *file, size_t line, const char *name) {
+    ZoneScopedN("trace_push");
+static void trace_push(const char *file, int32_t line, const char *name) {
+    // The returned context must be stored thread-locally to handle nested zones.
+    //___tracy_source_location_data srcloc = { name, __FUNCTION__, file, (uint32_t)line, 0 };
+    //static thread_local std::vector<TracyCZoneCtx> tracy_context_stack;
+    //tracy_context_stack.push_back(___tracy_emit_zone_begin(&srcloc, 1));
+    std::cout << "Trace push: " << name << " at " << file << ":" << line << std::endl;
+    ___tracy_source_location_data srcloc = { name, __FUNCTION__, file, (uint32_t)line, 0 };
+    static thread_local std::vector<TracyCZoneCtx> tracy_context_stack;
+    tracy_context_stack.push_back(___tracy_emit_zone_begin(&srcloc, 1));
+}
+
+static void trace_pop(const char *file, size_t line, const char *name) {
+    ZoneScopedN("trace_pop");
+static void trace_pop(const char *file, int32_t line, const char *name) {
+    // Pop the context from our thread-local stack and end the Tracy zone.
+    //static thread_local std::vector<TracyCZoneCtx> tracy_context_stack;
+    //if (!tracy_context_stack.empty()) {
+    //    ___tracy_emit_zone_end(tracy_context_stack.back());
+    //    tracy_context_stack.pop_back();
+    //}
+    std::cout << "Trace pop: " << name << " at " << file << ":" << line << std::endl;
+    static thread_local std::vector<TracyCZoneCtx> tracy_context_stack;
+    if (!tracy_context_stack.empty()) {
+        ___tracy_emit_zone_end(tracy_context_stack.back());
+        tracy_context_stack.pop_back();
+    }
+}
 int main(int, char *[]) {
     std::cout << "Starting main" << std::endl;
+
+    // Link the tracing functionality into tracy
+    ecs_os_set_api_defaults();
+    ecs_os_api_t os_api = ecs_os_get_api();
+    os_api.perf_trace_push_ = trace_push;
+    os_api.perf_trace_pop_ = trace_pop;
+    ecs_os_set_api(&os_api);
+    std::cout << "Flecs performance tracing hooks set for Tracy" << std::endl;
+    std::cout << os_api.perf_trace_push_ << ", " << os_api.perf_trace_pop_ << std::endl;
 
     flecs::world ecs;
     ecs.set<flecs::Rest>({});// {.port=27751});  // TODO: Get multiple ports working so the plugin can listen too
     ecs.import<flecs::stats>(); // Enable statistics in explorer
     std::cout << "World created" << std::endl;
+
+
+
+
 
     ecs.component<std::string>()
         .opaque(flecs::String) // Opaque type that maps to string
