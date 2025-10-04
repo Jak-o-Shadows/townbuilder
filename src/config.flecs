@@ -2,6 +2,8 @@
 Buildings.components {Logging.components.LoggerControls: {info}}
 Coordinates.components {Logging.components.LoggerControls: {info}}
 Coordinates.systems    {Logging.components.LoggerControls: {info}}
+Database.components {Logging.components.LoggerControls: {info}}
+Database.systems    {Logging.components.LoggerControls: {info}}
 //fdis.components {Logging.components.LoggerControls: {info}}
 //fdis.systems     {Logging.components.LoggerControls: {info}}
 Map.components {Logging.components.LoggerControls: {info}}
