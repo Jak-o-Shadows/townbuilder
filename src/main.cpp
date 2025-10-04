@@ -437,6 +437,14 @@ int main(int, char *[]) {
         "AsyncTestSystem"
     );
 
+    ecs.observer<AsyncTestInputData, const AsyncTestOutputData>("Observer_AsyncTestInputDataIncrement")
+        .term_at(0).inout()
+        .term_at(1).in()
+        .event(flecs::OnSet)
+        .each([](flecs::entity e, AsyncTestInputData& data, const AsyncTestOutputData&) {
+            data.value += 1;
+        });
+
     std::cout << "Systems in main.cpp defined" << std::endl;
 
     
