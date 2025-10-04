@@ -14,7 +14,7 @@
 #include "pathfinding/module.hpp"
 #include "ui/module.hpp"
 #include "statemachine/module.hpp"
-#include "pawn/async_system.hpp"
+#include "async_system.hpp"
 
 
 #include "tracy_zones.hpp"

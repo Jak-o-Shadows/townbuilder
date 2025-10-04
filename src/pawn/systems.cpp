@@ -7,7 +7,7 @@
 #include "map/module.hpp"
 
 #include <functional>
-#include "pawn/async_system.hpp"
+#include "async_system.hpp"
 namespace Pawn{
 
 std::shared_ptr<spdlog::logger> systemsLogger;
