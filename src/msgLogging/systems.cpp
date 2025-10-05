@@ -33,9 +33,10 @@ systems::systems(flecs::world& ecs){
     ecs.module<systems>();
 
     // Set up the logger sink for all loggers as a singleton
-    //std::shared_ptr<spdlog::sinks::sink> sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>("logs.log", true);
-    std::shared_ptr<spdlog::sinks::sink> sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
-    ecs.set<LoggerSink>({sink});
+    std::vector<std::shared_ptr<spdlog::sinks::sink>> sinks;
+    sinks.push_back(std::make_shared<spdlog::sinks::stdout_color_sink_mt>());
+    sinks.push_back(std::make_shared<spdlog::sinks::basic_file_sink_mt>("logs.log", true));
+    ecs.set<LoggerSink>({sinks});
 
     // Register and use the custom formatter
     //  Note that the order and function calls to set the pattern & the formatter are very specific
@@ -45,8 +46,9 @@ systems::systems(flecs::world& ecs){
     auto formatter = std::make_unique<spdlog::pattern_formatter>();
     formatter->add_flag<FlecsWorldTimeFormatter>('j', ecs_ptr);
     formatter->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%j] [%^%l%$] [%n] %v");
-    // As the loggers are defined after this, must apply the formatter to the sink
-    sink->set_formatter(std::move(formatter));
+    // As the loggers are defined after this, must apply the formatter to each sink
+    for(auto& s : sinks)
+        s->set_formatter(formatter->clone());
 
     // Set up the observer to update the log level of the logger
     ecs.observer<LoggerControls>("UpdateLogLevel")
@@ -64,7 +66,7 @@ std::shared_ptr<spdlog::logger> logger;
 
 examplemodule::examplemodule(flecs::world& ecs) {
     flecs::entity m = ecs.module<examplemodule>();
-    logger = Logging::init_module_logger(m, ecs.get<Logging::LoggerSink>().sink);
+    logger = Logging::init_module_logger(m, ecs.get<Logging::LoggerSink>().sinks);
     // Before using logger, must set the level so the observer can handle it
     m.set<Logging::LoggerControls>({spdlog::level::err});
     logger->trace("Module Created");

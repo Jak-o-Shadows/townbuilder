@@ -63,7 +63,7 @@ std::shared_ptr<std::vector<unsigned char>> serialize_database(soci::session& so
 
 systems::systems(flecs::world& ecs) {
     flecs::entity m = ecs.module<systems>();
-    systemsLogger = Logging::init_module_logger(m, ecs.get<Logging::LoggerSink>().sink);
+    systemsLogger = Logging::init_module_logger(m, ecs.get<Logging::LoggerSink>().sinks);
     m.set<Logging::LoggerControls>({spdlog::level::trace});
     systemsLogger->trace("Database systems module created");
 

@@ -13,8 +13,8 @@
 
 namespace Logging{
 
-std::shared_ptr<spdlog::logger> init_module_logger(flecs::entity& module, std::shared_ptr<spdlog::sinks::sink> sink) {
-    std::shared_ptr<spdlog::logger> logger = std::make_shared<spdlog::logger>(std::string(module.path()), sink);
+std::shared_ptr<spdlog::logger> init_module_logger(flecs::entity& module, const std::vector<std::shared_ptr<spdlog::sinks::sink>>& sinks) {
+    std::shared_ptr<spdlog::logger> logger = std::make_shared<spdlog::logger>(std::string(module.path()), sinks.begin(), sinks.end());
     logger->set_level(spdlog::level::trace);  // Set to trace in the knowledge that the observer will fire soon and change it
     spdlog::register_logger(logger);
     // Add it as the module logger component

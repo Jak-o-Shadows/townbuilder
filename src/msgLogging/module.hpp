@@ -1,6 +1,7 @@
 #pragma once
 #include <stdint.h>
-
+#include <vector>
+#include <memory>
 #include <io.h>
 
 #include <flecs.h>
@@ -12,7 +13,7 @@ namespace Logging {
 
 // Flecs Components
 struct LoggerSink{
-    std::shared_ptr<spdlog::sinks::sink> sink;
+    std::vector<std::shared_ptr<spdlog::sinks::sink>> sinks;
 };
 
 struct LoggerControls {
@@ -25,7 +26,7 @@ struct Logger {
 
 
 
-std::shared_ptr<spdlog::logger> init_module_logger(flecs::entity& module, std::shared_ptr<spdlog::sinks::sink> sink);
+std::shared_ptr<spdlog::logger> init_module_logger(flecs::entity& module, const std::vector<std::shared_ptr<spdlog::sinks::sink>>& sinks);
 
 struct components {
     components(flecs::world& ecs);

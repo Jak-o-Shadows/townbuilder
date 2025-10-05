@@ -15,7 +15,7 @@ systems::systems(flecs::world& ecs){
     // Register module with world. The module entity will be created with the
     // same hierarchy as the C++ namespaces (e.g. simple::module)
     flecs::entity m = ecs.module<systems>();
-    systemsLogger = Logging::init_module_logger(m, ecs.get<Logging::LoggerSink>().sink);
+    systemsLogger = Logging::init_module_logger(m, ecs.get<Logging::LoggerSink>().sinks);
     // Before using logger, must set the level so the observer can handle it
     m.set<Logging::LoggerControls>({spdlog::level::trace});
     systemsLogger->trace("Module Created");
@@ -26,8 +26,10 @@ systems::systems(flecs::world& ecs){
 
 
     // The logger for the FSM is defined differently so header-only can access it.
-    //  TODO: Should I just put this in a different flecs module for consistency?
-    fsmLogger = std::make_shared<spdlog::logger>(std::string(m.path()) + ".fsm", ecs.get<Logging::LoggerSink>().sink);
+    // TODO: Should I just put this in a different flecs module for consistency?
+    // TODO: Should I make a function for this in msgLogging/module.hpp?
+    const auto& sinks = ecs.get<Logging::LoggerSink>().sinks;
+    fsmLogger = std::make_shared<spdlog::logger>(std::string(m.path()) + ".fsm", sinks.begin(), sinks.end());
     fsmLogger->set_level(spdlog::level::trace);
     spdlog::register_logger(fsmLogger);
 
