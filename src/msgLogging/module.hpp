@@ -32,7 +32,7 @@ struct Logger {
 /**
  * @brief A thread-safe spdlog sink that sends log messages to the Tracy profiler.
  *
- * @tparam Mutex The mutex type to use for thread safety.
+ * @tparam Mutex The mutex type to use for thread safety. This is templated to match spdlog's design
  */
 template<typename Mutex>
 class tracy_sink : public spdlog::sinks::base_sink<Mutex> {
