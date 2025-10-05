@@ -6,8 +6,6 @@
 #include "coordinates/module.hpp"
 #include "map/module.hpp"
 
-#include <functional>
-#include "async_system.hpp"
 namespace Pawn{
 
 std::shared_ptr<spdlog::logger> systemsLogger;

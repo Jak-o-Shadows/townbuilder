@@ -63,7 +63,9 @@ struct AsyncTestInputData {
 struct AsyncTestOutputData {
     std::string msg;
 };
-
+struct AsyncTestOutputData2 {
+    std::string msg;
+};
 /**
  * @brief A standalone function to perform long-running work for the async system example.
  * 
@@ -71,12 +73,21 @@ struct AsyncTestOutputData {
  * @return A std::tuple containing the result component(s).
  */
 std::tuple<AsyncTestOutputData> async_test_work(const AsyncTestInputData& req) {
-    std::cout << "[Async] Starting long work with value " << req.value << std::endl;
+    ZoneScopedN("async_test_work");
+    // Simulate long work
+    //std::cout << "[Async] Starting long work with value " << req.value << std::endl;
     std::this_thread::sleep_for(std::chrono::seconds(10));
-    std::cout << "[Async] Finished long work." << std::endl;
+    //std::cout << "[Async] Finished long work." << std::endl;
     return { { "Processed value: " + std::to_string(req.value) } };
 }
-
+std::tuple<AsyncTestOutputData2> async_test_work2(const AsyncTestInputData& req) {
+    ZoneScopedN("async_test_work2");
+    // Simulate long work
+    //std::cout << "[Async2] Starting long work with value " << req.value << std::endl;
+    std::this_thread::sleep_for(std::chrono::seconds(3));
+    //std::cout << "[Async2] Finished long work." << std::endl;
+    return { { "Processed value: " + std::to_string(req.value) } };
+}
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -147,6 +158,8 @@ int main(int, char *[]) {
     ecs.component<AsyncTestInputData>("AsyncTestInputData")
         .member<float>("value");
     ecs.component<AsyncTestOutputData>("AsyncTestOutputData")
+        .member<std::string>("msg");
+    ecs.component<AsyncTestOutputData2>("AsyncTestOutputData2")
         .member<std::string>("msg");
 
     
@@ -436,6 +449,13 @@ int main(int, char *[]) {
         Ticks::tick_ui,
         "AsyncTestSystem"
     );
+    std::function<std::tuple<AsyncTestOutputData2>(const AsyncTestInputData&)> work_fn2 = async_test_work2;
+    Async::create_async_system<AsyncTestOutputData2>(
+        ecs,
+        work_fn2,
+        Ticks::tick_ui,
+        "AsyncTestSystem2"
+    );
 
     ecs.observer<AsyncTestInputData, const AsyncTestOutputData>("Observer_AsyncTestInputDataIncrement")
         .term_at(0).inout()
@@ -443,7 +463,31 @@ int main(int, char *[]) {
         .event(flecs::OnSet)
         .each([](flecs::entity e, AsyncTestInputData& data, const AsyncTestOutputData&) {
             data.value += 1;
+        })
+        .set_doc_brief("Increment the test async input to show that change is working");
+    
+    auto qb = ecs.query_builder<const AsyncTestInputData>()
+        .term_at(0).up(); // Query for entities that have a child with AsyncTestInputData
+//    Async::create_async_system_with_query<AsyncTestOutputData>(
+//        ecs,
+//        qb,
+//        work_fn,
+//        Ticks::tick_ui,
+//        "AsyncTestSystemWithQuery"
+//    );
+
+    /*
+    flecs::query<const AsyncTestInputData> q = qb.build();
+    ecs.system("Test System")
+        .tick_source(Ticks::tick_ui)
+        .run([q](flecs::iter it){
+            std::cout << "Test System running, found " << q.count() << " entities with AsyncTestInputData" << std::endl;
+            q.each([](flecs::entity e, const AsyncTestInputData& data){
+                std::cout << " - Entity " << std::string(e.path()) << " has AsyncTestInputData.value = " << data.value << std::endl;
+            });
         });
+    */
+
 
     std::cout << "Systems in main.cpp defined" << std::endl;
 
@@ -478,8 +522,10 @@ int main(int, char *[]) {
     e.set<Coordinates::Grid>({32, 3});
     */
 
-    ecs.entity("AsyncTester")
+    flecs::entity async_tester = ecs.entity("AsyncTester")
         .set<AsyncTestInputData>({42.0f});
+    ecs.entity("AsyncTestChild")
+        .child_of(async_tester);
 
 
 
