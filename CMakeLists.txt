@@ -49,6 +49,12 @@ target_sources(${PROJECT_NAME} PRIVATE
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_include_directories(${PROJECT_NAME} PRIVATE ${DIR_DEPS})
 
+# Define NOMINMAX for Windows builds to prevent conflicts with <windows.h>
+# This is a common issue with libraries like Tracy that use std::numeric_limits::max.
+# This is straight from Gemini, so who knows if it's right, but annoyingly it worked
+if(WIN32)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE NOMINMAX)
+endif()
 
 
 # HFSM2
@@ -65,6 +71,7 @@ target_link_libraries(${PROJECT_NAME} flecs::flecs_static)
 # Tracy
 find_package(Tracy REQUIRED)
 target_link_libraries(${PROJECT_NAME} Tracy::TracyClient)
+target_compile_definitions(${PROJECT_NAME} PRIVATE TRACY_ENABLE FLECS_PERF_TRACE)
 
 # Spdlog
 find_package(spdlog REQUIRED)

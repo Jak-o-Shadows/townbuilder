@@ -36,6 +36,7 @@ systems::systems(flecs::world& ecs){
     std::vector<std::shared_ptr<spdlog::sinks::sink>> sinks;
     sinks.push_back(std::make_shared<spdlog::sinks::stdout_color_sink_mt>());
     sinks.push_back(std::make_shared<spdlog::sinks::basic_file_sink_mt>("logs.log", true));
+    sinks.push_back(std::make_shared<Logging::tracy_sink_mt>());
     ecs.set<LoggerSink>({sinks});
 
     // Register and use the custom formatter
