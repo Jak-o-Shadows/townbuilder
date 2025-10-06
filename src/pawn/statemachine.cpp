@@ -25,26 +25,35 @@ void Idle::update(FullControl& control) {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-void Walking::react(const Destination_Event& dest, FullControl& control) {
+void Idle::react(const Destination_Event& dest, FullControl& control) {
     flecs::entity e = flecs::entity(control.context().ecs, control.context().id);
-    flecs::world& ecs = control.context().ecs;
+    fsmLogger->trace("Idle::react(Destination_Event) called for entity {} with destination ({}, {})", std::string(e.path()), dest.target.x, dest.target.y);
     // The event itself is now the destination, which will be picked up by the
     // OnEnterWalkingState_RequestPath observer.
     e.set<Destination_Event>(dest);
-    fsmLogger->trace("Walking::react(Destination_Event) called for entity {} with destination ({}, {})", std::string(e.path()), dest.x, dest.y);
+    control.changeTo<Walking>();
 }
 
 void Walking::react(const Arrived_Event&, FullControl& control){
     flecs::entity e = flecs::entity(control.context().ecs, control.context().id);
+    fsmLogger->trace("Walking::react(Arrived_Event) called for entity {}", std::string(e.path()));
 
-    // We arrived -> remove the destination
-    e.remove<Pawn::PathfindRequest>();
     e.remove<Destination_Event>();
-
     control.changeTo<Idle>();
 }
 
+void Walking::react(const Destination_Event& dest, FullControl& control) {
+    flecs::entity e = flecs::entity(control.context().ecs, control.context().id);
+    fsmLogger->trace("Walking::react(Destination_Event) called for entity {} with destination ({}, {})", std::string(e.path()), dest.target.x, dest.target.y);
+    // The event itself is now the destination, which will be picked up by the
+    // OnEnterWalkingState_RequestPath observer.
+    e.set<Destination_Event>(dest);
+}
 
-
+void PawnWoodcutterStateWalkingTo::react(const Arrived_Event&, FullControl& control) {
+    flecs::entity e = flecs::entity(control.context().ecs, control.context().id);
+    fsmLogger->trace("PawnWoodcutterStateWalkingTo::react(Arrived_Event) called for entity {}", std::string(e.path()));
+    control.changeTo<PawnWoodcutterStateChopping>();
+}
 
 }

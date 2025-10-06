@@ -11,7 +11,7 @@ add_executable(${PROJECT_NAME} src/main.cpp)
 message("deps " ${DIR_DEPS})
 target_sources(${PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src/buildings/components.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src//coordinates/components.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/coordinates/components.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/coordinates/systems.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/database/components.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/database/systems.cpp
@@ -23,6 +23,7 @@ target_sources(${PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pathfinding/components.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pawn/components.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pawn/systems.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/pawn/statemachine.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/plugin/components.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/plugin/systems.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pythonEcsBinding/components.cpp

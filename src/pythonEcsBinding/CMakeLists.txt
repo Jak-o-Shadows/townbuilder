@@ -19,6 +19,7 @@ target_sources(pythonEcsBinding PRIVATE
 #    ${CMAKE_CURRENT_SOURCE_DIR}/../../src/pathfinding/components.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../../src/pawn/components.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../../src/pawn/systems.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../src/pawn/statemachine.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../../src/plugin/components.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../../src/plugin/systems.cpp
 #    ${CMAKE_CURRENT_SOURCE_DIR}/../../src/pythonEcsBinding/components.cpp

@@ -17,6 +17,7 @@
 
 #include "msgLogging/module.hpp"
 #include "statemachine/module.hpp"
+#include "coordinates/module.hpp"
 
 namespace Pawn{
 
@@ -45,18 +46,9 @@ struct PawnAbilityTraits {
     float speed;
 };
 
-// A component to request a path to a target entity.
-// The target entity should be a grid cell.
-struct PathfindRequest {};
 
-// A component to hold the result of a pathfinding calculation.
-struct Path {
-    std::vector<flecs::id_t> waypoints;
-};
 
 struct PawnOccupying {};
-
-struct PawnNextCell {};
 
 struct Likes { };
 
@@ -76,9 +68,9 @@ using M = hfsm2::MachineT<hfsm2::Config::ContextT<Statemachine::Context>>;
 
 
 // Events
-struct Destination_Event{
-    int x;
-    int y;
+struct Destination_Event {
+    Coordinates::Grid target;
+    Coordinates::Cell local;
 };
 struct Arrived_Event {};  // When you arrive at a location or cell
 struct SecondaryEvent { int payload; };
@@ -135,10 +127,12 @@ using PawnFSM = M::PeerRoot<
 template <typename TemplateState>
 struct BasePawnState : PawnFSM::State {
     // BasePawnState is a base class for all Pawn states, providing default reactions
+    //  TODO: Test if this actually works
     void react(const Destination_Event&, FullControl& control) {};
     void react(const Arrived_Event&, FullControl& control) {};
     void react(const SecondaryEvent&, FullControl& control) {};
     void react(const Attacked&, FullControl& control) {};
+    // and default enter and exit
     void enter(Control& control) {
         flecs::entity e = flecs::entity(control.context().ecs, control.context().id);
         fsmLogger->trace("Pawn {} entering state {}", std::string(e.path()), Statemachine::TypeName<TemplateState>());

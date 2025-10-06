@@ -327,7 +327,7 @@ int main(int, char *[]) {
         std::cout << "Pawn Grid set: " << pawn.path() << std::endl;
         pawn.set<Coordinates::Cell>({0, 0});
         std::cout << "Pawn Coordinates set: " << pawn.path() << std::endl;
-        pawn.set<Coordinates::CellVelocity>({0.5, 0});
+        pawn.set<Coordinates::CellVelocity>({0, 0});
         pawn.add<Coordinates::GridBase>();
         pawn.set<Pawn::PawnAbilityTraits>({0, speed});
         std::cout << "First part of pawn created: " << pawn.path() << std::endl;
@@ -487,6 +487,27 @@ int main(int, char *[]) {
             });
         });
     */
+
+
+
+
+
+    ecs.system<Pawn::PawnFSMContainer>("Add destination")
+        .term_at(0).inout()
+        .interval(10)
+        .tick_source(Ticks::tick_pawn_behaviour)
+        .without<Pawn::Destination_Event>()
+        .each([&xDist, &yDist, &rng](flecs::entity e, Pawn::PawnFSMContainer& fsmc){
+            ZoneScopedN("Add destination");
+            // If the pawn doesn't have a destination, give it one
+            int targetX = xDist(rng);
+            int targetY = yDist(rng);
+            Pawn::Destination_Event dest{{targetX, targetY}, {0, 0.25}};
+            fsmc.machine->react(dest);
+            //std::cout << "Set destination for " << std::string(e.path()) << " to (" << targetX << ", " << targetY << ")" << std::endl;
+        })
+        .set_doc_brief("Set a random destination for pawns that don't have one");
+
 
 
     std::cout << "Systems in main.cpp defined" << std::endl;
