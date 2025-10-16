@@ -59,6 +59,14 @@ if __name__ == "__main__":
     print(f"\nComplex map rows: {complex_map.rows}, cols: {complex_map.cols}")
     tick_input.map = complex_map
 
+    oldChannel = pluginPythonBinding.OldSchoolComplexChannel()
+    # Create a numpy array and assign it. This allocates memory
+    # on the Python side and makes the C++ side point to it.
+    numpy_data = np.array([3/2+1j, 2+0j, 0 + 1*1j], dtype=np.complex64)
+    oldChannel.data = numpy_data
+    print(f"OldSchoolChannel count: {oldChannel.count}")
+    tick_input.old_school_map = oldChannel
+
 
     # Test out the plugin interface
 
@@ -71,3 +79,7 @@ if __name__ == "__main__":
     print(f"Results: {results.success}")
     print(f"{results.max_location1}, {results.max_location2}, {results.max_location3}, {results.max_location4}")
     print(f"{results.first_elem}, ({results.num_rows}, {results.num_cols})")
+    print(f"Old school: {results.old_school_first_elem}, {results.old_school_max_location}")
+
+
+

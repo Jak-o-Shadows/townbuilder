@@ -67,7 +67,31 @@ module::module(flecs::world& ecs) {
             //std::cout << input.map.rows << ", " << input.map.cols << std::endl;
             std::complex<double> first_elem = input.map.data[0][0];
             //std::cout << std::format("first elem is: {} + {}j", first_elem.real(), first_elem.imag()) << std::endl;
-            e.set<Plugin::PluginResults>({true, max_loc[0], max_loc[1], max_loc[2], max_loc[3], first_elem, input.map.rows, input.map.cols});
+
+            // Handle old school complex channel
+            int old_school_max_loc = -1;
+            float max_val = -1.0f;
+            //std::cout << std::format("old school count: {} at ", input.old_school_map.count) << input.old_school_map.data << std::endl;
+            for (size_t oldSchooLIdx=0; oldSchooLIdx<input.old_school_map.count; oldSchooLIdx++) {
+                //std::cout << std::format("Old school data[{}] = {} + {}j", oldSchooLIdx, input.old_school_map.data[oldSchooLIdx].real, input.old_school_map.data[oldSchooLIdx].imag) << std::endl;
+                float val = std::sqrt(input.old_school_map.data[oldSchooLIdx].real * input.old_school_map.data[oldSchooLIdx].real +
+                                  input.old_school_map.data[oldSchooLIdx].imag * input.old_school_map.data[oldSchooLIdx].imag);
+                if (max_val < val) {
+                    max_val = val;
+                    old_school_max_loc = static_cast<int>(oldSchooLIdx);}
+            }
+            //std::cout << std::format("old school count: {} at ", input.old_school_map.count) << input.old_school_map.data << std::endl;
+            for (size_t oldSchooLIdx=0; oldSchooLIdx<input.old_school_map.count; oldSchooLIdx++) {
+                //std::cout << std::format("Old school data[{}] = {} + {}j", oldSchooLIdx, input.old_school_map.data[oldSchooLIdx].real, input.old_school_map.data[oldSchooLIdx].imag) << std::endl;
+            }
+            //std::cout << std::format("Old school max location is {}", old_school_max_loc) << std::endl;
+            std::complex<float> old_first_elem = {0.0f, 0.0f};
+            if (input.old_school_map.data && input.old_school_map.count > 0) {
+                old_first_elem = std::complex<float>(input.old_school_map.data[0].real, input.old_school_map.data[0].imag);
+            }
+
+
+            e.set<Plugin::PluginResults>({true, max_loc[0], max_loc[1], max_loc[2], max_loc[3], first_elem, input.map.rows, input.map.cols, old_first_elem, old_school_max_loc});
         });
 
     ecs.system("EveryFrame")

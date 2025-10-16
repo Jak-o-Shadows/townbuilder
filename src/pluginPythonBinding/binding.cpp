@@ -127,7 +127,9 @@ PYBIND11_MODULE(pluginPythonBinding, m) {
         .def_readwrite("max_location4", &Plugin::PluginResults::max_location4)
         .def_readwrite("first_elem", &Plugin::PluginResults::first_elem)
         .def_readwrite("num_rows", &Plugin::PluginResults::num_rows)
-        .def_readwrite("num_cols", &Plugin::PluginResults::num_cols);
+        .def_readwrite("num_cols", &Plugin::PluginResults::num_cols)
+        .def_readwrite("old_school_first_elem", &Plugin::PluginResults::old_school_first_elem)
+        .def_readwrite("old_school_max_location", &Plugin::PluginResults::old_school_max_location);
 
 
     pybind11::class_<Plugin::ComplexChannel>(m, "ComplexChannel", "A complex channel for plugin communication", pybind11::dynamic_attr())
@@ -158,6 +160,33 @@ PYBIND11_MODULE(pluginPythonBinding, m) {
                 self.attr("_data_owner") = arr;
             }, "A numpy array view of the channel data. Can be assigned from a numpy array.");
 
+
+    pybind11::class_<Plugin::OldSchoolComplexChannel>(m, "OldSchoolComplexChannel", "A C-style complex channel for plugin communication", pybind11::dynamic_attr())
+        .def(pybind11::init<>())
+        .def_readonly("count", &Plugin::OldSchoolComplexChannel::count, "Number of complex values in the channel.")
+        .def_property("data",
+            /* Getter: returns the python-owned numpy array */
+            [](pybind11::object &self) -> pybind11::array {
+                if (pybind11::hasattr(self, "_data_owner")) {
+                    return self.attr("_data_owner").cast<pybind11::array>();
+                } else {
+                    return pybind11::array();
+                }
+            },
+            /* Setter: Python (numpy) allocates and owns the memory. */
+            [](pybind11::object &self, pybind11::array_t<std::complex<float>, pybind11::array::c_style | pybind11::array::forcecast> arr) {
+                Plugin::OldSchoolComplexChannel &c = self.cast<Plugin::OldSchoolComplexChannel&>();
+                pybind11::buffer_info info = arr.request();
+                if (info.ndim != 1) {
+                    throw std::runtime_error("Incompatible buffer dimension! Expected a 1D array.");
+                }
+                if (info.format != pybind11::format_descriptor<std::complex<float>>::format()) {
+                    throw std::runtime_error("Incompatible format: expected a numpy array of complex64.");
+                }
+                c.data = reinterpret_cast<Plugin::OldSchoolComplex32*>(info.ptr);
+                c.count = info.shape[0];
+                self.attr("_data_owner") = arr;
+            }, "A numpy array view of the channel data. Can be assigned from a numpy array of complex64.");
 
     pybind11::class_<Plugin::ComplexMapArray>(m, "ComplexMapArray", "A 4-channel complex map for plugin communication", pybind11::dynamic_attr())
         .def(pybind11::init<>())
@@ -244,7 +273,8 @@ PYBIND11_MODULE(pluginPythonBinding, m) {
                 self_obj.attr("_channels_owner") = seq;
             }, "A tuple of 4 ComplexChannel objects. Can be assigned from a list or tuple.")
         .def_readwrite("time", &Plugin::TickInput::time)
-        .def_readwrite("map", &Plugin::TickInput::map);
+        .def_readwrite("map", &Plugin::TickInput::map)
+        .def_readwrite("old_school_map", &Plugin::TickInput::old_school_map);
 
     pybind11::class_<PluginLoader>(m, "PluginLoader", "Loads a plugin DLL and provides access to its functions")
         .def(pybind11::init<>(), "Loads the plugin from 'plugin.dll' or 'plugin.so' in the current directory.")

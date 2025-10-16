@@ -33,6 +33,18 @@ struct ComplexMapArray {
     std::size_t cols;
 };
 
+struct OldSchoolComplex32 {
+    float real;
+    float imag;
+    OldSchoolComplex32() : real(0.0f), imag(0.0f) {};
+    OldSchoolComplex32(float r, float i) : real(r), imag(i) {};
+};
+
+struct OldSchoolComplexChannel {
+    OldSchoolComplex32* data;
+    std::size_t count;
+};
+
 enum Mode {
     a,
     b,
@@ -44,6 +56,7 @@ struct TickInput {
     ComplexChannel channels[4];
     Mode mode;
     ComplexMapArray map;
+    OldSchoolComplexChannel old_school_map;
 };
 
 struct PluginResults {
@@ -55,6 +68,8 @@ struct PluginResults {
     std::complex<double> first_elem;
     size_t num_rows;
     size_t num_cols;
+    std::complex<float> old_school_first_elem;
+    int old_school_max_location;
 };
 
 // Exported functions
