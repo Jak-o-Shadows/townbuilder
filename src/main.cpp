@@ -260,7 +260,7 @@ int main(int, char *[]) {
     // Map random-generation is VERY VERY primitive right now
     std::mt19937 rngMap;
     rngMap.seed(11223344);
-    std::bernoulli_distribution treeDist(0.2);
+    std::bernoulli_distribution treeDist(0.02);
 
     // Define trees
     for (int x = 0; x<map_width; x++){
@@ -304,12 +304,12 @@ int main(int, char *[]) {
     //std::cout << "Map:" << map << std::endl;
     std::uniform_int_distribution<int> xDist(0, map.m_width-1);
     std::uniform_int_distribution<int> yDist(0, map.m_height-1);
-    std::uniform_real_distribution<float> speedDist(0.7, 0.9);
+    std::uniform_real_distribution<float> speedDist(3, 10);
     std::cout << "Random distributions created" << std::endl;
     
 
     
-    constexpr int numPawns = 1;
+    constexpr int numPawns = 30;
     for (int pawnNumber=0; pawnNumber < numPawns; pawnNumber++){
         int targetX = xDist(rng);
         int targetY = yDist(rng);

@@ -20,13 +20,14 @@ std::tuple<Coordinates::CellVelocity> calculate_next_velocity(
     const Coordinates::Cell& local,
     const Destination_Event& dest,
     const PawnAbilityTraits& ability){
+        ZoneScopedN("calculate_next_velocity");
         // Calculate the velocity needed to go towards the destination
-        float dx = (dest.local.x + dest.target.x * 1.0f) - (local.x + current.x * 1.0f);
-        float dy = (dest.local.y + dest.target.y * 1.0f) - (local.y + current.y * 1.0f);
-        // Normalise as per speed
+        float dx = (dest.target.x - current.x) + (dest.local.x - local.x)/2.0f;
+        float dy = (dest.target.y - current.y) + (dest.local.y - local.y)/2.0f;
+        // Clamp as per speed
         //  Remember that this is per second, as in movement it is scaled by delta time
-        dx *= ability.speed;
-        dy *= ability.speed;
+        dx = std::clamp(dx, -ability.speed, ability.speed);
+        dy = std::clamp(dy, -ability.speed, ability.speed);
 
         // Add a dummy sleep in to pretend this system takes time to run, as if it were actually pathfinding
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -151,6 +152,33 @@ systems::systems(flecs::world& ecs){
         Ticks::tick_pawn_behaviour,
         "System_Pawn_CalculateNextVelocity"
     );
+
+    // Emit Arrived_Events
+    // TODO: This should be an observer. Do I need to only do the observer on the thing that changes, and use .with<> for the rest?
+    ecs.system<const Coordinates::Grid,
+                 const Coordinates::Cell,
+                 const Destination_Event,
+                 PawnFSMContainer>("System_GiveEventPawnArrived")
+        .term_at(0).in()
+        .term_at(1).in()
+        .term_at(2).in()
+        .each([](flecs::entity e,
+            const Coordinates::Grid& grid,
+            const Coordinates::Cell& local,
+            const Destination_Event& dest,
+            PawnFSMContainer& fsmc){
+            ZoneScopedN("System_GiveEventPawnArrived");
+            // If the pawn is at the destination, emit an Arrived_Event
+            const float epsilon = 0.01f;
+            if (grid.x == dest.target.x && grid.y == dest.target.y &&
+                std::abs(local.x - dest.local.x) < epsilon && std::abs(local.y - dest.local.y) < epsilon) {
+                systemsLogger->trace("Pawn {} has arrived at its destination", std::string(e.path()));
+                // Notify the FSM that we've arrived
+                //fsmc.machine->react(Arrived_Event{});
+                // TODO: The react isn't working, so do it manually
+                e.remove<Destination_Event>();
+            }
+        });
 
 
 

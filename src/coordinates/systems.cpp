@@ -213,7 +213,7 @@ systems::systems(flecs::world& ecs) {
                 grid.x -= 1;
                 changed = true;
             }
-            else if (cell.x > 1) {
+            else if (cell.x >= 1) {
                 cell.x -= 2;
                 grid.x += 1;
                 changed = true;
@@ -223,7 +223,7 @@ systems::systems(flecs::world& ecs) {
                 grid.y -= 1;
                 changed = true;
             }
-            else if (cell.y > 1) {
+            else if (cell.y >= 1) {
                 cell.y -= 2;
                 grid.y += 1;
                 changed = true;
