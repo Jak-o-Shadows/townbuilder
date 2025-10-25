@@ -1,4 +1,5 @@
 import sqlite3
+import re
 
 import pandas as pd
 import altair as alt
@@ -46,3 +47,48 @@ def get_pawn_names(request):
     df = pd.read_sql_query(query, con)
     con.close()
     return JsonResponse(df.to_dict(orient='list'))
+
+def log_viewer(request):
+    return render(request, 'dashboard/log_viewer.html')
+
+def get_log_data(request):
+    log_file_path = "z:/Hayden/programming/projects/townbuilder/build/Release/logs.log"
+    log_pattern = re.compile(r'^\[(.*?)\]\s+\[(.*?)\]\s+\[(.*?)\]\s+\[(.*?)\]\s+(.*)$')
+
+    log_messages = []
+    log_levels = set()
+    logger_names = set()
+
+    try:
+        with open(log_file_path, 'r') as f:
+            for line in f:
+                match = log_pattern.match(line)
+                if match:
+                    timestamp, thread_id, level, logger, message = match.groups()
+                    log_levels.add(level)
+                    logger_names.add(logger)
+                    log_messages.append({
+                        'timestamp': timestamp,
+                        'thread_id': thread_id,
+                        'level': level,
+                        'logger': logger,
+                        'message': message
+                    })
+    except FileNotFoundError:
+        return JsonResponse({'error': 'Log file not found'}, status=404)
+    
+    logs = pd.DataFrame(log_messages)
+
+    level_filter = request.GET.get('level')
+    logger_filter = request.GET.get('logger')
+
+    if level_filter:
+        logs = logs[logs['level'] == level_filter]
+    if logger_filter:
+        logs = logs[logs['logger'] == logger_filter]
+
+    return JsonResponse({
+        'logs': logs.to_dict(orient='records'),
+        'levels': sorted(log_levels),
+        'loggers': sorted(logger_names)
+    })

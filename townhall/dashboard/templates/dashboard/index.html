@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Townbuilder Dashboard</title>
+    <title>Townhall</title>
     <script src="https://cdn.jsdelivr.net/npm/vega@5"></script>
     <script src="https://cdn.jsdelivr.net/npm/vega-lite@5"></script>
     <script src="https://cdn.jsdelivr.net/npm/vega-embed@6"></script>
@@ -14,11 +14,14 @@
     </style>
 </head>
 <body>
-    <h1>Townbuilder Dashboard</h1>
+    <h1>Townhall</h1>
 
     <div>
         <label for="pawn-select">Select a Pawn:</label>
         <select id="pawn-select"></select>
+        <button id="refresh-btn">Refresh</button>
+        <input type="checkbox" id="auto-refresh-checkbox">
+        <label for="auto-refresh-checkbox">Auto-refresh</label>
     </div>
 
     <div class="container">
@@ -38,6 +41,9 @@
 
     <script type="text/javascript">
         const pawnSelect = document.getElementById('pawn-select');
+        const refreshBtn = document.getElementById('refresh-btn');
+        const autoRefreshCheckbox = document.getElementById('auto-refresh-checkbox');
+        let autoRefreshInterval = null;
 
         function fetchAndRenderChart(pawnName) {
             let url = '/dashboard/chart_data/?pawn_name=' + pawnName;
@@ -49,25 +55,48 @@
         }
 
         function populatePawnSelect() {
+            const selectedPawn = pawnSelect.value;
             fetch('/dashboard/pawn_names/')
                 .then(response => response.json())
                 .then(data => {
                     const pawns = data.pawn_name;
+                    pawnSelect.innerHTML = '';
                     pawns.forEach(pawn => {
                         let option = document.createElement('option');
                         option.value = pawn;
                         option.textContent = pawn;
                         pawnSelect.appendChild(option);
                     });
-                    // Initial render with the first pawn
-                    if (pawns.length > 0) {
-                        fetchAndRenderChart(pawns[0]);
+
+                    // Try to re-select the previously selected pawn
+                    if (pawns.includes(selectedPawn)) {
+                        pawnSelect.value = selectedPawn;
+                    } 
+
+                    // Initial render or re-render with the selected pawn
+                    const currentPawn = pawnSelect.value;
+                    if (currentPawn) {
+                        fetchAndRenderChart(currentPawn);
                     }
                 });
         }
 
         pawnSelect.addEventListener('change', (event) => {
             fetchAndRenderChart(event.target.value);
+        });
+
+        refreshBtn.addEventListener('click', () => {
+            populatePawnSelect();
+        });
+
+        autoRefreshCheckbox.addEventListener('change', (event) => {
+            if (event.target.checked) {
+                autoRefreshInterval = setInterval(() => {
+                    populatePawnSelect();
+                }, 5000); // Refresh every 5 seconds
+            } else {
+                clearInterval(autoRefreshInterval);
+            }
         });
 
         // Initial population of the dropdown
