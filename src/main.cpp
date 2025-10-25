@@ -167,6 +167,14 @@ int main(int, char *[]) {
     ecs.import<Logging::components>();
     ecs.import<Logging::systems>();
     std::cout << "Logger imported" << std::endl;
+    // Create and add the ImGui log sink component. This must be done before importing modules
+    // because they may create loggers during their import, which then wouldn't be linked to the sync
+    ecs.import<Render::components>();  // Suffer through not having render components log to imgui
+    std::shared_ptr<Render::ImGuiLogSink_mt> imgui_sink = std::make_shared<Render::ImGuiLogSink_mt>();
+    ecs.set<Render::ImGuiLogSinkComponent>({imgui_sink});
+    // Add the ImGui sink to the logger sinks
+    ecs.get_mut<Logging::LoggerSink>().sinks.push_back(imgui_sink);
+    std::cout << "ImGui log sink created and added to LoggerSink" << std::endl;
 
     // Then import all the comopnents
     ecs.import<Buildings::components>();
@@ -337,7 +345,6 @@ int main(int, char *[]) {
         Statemachine::Context blah{pawn.id(), ecs};  // No idea why this has to be a separate variable, but it does, so bugger it
         pawn.set<Pawn::PawnFSMContainer>({std::shared_ptr<Pawn::PawnFSM::Instance>(new Pawn::PawnFSM::Instance(blah))});
 
-
     }
     
 
@@ -438,10 +445,19 @@ int main(int, char *[]) {
 
 
     // Example of the async system
+    std::function<std::tuple<AsyncTestOutputData>(const AsyncTestInputData&)> work_fn = async_test_work;
+    Async::create_async_system(ecs, "AsyncTestSystem")
+        .query<const AsyncTestInputData>()
+        .work(work_fn)
+        .tick_source(Ticks::tick_ui)
+        .build();
+
+
     // Create the async system, passing our standalone function as the worker.
     // The template arguments define the signature of the worker function:
     //    - ResultComponents: AsyncTestOutputData
     //    - InputComponents are now automatically deduced from the function signature.
+    /*    
     std::function<std::tuple<AsyncTestOutputData>(const AsyncTestInputData&)> work_fn = async_test_work;
     Async::create_async_system<AsyncTestOutputData>(
         ecs,
@@ -456,6 +472,7 @@ int main(int, char *[]) {
         Ticks::tick_ui,
         "AsyncTestSystem2"
     );
+    */
 
     ecs.observer<AsyncTestInputData, const AsyncTestOutputData>("Observer_AsyncTestInputDataIncrement")
         .term_at(0).inout()
@@ -465,7 +482,6 @@ int main(int, char *[]) {
             data.value += 1;
         })
         .set_doc_brief("Increment the test async input to show that change is working");
-    
     auto qb = ecs.query_builder<const AsyncTestInputData>()
         .term_at(0).up(); // Query for entities that have a child with AsyncTestInputData
 //    Async::create_async_system_with_query<AsyncTestOutputData>(
@@ -503,7 +519,11 @@ int main(int, char *[]) {
             int targetX = xDist(rng);
             int targetY = yDist(rng);
             Pawn::Destination_Event dest{{targetX, targetY}, {0, 0.25}};
-            fsmc.machine->react(dest);
+            // The state mchien reacting isn't working, so just force it
+            // TODO: Fix this
+            //fsmc.machine->changeTo<Pawn::Walking>();
+            e.set<Pawn::Destination_Event>(dest);
+            //fsmc.machine->react(dest);
             //std::cout << "Set destination for " << std::string(e.path()) << " to (" << targetX << ", " << targetY << ")" << std::endl;
         })
         .set_doc_brief("Set a random destination for pawns that don't have one");
@@ -547,6 +567,8 @@ int main(int, char *[]) {
         .set<AsyncTestInputData>({42.0f});
     ecs.entity("AsyncTestChild")
         .child_of(async_tester);
+
+
 
 
 
