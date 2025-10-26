@@ -56,6 +56,24 @@ struct PtTest {
         int y;
     };
 
+struct AsyncSingletonTestInputData{
+    float value;
+};
+
+struct AsyncSingletonTestOutputData{
+    std::string msg;
+};
+
+std::tuple<AsyncSingletonTestOutputData> async_singleton_test_work(const AsyncSingletonTestInputData& req) {
+    ZoneScopedN("async_singleton_test_work");
+    // Simulate long work
+    //std::cout << "[Async] Starting long work with value " << req.value << std::endl;
+    std::this_thread::sleep_for(std::chrono::seconds(10));
+    //std::cout << "[Async] Finished long work." << std::endl;
+    return { { "Processed value: " + std::to_string(req.value) } };
+}
+
+
 struct AsyncTestInputData {
     float value;
 };
@@ -155,6 +173,12 @@ int main(int, char *[]) {
         .member<int>("x")
         .member<int>("y");
 
+    ecs.component<AsyncSingletonTestInputData>("AsyncSingletonTestInputData")
+        .member<float>("value")
+        .add(flecs::Singleton);
+    ecs.component<AsyncSingletonTestOutputData>("AsyncSingletonTestOutputData")
+        .member<std::string>("msg")
+        .add(flecs::Singleton);
     ecs.component<AsyncTestInputData>("AsyncTestInputData")
         .member<float>("value");
     ecs.component<AsyncTestOutputData>("AsyncTestOutputData")
@@ -467,6 +491,23 @@ int main(int, char *[]) {
             data.value += 1;
         })
         .set_doc_brief("Increment the test async input to show that change is working");
+
+    // Test the singleton async
+    std::function<std::tuple<AsyncSingletonTestOutputData>(const AsyncSingletonTestInputData&)> work_fn3 = async_singleton_test_work;
+    Async::create_async_system_for_singleton(ecs, "AsyncSingletonTestSystem")
+        .query<const AsyncSingletonTestInputData>()
+        .work(work_fn3)
+        .tick_source(Ticks::tick_ui)
+        .build();
+    ecs.set<AsyncSingletonTestInputData>({13.0f});
+
+    
+
+
+
+
+
+
     auto qb = ecs.query_builder<const AsyncTestInputData>()
         .term_at(0).up(); // Query for entities that have a child with AsyncTestInputData
 //    Async::create_async_system_with_query<AsyncTestOutputData>(

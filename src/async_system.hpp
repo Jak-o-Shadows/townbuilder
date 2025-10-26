@@ -45,7 +45,7 @@ struct Future {
 };
 
 
-// Forward declaration of the main builder
+// Forward declarations for the builders
 template <
     typename TQueryArgs,  // type_list of components to query for
     typename TGathered,   // A std::tuple<> of the data prepared by the gather stage
@@ -55,6 +55,18 @@ template <
     typename TApplyFn     // The apply function type
 >
 class AsyncSystemBuilder;
+
+template <
+    typename TQueryArgs,  // type_list of components to query for
+    typename TGathered,   // A std::tuple<> of the data prepared by the gather stage
+    typename TResults,    // A std::tuple<> of the results from the work stage
+    typename TGatherFn,   // The gather function type
+    typename TWorkFn,     // The work function type
+    typename TApplyFn     // The apply function type
+>
+class AsyncSingletonSystemBuilder;
+
+
 
 // Default Gather: Copy input components
 struct DefaultEntityGatherFn {
@@ -109,11 +121,6 @@ public:
         (apply_result(world, results), ...);
     }    
 };
-
-
-// Forward declarations for the builders
-template <typename TQueryArgs, typename TGathered, typename TResults, typename TGatherFn, typename TWorkFn, typename TApplyFn> class AsyncSystemBuilder;
-template <typename TQueryArgs, typename TGathered, typename TResults, typename TGatherFn, typename TWorkFn, typename TApplyFn> class AsyncSingletonSystemBuilder;
 
 /**
  * @brief A builder for creating efficient, thread-safe, single-system asynchronous operations.
@@ -177,8 +184,8 @@ public:
         using WorkerArgTuple = typename function_traits<Fn>::arg_tuple;
         using NewGathered = typename decay_tuple<WorkerArgTuple>::type;
         using NewResults = typename function_traits<Fn>::result_type;
-        return AsyncSystemBuilder<TQueryArgs, NewGathered, NewResults, DefaultGatherFn, Fn, TApplyFn>(
-            world, system_name_prefix, tick_source_, DefaultGatherFn{}, fn, DefaultApplyFn{}
+        return AsyncSystemBuilder<TQueryArgs, NewGathered, NewResults, DefaultEntityGatherFn, Fn, TApplyFn>(
+            world, system_name_prefix, tick_source_, DefaultEntityGatherFn{}, fn, DefaultEntityApplyFn{}
         );
     }
 
@@ -353,32 +360,57 @@ private:
     template<typename... Comps>
     void build_system(type_list<Comps...>) {
         const std::string future_name = system_name_prefix + "_Future";
-        flecs::entity future_component = world.component<Async::Future<TResults>>(future_name.c_str()).add(flecs::Singleton);
+        flecs::entity future_component = world.component<Async::Future<TResults>>(future_name.c_str())
+            .add(flecs::Singleton);
 
         const std::string start_name = std::format("{}_Start", system_name_prefix);
-        auto start_sys = world.system<Comps...>(start_name.c_str())
-            .term_at(0).singleton() // This makes the system query for singleton components
+        flecs::system start_sys = world.system<Comps...>(start_name.c_str())
             .without(future_component)
-            .iter(this {
+            .each([
+                &world = world,
+                start_name = start_name,
+                system_name_prefix = system_name_prefix,
+                gather_fn = gather_fn_,
+                work_fn = work_fn_
+            ](Comps... comps) {
                 ZoneScoped; ZoneName(start_name.c_str(), start_name.length());
-                TGathered gathered_data = gather_fn_(world, *comps...);
-                std::future<TResults> future = std::async(std::launch::async, [this, gathered_data] {
-                    return std::apply(work_fn_, gathered_data);
-                });
+                
+                TGathered gathered_data = gather_fn(world, comps...);
+                //std::cout << std::format("Gathered data for async task {}", system_name_prefix) << std::endl;
+
+                // Launch the async task
+                std::future<TResults> future = std::async(std::launch::async,
+                    [work_fn, gathered_data] { // Capture work_fn and gathered_data by value
+                        return std::apply(work_fn, gathered_data);
+                    });
+                
+                // Construct the Future component with the std::future
                 world.set<Async::Future<TResults>>({std::move(future)});
             });
 
         const std::string check_name = std::format("{}_Check", system_name_prefix);
-        auto check_sys = world.system<Async::Future<TResults>*>(check_name.c_str())
-            .term_at(0).singleton()
-            .iter(this {
+        flecs::system check_sys = world.system<Async::Future<TResults>>(check_name.c_str())
+            .each([&world = world,  // Capture world by reference
+                   apply_fn = apply_fn_,
+                   check_name,
+                   future_component
+                ](flecs::iter& it, size_t i, Async::Future<TResults>& fut_comp) {
                 ZoneScoped; ZoneName(check_name.c_str(), check_name.length());
-                Async::Future<TResults>& fut_comp = **fut_comp_ptr;
                 if (fut_comp.future.wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
                     TResults results = fut_comp.future.get();
-                    auto apply_args = std::tuple_cat(std::make_tuple(std::ref(world)), results);
-                    std::apply(apply_fn_, apply_args);
-                    world.remove<Async::Future<TResults>>();
+
+                    // Use the results function.
+                    // We use std::apply to unpack the result and provide the iter and index to the apply function.
+                    auto apply_args = std::tuple_cat(
+                        std::make_tuple(std::ref(world)),
+                        results
+                    );
+                    std::apply(apply_fn, apply_args);
+
+                    // The task is complete, so remove the trigger and future components.
+                    // The slightly not great performance of removing components is ok
+                    // here since by definition this should be a low frequency operation
+                    world.remove<Async::Future<TResults>>();  // Unsure why i can't just do world.remove(future_component)
                 }
             });
 
@@ -395,20 +427,30 @@ private:
     TWorkFn work_fn_;
     TApplyFn apply_fn_;
 };
+
+
+
+
+
+// Entry points: returns a builder with default functions.
 inline AsyncSystemBuilder<
     type_list<>, 
     type_list<>, 
     type_list<>, 
-    DefaultGatherFn, 
+    DefaultEntityGatherFn, 
     std::nullptr_t, 
-    DefaultApplyFn
+    DefaultEntityApplyFn
 >
 create_async_system(flecs::world& ecs, const std::string name) {
     return AsyncSystemBuilder<
         type_list<>, 
         type_list<>, 
         type_list<>, 
-        DefaultGatherFn, 
+        DefaultEntityGatherFn, 
+        std::nullptr_t, 
+        DefaultEntityApplyFn
+    >(ecs, name, flecs::entity::null(), DefaultEntityGatherFn{}, nullptr, DefaultEntityApplyFn{});
+}
 // Entry point for singleton async systems.
 inline AsyncSingletonSystemBuilder<
     type_list<>, 
