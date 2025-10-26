@@ -6,6 +6,7 @@
 #include "ticks/module.hpp"
 #include "pawn/module.hpp"
 #include "statemachine/module.hpp"
+#include "async_system.hpp"
 
 #include <soci/sqlite3/soci-sqlite3.h>
 #include <sqlite3.h>
@@ -13,6 +14,7 @@
 #include <vector>
 #include <cstdio> // For std::remove
 #include <future>
+#include <fstream>
 
 namespace Database {
 
@@ -22,18 +24,18 @@ std::shared_ptr<spdlog::logger> systemsLogger;
  * @brief Writes a memory buffer to a file.
  * This is intended to be run in a background thread.
  */
-/*
-void save_buffer_to_file(const std::string& destFilename, std::shared_ptr<std::vector<unsigned char>> buffer) {
+
+void save_buffer_to_file(const std::string& destFilename, const std::shared_ptr<std::vector<unsigned char>> buffer) {
     ZoneScopedN("save_buffer_to_file");
+    systemsLogger->debug("Saving database to file {}", destFilename);
     try {
         std::ofstream of(destFilename, std::ios::binary);
         of.write(reinterpret_cast<const char*>(buffer->data()), buffer->size());
-        systemsLogger->info("Database successfully saved to {}", destFilename);
+        systemsLogger->debug("Database successfully saved to {}", destFilename);
     } catch (const std::exception& e) {
         systemsLogger->error("Failed to write database to file {}: {}", destFilename, e.what());
     }
 }
-    */
 
 /**
  * @brief Serializes an in-memory SQLite database into a memory buffer.
@@ -41,14 +43,14 @@ void save_buffer_to_file(const std::string& destFilename, std::shared_ptr<std::v
  * @param sourceSession The in-memory SOCI session to serialize.
  * @return A shared_ptr to a vector containing the serialized database.
  */
-/*
 std::shared_ptr<std::vector<unsigned char>> serialize_database(soci::session& sourceSession) {
     ZoneScopedN("serialize_database");
+    systemsLogger->debug("Serializing database");
     soci::sqlite3_session_backend* sourceBackend = static_cast<soci::sqlite3_session_backend*>(sourceSession.get_backend());
-    sqlite3* pFrom = sourceBackend->conn_;
+    sqlite_api::sqlite3* pFrom = sourceBackend->conn_;
 
     sqlite3_int64 size = 0;
-    unsigned char* pData = sqlite3_serialize(pFrom, "main", &size, 0);
+    unsigned char* pData = sqlite3_serialize(reinterpret_cast<sqlite3*>(pFrom), "main", &size, 0);
 
     if (!pData) {
         systemsLogger->error("Failed to serialize database.");
@@ -57,9 +59,25 @@ std::shared_ptr<std::vector<unsigned char>> serialize_database(soci::session& so
 
     auto buffer = std::make_shared<std::vector<unsigned char>>(pData, pData + size);
     sqlite3_free(pData);
+    systemsLogger->debug("Database successfully serialized");
     return buffer;
 }
-*/
+
+std::tuple<Snapshot> gather_database_snapshot(flecs::world&, const Connection& conn) {
+    systemsLogger->debug("Creating database snapshot for async save.");
+    std::shared_ptr<std::vector<unsigned char>> buffer = serialize_database(*conn.sql);
+    std::string dest_filename = "database_backup.sqlite3";
+    return std::make_tuple(Snapshot({buffer, dest_filename}));
+}
+
+std::tuple<> work_save_database_snapshot(const Snapshot& snapshot) {
+    if (snapshot.buffer) {  // TODO: Is this really neccessary? If it's empty, why not jsut write it
+        systemsLogger->trace("Saving database snapshot to file.");
+        save_buffer_to_file(snapshot.destination_filename, snapshot.buffer);
+    }
+    return std::make_tuple();
+}
+
 
 systems::systems(flecs::world& ecs) {
     flecs::entity m = ecs.module<systems>();
@@ -76,7 +94,7 @@ systems::systems(flecs::world& ecs) {
 
             // Create and assign the new session
             try {
-                conn.sql = std::make_unique<soci::session>(soci::sqlite3, db_connection_string);
+                conn.sql = std::make_shared<soci::session>(soci::sqlite3, db_connection_string);
                 systemsLogger->info("In-memory database established.");
 
                 // Enable Write-Ahead Logging.
@@ -105,54 +123,27 @@ systems::systems(flecs::world& ecs) {
             }
         });
     
-    /*
-    ecs.system<Database::Connection>("FlushDatabaseToDisk_Periodic")
-        .interval(20.0f)
-        .each([](Database::Connection& conn) {
-            // Clean up any finished futures
-            std::erase_if(conn.backup_futures,
-                    [](const std::future<void>& f) {
-                        // Check if the future is ready with a zero timeout
-                        return f.wait_for(std::chrono::seconds(0)) == std::future_status::ready;
-                    });
+   // Use the `create_async_system` to periodically flush the database to disk via copying the in-memory SQLITE,
+   //   then writing it to disk
+   //   Note that a custom "tick source" is required because `create_async_system` doesn't support the `.interval`,
+   //   because it is quite clumsily using flecs, rather than being more native
+   flecs::entity flush_tick_source = ecs.timer("flush_log").interval(2);
 
-            systemsLogger->info("Initiating periodic asynchronous database flush...");
-            
-            // 1. Main thread quickly serializes the in-memory DB to a memory buffer.
-            auto db_buffer = serialize_database(*conn.sql);
-            if (!db_buffer) {
-                return; // Serialization failed
-            }
+   
+    // Use the new async system builder to periodically save the database.
+    std::function<std::tuple<Snapshot>(flecs::world&, const Connection&)>
+        gather_database_snapshot_fn = gather_database_snapshot;
 
-            // 2. Launch a background task to write the buffer to disk.
-            conn.backup_futures.push_back(std::async(std::launch::async, 
-                save_buffer_to_file, "database_backup.db", db_buffer));
-        })
-        .set_doc_brief("Periodically flushes the in-memory database to disk asynchronously.");
-    */
+    std::function<std::tuple<>(const Snapshot&)>
+        work_save_database_snapshot_fn = work_save_database_snapshot;
 
-    // System to flush the in-memory database to disk on application shutdown.
-    /*
-    ecs.system<Database::Connection>("FlushDatabaseToDisk_OnShutdown")
-        .kind(flecs::OnStop)
-        .each([](Database::Connection& conn) {
-            if (!conn.sql) return;
-
-            // Wait for any outstanding async backups to complete.
-            systemsLogger->info("Waiting for periodic backup tasks to finish...");
-            for (auto& f : conn.backup_futures) {
-                f.wait();
-            }
-            conn.backup_futures.clear();
-
-            systemsLogger->info("Initiating final database flush on shutdown...");
-            auto db_buffer = serialize_database(*conn.sql);
-            if (db_buffer) {
-                save_buffer_to_file("database_final.db", db_buffer);
-            }
-        });
-    */
-
+    Async::create_async_system_for_singleton(ecs, "SaveDatabaseSnapshot")
+        .query<const Connection>() // Query for the singleton
+        .tick_source(flush_tick_source)
+        .gather(gather_database_snapshot_fn)
+        .work(work_save_database_snapshot_fn)
+        // No .apply() needed, the default does nothing for an empty results tuple.
+        .build();
     
     ecs.system<const Statemachine::StateUtility, Database::Connection>("LogPawnStateUtility")
         .term_at(0).in()

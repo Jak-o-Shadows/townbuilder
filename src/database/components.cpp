@@ -13,6 +13,9 @@ components::components(flecs::world& ecs) {
 
     ecs.component<Connection>()
         .add(flecs::Singleton);
+    ecs.component<Snapshot>()
+        .member<std::string>("destination_filename")
+        .add(flecs::Singleton);
     componentsLogger->trace("Components Registered");
 
 };

@@ -8,7 +8,12 @@
 namespace Database {
 
 struct Connection {
-    std::unique_ptr<soci::session> sql;
+    std::shared_ptr<soci::session> sql;
+};
+
+struct Snapshot {
+    std::shared_ptr<std::vector<unsigned char>> buffer;
+    std::string destination_filename;
 };
 
 struct components {

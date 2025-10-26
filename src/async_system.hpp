@@ -410,7 +410,7 @@ private:
                     // The task is complete, so remove the trigger and future components.
                     // The slightly not great performance of removing components is ok
                     // here since by definition this should be a low frequency operation
-                    world.remove<Async::Future<TResults>>();  // Unsure why i can't just do world.remove(future_component)
+                    world.remove<Async::Future<TResults>>();  // Unsure why i can't just do world.remove(future_component) like with entities
                 }
             });
 
