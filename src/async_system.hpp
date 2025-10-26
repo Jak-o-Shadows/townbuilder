@@ -213,7 +213,7 @@ private:
                         std::make_tuple(std::ref(world), e),
                         results
                     );
-                    //std::apply(apply_fn, apply_args);
+                    std::apply(apply_fn, apply_args);
 
                     // The task is complete, so remove the trigger and future components.
                     // The slightly not great performance of removing components is ok
