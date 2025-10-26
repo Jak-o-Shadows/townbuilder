@@ -59,7 +59,8 @@ class AsyncSystemBuilder;
 // Default Gather: Copy input components
 struct DefaultGatherFn {
     template<typename... Args>
-    std::tuple<std::decay_t<Args>...> operator()(flecs::world&, flecs::entity, const Args&... args) const {
+    std::tuple<std::decay_t<Args>...> operator()(flecs::iter& it, size_t i, const Args&... args) const {
+        // The default gather copies the queried components for the current entity.
         return std::make_tuple(std::decay_t<Args>(args)...);
     }
 };
@@ -78,8 +79,8 @@ private:
     }
 public:
     template<typename... TResults>
-    void operator()(flecs::world&, flecs::entity e, const TResults&... results) const {
-        (apply_result(e, results), ...);
+    void operator()(flecs::iter& it, size_t i, const TResults&... results) const {
+        (apply_result(it.entity(i), results), ...);
     }    
 };
 
@@ -185,11 +186,12 @@ private:
                 system_name_prefix = system_name_prefix,
                 gather_fn = gather_fn_,
                 work_fn = work_fn_
-            ](flecs::entity e, Comps... comps) {
+            ](flecs::iter& it, size_t i, Comps... comps) {
                 ZoneScoped; ZoneName(start_name.c_str(), start_name.length());
                 
-                TGathered gathered_data = gather_fn(world, e, comps...);
+                TGathered gathered_data = gather_fn(it, i, comps...);
                 //std::cout << std::format("Gathered data for async task {}", system_name_prefix) << std::endl;
+                flecs::entity e = it.entity(i);
 
                 // Launch the async task
                 std::future<TResults> future = std::async(std::launch::async,
@@ -208,18 +210,15 @@ private:
                    apply_fn = apply_fn_,
                    check_name,
                    future_component
-                ](flecs::entity e, Async::Future<TResults>& fut_comp) {
+                ](flecs::iter& it, size_t i, Async::Future<TResults>& fut_comp) {
                 ZoneScoped; ZoneName(check_name.c_str(), check_name.length());
-                //std::cout << std::format("Checking async task for entity {} {}", std::string(e.path()), check_name) << std::endl;
                 if (fut_comp.future.wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
-                    //std::cout << "Async task completed, retrieving results." << std::endl;
                     TResults results = fut_comp.future.get();
-                    //std::cout << "Results retrieved from async task." << std::endl;
 
-                    // Use the results function
-                    // We use std::apply to unpack the result, and to provide the ECS & entity to the apply function
+                    // Use the results function.
+                    // We use std::apply to unpack the result and provide the iter and index to the apply function.
                     auto apply_args = std::tuple_cat(
-                        std::make_tuple(std::ref(world), e),
+                        std::make_tuple(std::ref(it), i),
                         results
                     );
                     std::apply(apply_fn, apply_args);
@@ -227,7 +226,7 @@ private:
                     // The task is complete, so remove the trigger and future components.
                     // The slightly not great performance of removing components is ok
                     // here since by definition this should be a low frequency operation
-                    e.remove(future_component);
+                    it.entity(i).remove(future_component);
                 }
             });
 
