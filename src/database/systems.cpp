@@ -127,7 +127,7 @@ systems::systems(flecs::world& ecs) {
    //   then writing it to disk
    //   Note that a custom "tick source" is required because `create_async_system` doesn't support the `.interval`,
    //   because it is quite clumsily using flecs, rather than being more native
-   flecs::entity flush_tick_source = ecs.timer("flush_log").interval(2);
+   flecs::entity flush_tick_source = ecs.timer("flush_log").interval(10);
 
    
     // Use the new async system builder to periodically save the database.
@@ -140,8 +140,8 @@ systems::systems(flecs::world& ecs) {
     Async::create_async_system_for_singleton(ecs, "SaveDatabaseSnapshot")
         .query<const Connection>() // Query for the singleton
         .tick_source(flush_tick_source)
-        .gather(gather_database_snapshot_fn)
         .work(work_save_database_snapshot_fn)
+        .gather(gather_database_snapshot_fn)
         // No .apply() needed, the default does nothing for an empty results tuple.
         .build();
     

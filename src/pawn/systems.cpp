@@ -146,7 +146,7 @@ systems::systems(flecs::world& ecs){
 
     // Register the pathfinding system as an async system   
     std::function<std::tuple<Coordinates::CellVelocity>(const Coordinates::Grid&, const Coordinates::Cell&, const Destination_Event&, const PawnAbilityTraits&)> func = calculate_next_velocity;
-    Async::create_async_system(ecs, "System_Pawn_CalculateNextVelocity")
+    Async::create_async_system(ecs, "Pawn_CalculateNextVelocity")
         .query<const Coordinates::Grid&, const Coordinates::Cell&, const Destination_Event&, const PawnAbilityTraits&>()
         .work(func)
         .tick_source(Ticks::tick_pawn_behaviour)

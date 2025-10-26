@@ -7,13 +7,18 @@ import altair as alt
 from django.shortcuts import render
 from django.http import JsonResponse
 
+alt.data_transformers.enable("vegafusion")
+
+DEFAULT_FILEPATH_DB = "../build/Release/database_backup.sqlite3"
+
+
 # Create your views here.
 def chart_view(request):
     return render(request, "dashboard/index.html")
 
 def get_chart_data(request):
     pawn_name = request.GET.get("pawn_name", "Pawn 1")   # Default to Pawn 1
-    filepath_db = request.GET.get("filepath_db", "../build/Release/database.db")
+    filepath_db = request.GET.get("filepath_db", DEFAULT_FILEPATH_DB)
 
     # Fetch the data
     con = sqlite3.connect(filepath_db)
@@ -38,10 +43,10 @@ def get_chart_data(request):
         height='container'
     ).interactive()
 
-    return JsonResponse(chart.to_dict())
+    return JsonResponse(chart.to_dict(format="vega"))
 
 def get_pawn_names(request):
-    filepath_db = request.GET.get("filepath_db", "../build/Release/database.db")
+    filepath_db = request.GET.get("filepath_db", DEFAULT_FILEPATH_DB)
     con = sqlite3.connect(filepath_db)
     query = "SELECT DISTINCT pawn_name FROM pawn_state_utility"
     df = pd.read_sql_query(query, con)
