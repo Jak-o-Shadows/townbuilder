@@ -15,6 +15,13 @@ namespace Async {
 // Helper to pass around type packs
 template<typename... T>
 struct type_list {};
+
+// Helper to decay all types in a tuple
+template<typename Tup> struct decay_tuple;
+template<typename... Ts> struct decay_tuple<std::tuple<Ts...>> {
+    using type = std::tuple<std::decay_t<Ts>...>;
+};
+
  
 // Helper to get traits from any callable type (lambda, function pointer, std::function)
 template<typename T>
@@ -52,8 +59,8 @@ class AsyncSystemBuilder;
 // Default Gather: Copy input components
 struct DefaultGatherFn {
     template<typename... Args>
-    std::tuple<Args...> operator()(flecs::entity, const Args&... args) const {
-        return std::make_tuple(Args(args)...);
+    std::tuple<std::decay_t<Args>...> operator()(flecs::world&, flecs::entity, const Args&... args) const {
+        return std::make_tuple(std::decay_t<Args>(args)...);
     }
 };
 
@@ -134,11 +141,12 @@ public:
 
     // (Required) Provide the worker function.
     template<typename Fn>
-    AsyncSystemBuilder<TQueryArgs, typename function_traits<Fn>::arg_tuple, typename function_traits<Fn>::result_type, TGatherFn, Fn, TApplyFn>
+    auto
     work(Fn fn) {
-        using NewGathered = typename function_traits<Fn>::arg_tuple;
+        using WorkerArgTuple = typename function_traits<Fn>::arg_tuple;
+        using NewGathered = typename decay_tuple<WorkerArgTuple>::type;
         using NewResults = typename function_traits<Fn>::result_type;
-        return AsyncSystemBuilder<TQueryArgs, NewGathered, NewResults, TGatherFn, Fn, TApplyFn>(
+        return AsyncSystemBuilder<TQueryArgs, NewGathered, NewResults, DefaultGatherFn, Fn, TApplyFn>(
             world, system_name_prefix, tick_source_, DefaultGatherFn{}, fn, DefaultApplyFn{}
         );
     }
@@ -160,10 +168,10 @@ public:
 private:
     template<typename... Comps>
     void build_system(type_list<Comps...>) {
-        std::cout << std::format("Registering async system '{}'", system_name_prefix) << std::endl;
+        //std::cout << std::format("Registering async system '{}'", system_name_prefix) << std::endl;
         const std::string future_name = system_name_prefix + "_Future";
         flecs::entity future_component = world.component<Async::Future<TResults>>(future_name.c_str());
-        std::cout << std::format("Future component '{}' registered", future_name) << std::endl;
+        //std::cout << std::format("Future component '{}' registered", future_name) << std::endl;
 
         // System 1: Kicks off the async task.
         // It queries, applies the gather function, and kicks off the future
@@ -172,6 +180,7 @@ private:
         flecs::system start_sys = world.system<Comps...>(start_name.c_str())
             .without(future_component)
             .each([
+                &world = world,
                 start_name = start_name,
                 system_name_prefix = system_name_prefix,
                 gather_fn = gather_fn_,
@@ -179,8 +188,8 @@ private:
             ](flecs::entity e, Comps... comps) {
                 ZoneScoped; ZoneName(start_name.c_str(), start_name.length());
                 
-                TGathered gathered_data = gather_fn(e, comps...);
-                std::cout << std::format("Gathered data for async task {}", system_name_prefix) << std::endl;
+                TGathered gathered_data = gather_fn(world, e, comps...);
+                //std::cout << std::format("Gathered data for async task {}", system_name_prefix) << std::endl;
 
                 // Launch the async task
                 std::future<TResults> future = std::async(std::launch::async,
@@ -203,9 +212,9 @@ private:
                 ZoneScoped; ZoneName(check_name.c_str(), check_name.length());
                 //std::cout << std::format("Checking async task for entity {} {}", std::string(e.path()), check_name) << std::endl;
                 if (fut_comp.future.wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
-                    std::cout << "Async task completed, retrieving results." << std::endl;
+                    //std::cout << "Async task completed, retrieving results." << std::endl;
                     TResults results = fut_comp.future.get();
-                    std::cout << "Results retrieved from async task." << std::endl;
+                    //std::cout << "Results retrieved from async task." << std::endl;
 
                     // Use the results function
                     // We use std::apply to unpack the result, and to provide the ECS & entity to the apply function
@@ -228,7 +237,7 @@ private:
         //    start_sys.tick_source(tick_source_);
         //    check_sys.tick_source(tick_source_);
         //}
-        std::cout << std::format("Registered async system '{}'", system_name_prefix);
+        //std::cout << std::format("Registered async system '{}'", system_name_prefix);
     }
 
     flecs::world& world;

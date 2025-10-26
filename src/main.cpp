@@ -451,28 +451,13 @@ int main(int, char *[]) {
         .work(work_fn)
         .tick_source(Ticks::tick_ui)
         .build();
-
-
-    // Create the async system, passing our standalone function as the worker.
-    // The template arguments define the signature of the worker function:
-    //    - ResultComponents: AsyncTestOutputData
-    //    - InputComponents are now automatically deduced from the function signature.
-    /*    
-    std::function<std::tuple<AsyncTestOutputData>(const AsyncTestInputData&)> work_fn = async_test_work;
-    Async::create_async_system<AsyncTestOutputData>(
-        ecs,
-        work_fn,
-        Ticks::tick_ui,
-        "AsyncTestSystem"
-    );
     std::function<std::tuple<AsyncTestOutputData2>(const AsyncTestInputData&)> work_fn2 = async_test_work2;
-    Async::create_async_system<AsyncTestOutputData2>(
-        ecs,
-        work_fn2,
-        Ticks::tick_ui,
-        "AsyncTestSystem2"
-    );
-    */
+    Async::create_async_system(ecs, "AsyncTestSystem2")
+        .query<const AsyncTestInputData>()
+        .work(work_fn2)
+        .tick_source(Ticks::tick_ui)
+        .build();
+
 
     ecs.observer<AsyncTestInputData, const AsyncTestOutputData>("Observer_AsyncTestInputDataIncrement")
         .term_at(0).inout()
