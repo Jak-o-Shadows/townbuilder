@@ -57,7 +57,7 @@ template <
 class AsyncSystemBuilder;
 
 // Default Gather: Copy input components
-struct DefaultGatherFn {
+struct DefaultEntityGatherFn {
     template<typename... Args>
     std::tuple<std::decay_t<Args>...> operator()(flecs::iter& it, size_t i, const Args&... args) const {
         // The default gather copies the queried components for the current entity.
@@ -67,7 +67,7 @@ struct DefaultGatherFn {
 
 // Default Apply: Set result components on the entity.
 // Handles both tags (using add) and components with data (using set).
-struct DefaultApplyFn {
+struct DefaultEntityApplyFn {
 private:
     template<typename T>
     void apply_result(flecs::entity e, const T& result) const {
@@ -84,6 +84,36 @@ public:
     }    
 };
 
+// Default Gather for singleton systems: Copy input singleton components.
+struct DefaultSingletonGatherFn {
+    template<typename... Args>
+    std::tuple<std::decay_t<Args>...> operator()(flecs::world&, const Args&... args) const {
+        return std::make_tuple(std::decay_t<Args>(args)...);
+    }
+};
+
+// Default Apply for singleton systems: Set result components as singletons.
+struct DefaultSingletonApplyFn {
+private:
+    template<typename T>
+    void apply_result(flecs::world& world, const T& result) const {
+        if constexpr (std::is_empty_v<T>) {
+            world.add<T>();
+        } else {
+            world.set<T>(result);
+        }
+    }
+public:
+    template<typename... TResults>
+    void operator()(flecs::world& world, const TResults&... results) const {
+        (apply_result(world, results), ...);
+    }    
+};
+
+
+// Forward declarations for the builders
+template <typename TQueryArgs, typename TGathered, typename TResults, typename TGatherFn, typename TWorkFn, typename TApplyFn> class AsyncSystemBuilder;
+template <typename TQueryArgs, typename TGathered, typename TResults, typename TGatherFn, typename TWorkFn, typename TApplyFn> class AsyncSingletonSystemBuilder;
 
 /**
  * @brief A builder for creating efficient, thread-safe, single-system asynchronous operations.
@@ -247,7 +277,124 @@ private:
     TApplyFn apply_fn_;
 };
 
-// Entry point: returns a builder with default functions.
+/**
+ * @brief A builder for creating efficient, thread-safe, asynchronous operations on singleton components.
+ *
+ * This builder is a specialization for singleton components, following a similar "gather-work-apply" pipeline:
+ * 1. GATHER (Main Thread): A `gather` function runs inside a flecs system on the main thread.
+ *    It safely extracts data from singleton components. By default, it copies the queried singletons.
+ * 2. WORK (Worker Thread): A `work` function runs on a background thread via std::async.
+ *    It operates exclusively on the thread-safe data prepared by the `gather` stage.
+ * 3. APPLY (Main Thread): An `apply` function runs on the main thread after the work is complete.
+ *    By default, it sets any returned values as new singleton components.
+ */
+template <typename TQueryArgs, typename TGathered, typename TResults, typename TGatherFn, typename TWorkFn, typename TApplyFn>
+class AsyncSingletonSystemBuilder {
+public:
+    AsyncSingletonSystemBuilder(flecs::world& ecs, const std::string name, flecs::entity tick_src,
+                       TGatherFn gather_fn, TWorkFn work_fn, TApplyFn apply_fn) 
+        : world(ecs), system_name_prefix(name), tick_source_(tick_src),
+          gather_fn_(gather_fn), work_fn_(work_fn), apply_fn_(apply_fn) {}
+
+    // (Required) Define the singleton components to query for.
+    template<typename... Comps>
+    AsyncSingletonSystemBuilder<type_list<Comps...>, TGathered, TResults, TGatherFn, TWorkFn, TApplyFn>
+    query() {
+        return AsyncSingletonSystemBuilder<type_list<Comps...>, TGathered, TResults, TGatherFn, TWorkFn, TApplyFn>(
+            world, system_name_prefix, tick_source_, gather_fn_, work_fn_, apply_fn_
+        );
+    }
+
+    // Set the system's tick source.
+    AsyncSingletonSystemBuilder<TQueryArgs, TGathered, TResults, TGatherFn, TWorkFn, TApplyFn>
+    tick_source(flecs::entity tick_src) {
+        return AsyncSingletonSystemBuilder<TQueryArgs, TGathered, TResults, TGatherFn, TWorkFn, TApplyFn>(
+            world, system_name_prefix, tick_src, gather_fn_, work_fn_, apply_fn_
+        );
+    }
+
+    // (Optional) Provide a custom gather function.
+    template<typename Fn>
+    AsyncSingletonSystemBuilder<TQueryArgs, typename function_traits<Fn>::result_type, TResults, Fn, TWorkFn, TApplyFn>
+    gather(Fn gather_fn_new) {
+        using NewGathered = typename function_traits<Fn>::result_type;
+        return AsyncSingletonSystemBuilder<TQueryArgs, NewGathered, TResults, Fn, TWorkFn, TApplyFn>(
+            world, system_name_prefix, tick_source_, gather_fn_new, work_fn_, apply_fn_
+        );
+    }
+
+    // (Required) Provide the worker function.
+    template<typename Fn>
+    AsyncSingletonSystemBuilder<TQueryArgs, typename decay_tuple<typename function_traits<Fn>::arg_tuple>::type, typename function_traits<Fn>::result_type, DefaultSingletonGatherFn, Fn, DefaultSingletonApplyFn>
+    work(Fn fn) {
+        using WorkerArgTuple = typename function_traits<Fn>::arg_tuple;
+        using NewGathered = typename decay_tuple<WorkerArgTuple>::type;
+        using NewResults = typename function_traits<Fn>::result_type;
+        return AsyncSingletonSystemBuilder<TQueryArgs, NewGathered, NewResults, DefaultSingletonGatherFn, Fn, DefaultSingletonApplyFn>(
+            world, system_name_prefix, tick_source_, DefaultSingletonGatherFn{}, fn, DefaultSingletonApplyFn{}
+        );
+    }
+
+    // (Optional) Provide a custom apply function.
+    template<typename Fn>
+    AsyncSingletonSystemBuilder<TQueryArgs, TGathered, TResults, TGatherFn, TWorkFn, Fn>
+    apply(Fn fn) {
+        return AsyncSingletonSystemBuilder<TQueryArgs, TGathered, TResults, TGatherFn, TWorkFn, Fn>(
+            world, system_name_prefix, tick_source_, gather_fn_, work_fn_, fn
+        );
+    }
+
+    // Build and register the flecs system.
+    void build() {
+        build_system(TQueryArgs{});
+    }
+
+private:
+    template<typename... Comps>
+    void build_system(type_list<Comps...>) {
+        const std::string future_name = system_name_prefix + "_Future";
+        flecs::entity future_component = world.component<Async::Future<TResults>>(future_name.c_str()).add(flecs::Singleton);
+
+        const std::string start_name = std::format("{}_Start", system_name_prefix);
+        auto start_sys = world.system<Comps...>(start_name.c_str())
+            .term_at(0).singleton() // This makes the system query for singleton components
+            .without(future_component)
+            .iter(this {
+                ZoneScoped; ZoneName(start_name.c_str(), start_name.length());
+                TGathered gathered_data = gather_fn_(world, *comps...);
+                std::future<TResults> future = std::async(std::launch::async, [this, gathered_data] {
+                    return std::apply(work_fn_, gathered_data);
+                });
+                world.set<Async::Future<TResults>>({std::move(future)});
+            });
+
+        const std::string check_name = std::format("{}_Check", system_name_prefix);
+        auto check_sys = world.system<Async::Future<TResults>*>(check_name.c_str())
+            .term_at(0).singleton()
+            .iter(this {
+                ZoneScoped; ZoneName(check_name.c_str(), check_name.length());
+                Async::Future<TResults>& fut_comp = **fut_comp_ptr;
+                if (fut_comp.future.wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
+                    TResults results = fut_comp.future.get();
+                    auto apply_args = std::tuple_cat(std::make_tuple(std::ref(world)), results);
+                    std::apply(apply_fn_, apply_args);
+                    world.remove<Async::Future<TResults>>();
+                }
+            });
+
+        if (tick_source_.is_valid()) {
+            start_sys.set_tick_source(tick_source_);
+            check_sys.set_tick_source(tick_source_);
+        }
+    }
+
+    flecs::world& world;
+    std::string system_name_prefix;
+    flecs::entity tick_source_;
+    TGatherFn gather_fn_;
+    TWorkFn work_fn_;
+    TApplyFn apply_fn_;
+};
 inline AsyncSystemBuilder<
     type_list<>, 
     type_list<>, 
@@ -262,9 +409,24 @@ create_async_system(flecs::world& ecs, const std::string name) {
         type_list<>, 
         type_list<>, 
         DefaultGatherFn, 
+// Entry point for singleton async systems.
+inline AsyncSingletonSystemBuilder<
+    type_list<>, 
+    type_list<>, 
+    type_list<>, 
+    DefaultSingletonGatherFn, 
+    std::nullptr_t, 
+    DefaultSingletonApplyFn
+>
+create_async_system_for_singleton(flecs::world& ecs, const std::string name) {
+    return AsyncSingletonSystemBuilder<
+        type_list<>, 
+        type_list<>, 
+        type_list<>, 
+        DefaultSingletonGatherFn, 
         std::nullptr_t, 
-        DefaultApplyFn
-    >(ecs, name, flecs::entity::null(), DefaultGatherFn{}, nullptr, DefaultApplyFn{});
+        DefaultSingletonApplyFn
+    >(ecs, name, flecs::entity::null(), DefaultSingletonGatherFn{}, nullptr, DefaultSingletonApplyFn{});
 }
 
 }
