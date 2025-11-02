@@ -167,7 +167,7 @@ int main(int, char *[]) {
 
     // Examples are a little special
     ecs.import<Example::async>();
-    //ecs.import<Example::statemachine>();
+    ecs.import<Example::statemachine>();
 
 
     // Ticks is kinda odd one out

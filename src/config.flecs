@@ -4,6 +4,8 @@ Coordinates.components {Logging.components.LoggerControls: {info}}
 Coordinates.systems    {Logging.components.LoggerControls: {info}}
 Database.components {Logging.components.LoggerControls: {info}}
 Database.systems    {Logging.components.LoggerControls: {info}}
+Example.async {Logging.components.LoggerControls: {info}}
+Example.statemachine {Logging.components.LoggerControls: {info}}
 //fdis.components {Logging.components.LoggerControls: {info}}
 //fdis.systems     {Logging.components.LoggerControls: {info}}
 Map.components {Logging.components.LoggerControls: {info}}
@@ -43,9 +45,10 @@ myCurveEntity {
     Statemachine.components.CurveFile: {"../../state1.csv"}
 }
 
-myPythonEntity {
-    Python.components.PythonFile: {"../../embedExample.py"}
-}
+// The python file needs more care about the environment. So it can cause crashess
+//myPythonEntity {
+//    Python.components.PythonFile: {"../../embedExample.py"}
+//}
 
 /*
 // Debug Systems
