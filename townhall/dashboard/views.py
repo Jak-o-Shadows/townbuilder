@@ -1,6 +1,8 @@
 import sqlite3
 import re
 import json
+import random
+import hashlib
 import os
 
 import pandas as pd
@@ -63,6 +65,13 @@ def chart_partial(request):
     This is intended to be requested via HTMX and swapped into the page.
     """
     pawn_name = request.GET.get("pawn_name", "Pawn 1")
+    plot_type = request.GET.get("plot_type", "utility")
+    # additional filters for non-utility plots (these come from the new per-plot inputs)
+    region = request.GET.get('region')
+    category = request.GET.get('category')
+    metric = request.GET.get('metric')
+    # normalized filter value to use for seeding/cache when plot_type != 'utility'
+    seed_filter = region or category or metric or pawn_name
     # filepath: preference order -> GET param, session value, default constant
     filepath_db = request.GET.get("filepath_db") or request.session.get('db_path') or DEFAULT_FILEPATH_DB
 
@@ -72,7 +81,13 @@ def chart_partial(request):
     except Exception:
         mtime = 0
 
-    cache_key = f"chart_partial:{pawn_name}:{mtime}"
+    # Build cache key including plot_type and any filter value so cached fragments
+    # are distinct per-filter and auto-invalidate when DB mtime changes.
+    if plot_type == 'utility':
+        cache_key = f"chart_partial:utility:{pawn_name}:{mtime}"
+    else:
+        # use the normalized seed_filter (first non-empty of region/category/metric or pawn_name)
+        cache_key = f"chart_partial:{plot_type}:{seed_filter}:{mtime}"
     cached = cache.get(cache_key)
     if cached:
         return HttpResponse(cached)
@@ -80,19 +95,22 @@ def chart_partial(request):
     con = None
     try:
         con = sqlite3.connect(filepath_db)
-        query = "SELECT time, state_name, utility FROM pawn_state_utility WHERE pawn_name = ?"
-        try:
-            df = pd.read_sql_query(query, con, params=(pawn_name,))
-        except Exception:
-            # fallback: do a basic sqlite query
-            cur = con.cursor()
-            cur.execute("SELECT time, state_name, utility FROM pawn_state_utility WHERE pawn_name = ?", (pawn_name,))
-            rows = cur.fetchall()
+        # For the 'utility' plot type try to read real data; for synthetic plots we will generate data below
+        df = None
+        if plot_type == 'utility':
             try:
-                import pandas as _pd
-                df = _pd.DataFrame(rows, columns=['time', 'state_name', 'utility'])
+                query = "SELECT time, state_name, utility FROM pawn_state_utility WHERE pawn_name = ?"
+                df = pd.read_sql_query(query, con, params=(pawn_name,))
             except Exception:
-                df = None
+                # fallback to basic sqlite fetch
+                cur = con.cursor()
+                cur.execute("SELECT time, state_name, utility FROM pawn_state_utility WHERE pawn_name = ?", (pawn_name,))
+                rows = cur.fetchall()
+                try:
+                    import pandas as _pd
+                    df = _pd.DataFrame(rows, columns=['time', 'state_name', 'utility'])
+                except Exception:
+                    df = None
     finally:
         try:
             if con:
@@ -116,6 +134,72 @@ def chart_partial(request):
         height='container'
     ).interactive()
 
+    # If requested plot type is not 'utility' or if df is empty, generate a synthetic dataset
+    if plot_type != 'utility' or df is None or df.empty:
+        # Seed from either pawn_name (for utility) or the normalized seed_filter so
+        # non-utility plots are deterministic per-filter value.
+        if plot_type == 'utility':
+            seed_src = f"{pawn_name}|{plot_type}"
+        else:
+            seed_src = f"{seed_filter}|{plot_type}"
+        seed = int(hashlib.md5(seed_src.encode('utf-8')).hexdigest()[:8], 16)
+        rnd = random.Random(seed)
+
+        if plot_type == 'state_bar':
+            # Generate counts for a few state names
+            states = [f"State {i+1}" for i in range(6)]
+            counts = [rnd.randint(5, 50) for _ in states]
+            import pandas as _pd
+            df = _pd.DataFrame({'state_name': states, 'count': counts})
+            title_val = ("State counts for " + region) if region else "State counts"
+            chart = alt.Chart(df).mark_bar().encode(
+                x='state_name:N',
+                y='count:Q',
+                color='state_name:N'
+            ).properties(title=title_val)
+
+        elif plot_type == 'reward_scatter':
+            # Scatter of reward vs time
+            n = 50
+            xs = list(range(n))
+            ys = [rnd.uniform(0, 100) for _ in range(n)]
+            import pandas as _pd
+            df = _pd.DataFrame({'time': xs, 'reward': ys})
+            title_val = ("Reward scatter for " + category) if category else "Reward scatter"
+            chart = alt.Chart(df).mark_point().encode(
+                x='time:Q',
+                y='reward:Q',
+                tooltip=['time', 'reward']
+            ).properties(title=title_val)
+
+        elif plot_type == 'histogram':
+            # Histogram of synthetic metric
+            n = 200
+            vals = [rnd.gauss(50 + rnd.uniform(-10,10), 15) for _ in range(n)]
+            import pandas as _pd
+            df = _pd.DataFrame({'value': vals})
+            title_val = ("Histogram for " + metric) if metric else "Histogram"
+            chart = alt.Chart(df).mark_bar().encode(
+                alt.X('value:Q', bin=alt.Bin(maxbins=30)),
+                y='count():Q'
+            ).properties(title=title_val)
+
+        else:
+            # default fallback: simple line using random walk
+            n = 60
+            vals = []
+            v = rnd.uniform(0, 50)
+            for _ in range(n):
+                v += rnd.uniform(-5, 5)
+                vals.append(max(0, v))
+            import pandas as _pd
+            df = _pd.DataFrame({'time': list(range(n)), 'value': vals})
+            title_val = "Random trend for " + seed_filter
+            chart = alt.Chart(df).mark_line().encode(
+                x='time:Q',
+                y='value:Q'
+            ).properties(title=title_val)
+    
     spec = chart.to_dict(format="vega")
     html = render_to_string('dashboard/_chart.html', {'spec_json': json.dumps(spec)})
     # cache the rendered HTML for a short period (key includes mtime)

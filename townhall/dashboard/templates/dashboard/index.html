@@ -53,6 +53,26 @@
         <label for="pawn-select">Select a Pawn:</label>
         <!-- Load the server-rendered select into this container on page load -->
         <div id="pawn-select-container" hx-get="{% url 'dashboard:pawn_select_partial' %}" hx-trigger="load" hx-swap="innerHTML"></div>
+        <label for="plot-select" style="margin-left:12px;">Plot:</label>
+        <select id="plot-select" style="margin-left:6px;">
+            <option value="utility">Utility (DB)</option>
+            <option value="state_bar">State counts (bar)</option>
+            <option value="reward_scatter">Reward scatter</option>
+            <option value="histogram">Histogram</option>
+        </select>
+        <!-- Filters for non-utility plots (hidden by default) -->
+        <span id="filter-region-container" style="display:none; margin-left:12px;">
+            <label for="filter-region">Region:</label>
+            <input id="filter-region" type="text" placeholder="region" style="margin-left:6px;" />
+        </span>
+        <span id="filter-category-container" style="display:none; margin-left:12px;">
+            <label for="filter-category">Category:</label>
+            <input id="filter-category" type="text" placeholder="category" style="margin-left:6px;" />
+        </span>
+        <span id="filter-metric-container" style="display:none; margin-left:12px;">
+            <label for="filter-metric">Metric:</label>
+            <input id="filter-metric" type="text" placeholder="metric" style="margin-left:6px;" />
+        </span>
         <button id="refresh-btn" hx-get="{% url 'dashboard:pawn_select_partial' %}" hx-target="#pawn-select-container" hx-swap="innerHTML">Refresh</button>
         <input type="checkbox" id="auto-refresh-checkbox">
         <label for="auto-refresh-checkbox">Auto-refresh</label>
@@ -104,11 +124,28 @@
                                 const form = document.getElementById('pawn-form');
                                 const chartUrl = form && form.getAttribute('data-chart-url') || '{% url "dashboard:chart_partial" %}';
                                 showSpinner();
+                                const plotSelect = document.getElementById('plot-select');
+                                const plotType = plotSelect ? plotSelect.value : 'utility';
+                                let query = '';
+                                if (plotType === 'utility') {
+                                    query = '?pawn_name=' + encodeURIComponent(pawn) + '&plot_type=' + encodeURIComponent(plotType);
+                                } else if (plotType === 'state_bar') {
+                                    const region = document.getElementById('filter-region') ? document.getElementById('filter-region').value : '';
+                                    query = '?plot_type=' + encodeURIComponent(plotType) + '&region=' + encodeURIComponent(region);
+                                } else if (plotType === 'reward_scatter') {
+                                    const category = document.getElementById('filter-category') ? document.getElementById('filter-category').value : '';
+                                    query = '?plot_type=' + encodeURIComponent(plotType) + '&category=' + encodeURIComponent(category);
+                                } else if (plotType === 'histogram') {
+                                    const metric = document.getElementById('filter-metric') ? document.getElementById('filter-metric').value : '';
+                                    query = '?plot_type=' + encodeURIComponent(plotType) + '&metric=' + encodeURIComponent(metric);
+                                } else {
+                                    query = '?plot_type=' + encodeURIComponent(plotType);
+                                }
                                 if (window.htmx && htmx.ajax) {
-                                    htmx.ajax('GET', chartUrl + '?pawn_name=' + encodeURIComponent(pawn), {target:'#vis'});
+                                    htmx.ajax('GET', chartUrl + query, {target:'#vis'});
                                 } else {
                                     // Fallback: plain fetch - insert HTML and then attempt to run vegaEmbed if possible
-                                    fetch(chartUrl + '?pawn_name=' + encodeURIComponent(pawn))
+                                    fetch(chartUrl + query)
                                         .then(r => r.text())
                                         .then(html => {
                                             document.getElementById('vis').innerHTML = html;
@@ -150,6 +187,30 @@
                         if (String(path).indexOf('chart_partial') !== -1) showSpinner();
                     } catch (e) {}
                 });
+
+                // Show/hide filter inputs and pawn-select depending on plot type
+                function updateFilterVisibility() {
+                    const plotType = (document.getElementById('plot-select') || {}).value;
+                    const pawnContainer = document.getElementById('pawn-select-container');
+                    if (pawnContainer) pawnContainer.style.display = (plotType === 'utility') ? 'inline-block' : 'none';
+
+                    document.getElementById('filter-region-container').style.display = (plotType === 'state_bar') ? 'inline-block' : 'none';
+                    document.getElementById('filter-category-container').style.display = (plotType === 'reward_scatter') ? 'inline-block' : 'none';
+                    document.getElementById('filter-metric-container').style.display = (plotType === 'histogram') ? 'inline-block' : 'none';
+                }
+
+                const plotSelectEl = document.getElementById('plot-select');
+                if (plotSelectEl) {
+                    plotSelectEl.addEventListener('change', () => {
+                        updateFilterVisibility();
+                        // reload pawn select if we switched to utility
+                        if (plotSelectEl.value === 'utility' && window.htmx && htmx.ajax) {
+                            htmx.ajax('GET', '{% url "dashboard:pawn_select_partial" %}', {target:'#pawn-select-container'});
+                        }
+                    });
+                    // initial visibility
+                    updateFilterVisibility();
+                }
 
                 // Refresh button triggers a reload of the pawn select partial (which will re-trigger chart load)
                 refreshBtn.addEventListener('click', () => {
