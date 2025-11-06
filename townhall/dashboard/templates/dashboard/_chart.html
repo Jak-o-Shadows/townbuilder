@@ -1,0 +1,17 @@
+<div id="vis">
+    <!-- Vega spec will be embedded into this container -->
+</div>
+<script>
+    (function() {
+        try {
+            const spec = {{ spec_json|safe }};
+            if (window.vegaEmbed) {
+                vegaEmbed('#vis', spec, {actions: false});
+            } else {
+                console.warn('vegaEmbed not available when rendering chart partial');
+            }
+        } catch (e) {
+            console.error('Failed to render chart partial', e);
+        }
+    })();
+</script>

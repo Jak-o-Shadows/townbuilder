@@ -1,0 +1,7 @@
+<form id="pawn-form" method="get" action="" data-chart-url="{% url 'dashboard:chart_partial' %}">
+    <select id="pawn-select" name="pawn_name">
+    {% for pawn in pawns %}
+        <option value="{{ pawn }}" {% if pawn == selected %}selected{% endif %}>{{ pawn }}</option>
+    {% endfor %}
+    </select>
+</form>

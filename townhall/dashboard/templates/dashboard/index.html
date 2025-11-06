@@ -1,7 +1,12 @@
 <!DOCTYPE html>
+{% load static %}
 <html>
 <head>
     <title>Townhall</title>
+    <!-- HTMX (server-driven interactions) -->
+    <script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.8/dist/htmx.min.js" integrity="sha384-/TgkGk7p307TH7EXJDuUlgG3Ce1UVolAOFopFekQkkXihi5u/6OCvVKyz1W+idaz" crossorigin="anonymous"></script>
+    <!-- Alpine (local reactive sprinkles) - using CDN for now -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/vega@5"></script>
     <script src="https://cdn.jsdelivr.net/npm/vega-lite@5"></script>
     <script src="https://cdn.jsdelivr.net/npm/vega-embed@6"></script>
@@ -16,10 +21,39 @@
 <body>
     <h1>Townhall</h1>
 
+    <!-- Database file selector (shows current file; can post to set session path) -->
+    <div style="margin-bottom:1rem;">
+        <div id="db-path-container" hx-get="{% url 'dashboard:set_db_path' %}" hx-trigger="load" hx-swap="innerHTML">Loading DB path...</div>
+
+        <button id="show-db-form-btn" type="button" style="margin-left:1rem;">Change DB file</button>
+        <form id="db-form" hx-post="{% url 'dashboard:set_db_path' %}" hx-target="#db-path-container" hx-swap="outerHTML" style="display:none; margin-top:8px;">
+            {% csrf_token %}
+            <input type="text" name="db_path" id="db_path_input" placeholder="Path to sqlite DB" style="width:60%" />
+            <button type="submit">Set</button>
+            <button type="button" id="cancel-db-form">Cancel</button>
+        </form>
+    </div>
+
+    <!-- HTMX example: load a server-rendered widget into the page -->
+    <div style="margin-bottom: 1rem;">
+        <button hx-get="{% url 'dashboard:counter_partial' %}" hx-target="#htmx-counter" hx-swap="innerHTML">Load counter widget (htmx)</button>
+        <div id="htmx-counter" style="display:inline-block; margin-left:1rem;"></div>
+    </div>
+
+    <!-- Alpine example: local reactive widget (works offline when alpine.min.js is served locally) -->
+    <div style="margin-bottom:1rem;">
+        <div x-data="{ count: 0 }" style="display:inline-flex; gap:8px; align-items:center;">
+            <button x-on:click="count++">+ (Alpine)</button>
+            <span x-text="count">0</span>
+            <button x-on:click="count--">-</button>
+        </div>
+    </div>
+
     <div>
         <label for="pawn-select">Select a Pawn:</label>
-        <select id="pawn-select"></select>
-        <button id="refresh-btn">Refresh</button>
+        <!-- Load the server-rendered select into this container on page load -->
+        <div id="pawn-select-container" hx-get="{% url 'dashboard:pawn_select_partial' %}" hx-trigger="load" hx-swap="innerHTML"></div>
+        <button id="refresh-btn" hx-get="{% url 'dashboard:pawn_select_partial' %}" hx-target="#pawn-select-container" hx-swap="innerHTML">Refresh</button>
         <input type="checkbox" id="auto-refresh-checkbox">
         <label for="auto-refresh-checkbox">Auto-refresh</label>
     </div>
@@ -29,78 +63,125 @@
             <div id="vis"></div>
         </div>
         <div class="chart-container">
-            <div class="placeholder">Future Chart 1</div>
-        </div>
-        <div class="chart-container">
-            <div class="placeholder">Future Chart 2</div>
-        </div>
-        <div class="chart-container">
-            <div class="placeholder">Future Chart 3</div>
-        </div>
-    </div>
+            <script type="text/javascript">
+            const refreshBtn = document.getElementById('refresh-btn');
+                const autoRefreshCheckbox = document.getElementById('auto-refresh-checkbox');
+                let autoRefreshInterval = null;
 
-    <script type="text/javascript">
-        const pawnSelect = document.getElementById('pawn-select');
-        const refreshBtn = document.getElementById('refresh-btn');
-        const autoRefreshCheckbox = document.getElementById('auto-refresh-checkbox');
-        let autoRefreshInterval = null;
+                // Helper to show/hide spinner
+                function showSpinner() {
+                    let spinner = document.getElementById('chart-spinner');
+                    if (!spinner) {
+                        spinner = document.createElement('div');
+                        spinner.id = 'chart-spinner';
+                        spinner.innerHTML = '<div style="padding:12px;">Loading chart...</div>';
+                        spinner.style.position = 'absolute';
+                        spinner.style.top = '20px';
+                        spinner.style.right = '20px';
+                        spinner.style.background = 'rgba(255,255,255,0.9)';
+                        spinner.style.border = '1px solid #ccc';
+                        spinner.style.padding = '8px';
+                        document.body.appendChild(spinner);
+                    }
+                    spinner.style.display = 'block';
+                }
+                function hideSpinner() {
+                    const spinner = document.getElementById('chart-spinner');
+                    if (spinner) spinner.style.display = 'none';
+                }
 
-        function fetchAndRenderChart(pawnName) {
-            let url = '/dashboard/chart_data/?pawn_name=' + pawnName;
-            fetch(url)
-                .then(response => response.json())
-                .then(spec => {
-                    vegaEmbed('#vis', spec, {actions: false});
-                });
-        }
+                // When the pawn select partial is loaded by HTMX, wire up its change handler.
+                document.body.addEventListener('htmx:afterSwap', (evt) => {
+                    try {
+                        // pawn-select loaded into pawn-select-container
+                        if (evt.detail && evt.detail.target && evt.detail.target.id === 'pawn-select-container') {
+                            const pawnSelect = document.getElementById('pawn-select');
+                            if (!pawnSelect) return;
 
-        function populatePawnSelect() {
-            const selectedPawn = pawnSelect.value;
-            fetch('/dashboard/pawn_names/')
-                .then(response => response.json())
-                .then(data => {
-                    const pawns = data.pawn_name;
-                    pawnSelect.innerHTML = '';
-                    pawns.forEach(pawn => {
-                        let option = document.createElement('option');
-                        option.value = pawn;
-                        option.textContent = pawn;
-                        pawnSelect.appendChild(option);
-                    });
+                            // When selection changes, request the server-side chart partial (server cache will be used)
+                            pawnSelect.addEventListener('change', (e) => {
+                                const pawn = e.target.value;
+                                const form = document.getElementById('pawn-form');
+                                const chartUrl = form && form.getAttribute('data-chart-url') || '{% url "dashboard:chart_partial" %}';
+                                showSpinner();
+                                if (window.htmx && htmx.ajax) {
+                                    htmx.ajax('GET', chartUrl + '?pawn_name=' + encodeURIComponent(pawn), {target:'#vis'});
+                                } else {
+                                    // Fallback: plain fetch - insert HTML and then attempt to run vegaEmbed if possible
+                                    fetch(chartUrl + '?pawn_name=' + encodeURIComponent(pawn))
+                                        .then(r => r.text())
+                                        .then(html => {
+                                            document.getElementById('vis').innerHTML = html;
+                                        })
+                                        .finally(hideSpinner);
+                                }
+                            });
 
-                    // Try to re-select the previously selected pawn
-                    if (pawns.includes(selectedPawn)) {
-                        pawnSelect.value = selectedPawn;
-                    } 
+                            // Trigger an initial change to load first chart
+                            pawnSelect.dispatchEvent(new Event('change', { bubbles: true }));
+                        }
 
-                    // Initial render or re-render with the selected pawn
-                    const currentPawn = pawnSelect.value;
-                    if (currentPawn) {
-                        fetchAndRenderChart(currentPawn);
+                        // Chart partial swapped into #vis — hide spinner
+                        if (evt.detail && evt.detail.target && evt.detail.target.id === 'vis') {
+                            hideSpinner();
+                        }
+                    } catch (e) {
+                        console.warn('Error in htmx afterSwap handler', e);
                     }
                 });
-        }
 
-        pawnSelect.addEventListener('change', (event) => {
-            fetchAndRenderChart(event.target.value);
-        });
+                // When the DB path fragment is swapped in, reload pawn-select container
+                document.body.addEventListener('htmx:afterSwap', (evt) => {
+                    try {
+                        if (evt.detail && evt.detail.target && evt.detail.target.id === 'db-path-container') {
+                            // Reload the pawn select so it uses the new DB path from session
+                            if (window.htmx && htmx.ajax) {
+                                htmx.ajax('GET', '{% url "dashboard:pawn_select_partial" %}', {target:'#pawn-select-container'});
+                            }
+                        }
+                    } catch (e) { }
+                });
 
-        refreshBtn.addEventListener('click', () => {
-            populatePawnSelect();
-        });
+                // HTMX hooks: show spinner when a chart request starts
+                document.body.addEventListener('htmx:beforeRequest', (evt) => {
+                    try {
+                        const cfg = evt.detail && evt.detail.requestConfig;
+                        const path = cfg && (cfg.path || cfg.url) || '';
+                        if (String(path).indexOf('chart_partial') !== -1) showSpinner();
+                    } catch (e) {}
+                });
 
-        autoRefreshCheckbox.addEventListener('change', (event) => {
-            if (event.target.checked) {
-                autoRefreshInterval = setInterval(() => {
-                    populatePawnSelect();
-                }, 5000); // Refresh every 5 seconds
-            } else {
-                clearInterval(autoRefreshInterval);
-            }
-        });
+                // Refresh button triggers a reload of the pawn select partial (which will re-trigger chart load)
+                refreshBtn.addEventListener('click', () => {
+                    if (window.htmx && htmx.ajax) {
+                        htmx.ajax('GET', '{% url "dashboard:pawn_select_partial" %}', {target:'#pawn-select-container'});
+                    } else {
+                        // fallback: reload the page
+                        location.reload();
+                    }
+                });
 
-        // Initial population of the dropdown
-        populatePawnSelect();
-    </script>
-</body>
-</html>
+                autoRefreshCheckbox.addEventListener('change', (event) => {
+                    if (event.target.checked) {
+                        autoRefreshInterval = setInterval(() => {
+                            if (window.htmx && htmx.ajax) {
+                                htmx.ajax('GET', '{% url "dashboard:pawn_select_partial" %}', {target:'#pawn-select-container'});
+                            }
+                        }, 5000);
+                    } else {
+                        clearInterval(autoRefreshInterval);
+                    }
+                });
+
+                // Toggle DB path form
+                const showDbFormBtn = document.getElementById('show-db-form-btn');
+                const dbForm = document.getElementById('db-form');
+                const cancelDbFormBtn = document.getElementById('cancel-db-form');
+                if (showDbFormBtn && dbForm) {
+                    showDbFormBtn.addEventListener('click', () => { dbForm.style.display = 'block'; showDbFormBtn.style.display = 'none'; });
+                }
+                if (cancelDbFormBtn && dbForm && showDbFormBtn) {
+                    cancelDbFormBtn.addEventListener('click', () => { dbForm.style.display = 'none'; showDbFormBtn.style.display = 'inline-block'; });
+                }
+
+            </script>

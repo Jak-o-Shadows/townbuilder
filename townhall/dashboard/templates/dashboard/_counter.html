@@ -1,0 +1,11 @@
+{% load static %}
+<div x-data="{ count: 0 }" style="display:flex; gap:8px; align-items:center;">
+    <button x-on:click="count++">Increment</button>
+    <span x-text="count">0</span>
+    <button x-on:click="count--">Decrement</button>
+</div>
+
+<!-- Demonstrate htmx swapping the server-rendered fragment into the page. -->
+<div style="margin-top:8px;">
+    <small>This partial was rendered on the server and includes Alpine attributes so it becomes interactive after insertion.</small>
+</div>
