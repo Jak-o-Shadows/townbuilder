@@ -21,12 +21,11 @@
         This is a header
     </header>
     <nav role="sitewide">
-        <label data-role="burger"<input type="checkbox" />☰</label>
         <ul>
-            <li>Home</li>
+            <li><button>Home</button></li>
         </ul>
         <ul>
-            <li>Stuff</li>
+            <li><button>Stuff</button></li>
             <li>
                 <details class="dropdown">
                     <summary>Dropdown</summary>
@@ -42,29 +41,36 @@
 
     <main>
         <div class="with-sidebar">
-            <div><aside>
-                <nav>
-                    <div class="title">Plots</div>
-                    <ul>
-                        <li>
-                            <button>
-                                <a href="{% url 'dashboard:chart_view' %}?plot_type=utility" 
-                                    class="plot-link" data-plot="utility" aria-current="true"
-                                    hx-select="#vis" hx-push-url="true">Utility</a>
-                            </button>
-                        </li>
-                        <li>
-                            <a href="{% url 'dashboard:chart_view' %}?plot_type=entity_positions" 
-                                class="plot-link" data-plot="entity_positions"
-                                hx-select="#vis" hx-push-url="true">Entity Positions</a>
-                        </li>
-                        <li>
-                            <a href="{% url 'dashboard:chart_view' %}?plot_type=grid_heatmap" 
-                                class="plot-link" data-plot="grid_heatmap"
-                                hx-select="#vis" hx-push-url="true">Grid Heatmap</a>
-                        </li>
-                    </ul>
-                </nav>
+            <div class="sidebar"><aside>
+                <details open>
+                    <summary>☰</summary>
+                    <nav>
+                        <div class="title">Plots</div>
+                        <ul>
+                            <li>
+                                <button class="outline">
+                                    <a href="{% url 'dashboard:chart_view' %}?plot_type=utility" 
+                                        class="plot-link" data-plot="utility" aria-current="true"
+                                        hx-select="#vis" hx-push-url="true">Utility</a>
+                                </button>
+                            </li>
+                            <li>
+                                <button class="outline">
+                                    <a href="{% url 'dashboard:chart_view' %}?plot_type=entity_positions" 
+                                        class="plot-link" data-plot="entity_positions"
+                                        hx-select="#vis" hx-push-url="true">Entity Positions</a>
+                                </button>
+                            </li>
+                            <li>
+                                <button class="outline">
+                                    <a href="{% url 'dashboard:chart_view' %}?plot_type=grid_heatmap" 
+                                        class="plot-link" data-plot="grid_heatmap"
+                                        hx-select="#vis" hx-push-url="true">Grid Heatmap</a>
+                                </button>
+                            </li>
+                        </ul>
+                    </nav>
+                    </details>
             </aside></div>
 
             <div>
@@ -72,7 +78,9 @@
                     <header>
                         Article header
                     </header>
-                    Article body
+                    <p>Article body</p>
+                    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
+                    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
                     <div id="plot-area" aria-busy="true">   </div>
                     <footer>
                         Article footer
