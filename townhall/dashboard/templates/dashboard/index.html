@@ -5,347 +5,87 @@
     <title>Townhall</title>
     <!-- HTMX (server-driven interactions) -->
     <script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.8/dist/htmx.min.js" integrity="sha384-/TgkGk7p307TH7EXJDuUlgG3Ce1UVolAOFopFekQkkXihi5u/6OCvVKyz1W+idaz" crossorigin="anonymous"></script>
-    <!-- Alpine (local reactive sprinkles) - using CDN for now -->
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <!-- Pico.css (small, offline-friendly CSS framework) - using CDN for now; see note below to vendor locally -->
-    <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@1.*/css/pico.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+    <!-- Vega plottign -->
     <script src="https://cdn.jsdelivr.net/npm/vega@5"></script>
     <script src="https://cdn.jsdelivr.net/npm/vega-lite@5"></script>
     <script src="https://cdn.jsdelivr.net/npm/vega-embed@6"></script>
+    <!-- Project Custom CSS -->
     <link rel="stylesheet" href="{% static 'dashboard/dashboard.css' %}">
 </head>
 <body>
     <h1>Townhall</h1>
 
-    <!-- Database file selector (shows current file; can post to set session path) -->
-    <div class="mb">
-        <div id="db-path-container" hx-get="{% url 'dashboard:set_db_path' %}" hx-trigger="load" hx-swap="innerHTML">Loading DB path...</div>
+    <header>
+        This is a header
+    </header>
+    <nav role="sitewide">
+        <label data-role="burger"<input type="checkbox" />☰</label>
+        <ul>
+            <li>Home</li>
+        </ul>
+        <ul>
+            <li>Stuff</li>
+            <li>
+                <details class="dropdown">
+                    <summary>Dropdown</summary>
+                    <ul class="dropdown-menu">
+                        <li><a href="#">Link 1</a></li>
+                        <li><a href="#">Link 2</a></li>
+                        <li><a href="#">Link 3</a></li>
+                    </ul>
+                </details>
+            </li>
+        </ul>
+    </nav>
 
-        <button id="show-db-form-btn" type="button" class="ml">Change DB file</button>
-    <form id="db-form" hx-post="{% url 'dashboard:set_db_path' %}" hx-target="#db-path-container" hx-swap="outerHTML" class="hidden form-top">
-            {% csrf_token %}
-            <input type="text" name="db_path" id="db_path_input" placeholder="Path to sqlite DB" class="wide-input" />
-            <button type="submit">Set</button>
-            <button type="button" id="cancel-db-form">Cancel</button>
-        </form>
-    </div>
+    <main>
+        <div class="with-sidebar">
+            <div><aside>
+                <nav>
+                    <div class="title">Plots</div>
+                    <ul>
+                        <li>
+                            <button>
+                                <a href="{% url 'dashboard:chart_view' %}?plot_type=utility" 
+                                    class="plot-link" data-plot="utility" aria-current="true"
+                                    hx-select="#vis" hx-push-url="true">Utility</a>
+                            </button>
+                        </li>
+                        <li>
+                            <a href="{% url 'dashboard:chart_view' %}?plot_type=entity_positions" 
+                                class="plot-link" data-plot="entity_positions"
+                                hx-select="#vis" hx-push-url="true">Entity Positions</a>
+                        </li>
+                        <li>
+                            <a href="{% url 'dashboard:chart_view' %}?plot_type=grid_heatmap" 
+                                class="plot-link" data-plot="grid_heatmap"
+                                hx-select="#vis" hx-push-url="true">Grid Heatmap</a>
+                        </li>
+                    </ul>
+                </nav>
+            </aside></div>
 
-    <!-- HTMX example: load a server-rendered widget into the page -->
-    <div class="mb">
-        <button hx-get="{% url 'dashboard:counter_partial' %}" hx-target="#htmx-counter" hx-swap="innerHTML">Load counter widget (htmx)</button>
-        <div id="htmx-counter" class="inline ml"></div>
-    </div>
-
-    <!-- Alpine example: local reactive widget (works offline when alpine.min.js is served locally) -->
-    <div class="mb">
-        <div x-data="{ count: 0 }" class="inline-flex">
-            <button x-on:click="count++">+ (Alpine)</button>
-            <span x-text="count">0</span>
-            <button x-on:click="count--">-</button>
+            <div>
+                <article>
+                    <header>
+                        Article header
+                    </header>
+                    Article body
+                    <div id="plot-area" aria-busy="true">   </div>
+                    <footer>
+                        Article footer
+                    </footer>
+                </article>
+            </div>
+        
         </div>
-    </div>
+    </main>
 
-    <div class="layout">
-        <!-- Left plot-type navigation bar -->
-        <nav id="plot-left-bar" class="">
-            <div class="title">Plots</div>
-            <ul>
-                <li><a href="#" class="plot-link contrast" data-plot="utility" aria-current="true">Utility (DB)</a></li>
-                <li><a href="#" class="plot-link" data-plot="state_bar">State counts (bar)</a></li>
-                <li><a href="#" class="plot-link" data-plot="reward_scatter">Reward scatter</a></li>
-                <li><a href="#" class="plot-link" data-plot="histogram">Histogram</a></li>
-            </ul>
-        </nav>
-
-    <div class="main-area">
-            <label for="pawn-select">Select a Pawn:</label>
-            <!-- Load the server-rendered select into this container on page load -->
-            <div id="pawn-select-container" hx-get="{% url 'dashboard:pawn_select_partial' %}" hx-trigger="load" hx-swap="innerHTML"></div>
-        <!-- Filters for non-utility plots (hidden by default) -->
-        <div class="mt-2">
-            <span id="filter-region-container" class="hidden">
-                <label for="filter-region">Region</label>
-                <input id="filter-region" type="text" placeholder="region" />
-            </span>
-            <span id="filter-category-container" class="hidden">
-                <label for="filter-category">Category</label>
-                <input id="filter-category" type="text" placeholder="category" />
-            </span>
-            <span id="filter-metric-container" class="hidden">
-                <label for="filter-metric">Metric</label>
-                <input id="filter-metric" type="text" placeholder="metric" />
-            </span>
-            <button id="refresh-btn" hx-get="{% url 'dashboard:pawn_select_partial' %}" hx-target="#pawn-select-container" hx-swap="innerHTML">Refresh</button>
-            <label><input type="checkbox" id="auto-refresh-checkbox" /> Auto-refresh</label>
-        </div>
-    </div>
-
-    <div class="container">
-        <div class="chart-container">
-            <div id="vis"></div>
-        </div>
-        <div class="chart-container">
-            <script type="text/javascript">
-            const refreshBtn = document.getElementById('refresh-btn');
-                const autoRefreshCheckbox = document.getElementById('auto-refresh-checkbox');
-                let autoRefreshInterval = null;
-                // Parse URL params on load to support opening in new tab with a specific plot
-                const _initialParams = (function(){
-                    try {
-                        const p = new URLSearchParams(window.location.search);
-                        return {
-                            plot_type: p.get('plot_type'),
-                            pawn_name: p.get('pawn_name'),
-                            region: p.get('region'),
-                            category: p.get('category'),
-                            metric: p.get('metric')
-                        };
-                    } catch (e) { return {}; }
-                })();
-                // If a plot_type is provided in the URL, set it active so UI shows correct filters
-                if (_initialParams.plot_type) {
-                    setActivePlot(_initialParams.plot_type);
-                    // populate filter inputs (they may be hidden until setActivePlot)
-                    if (_initialParams.region) document.getElementById('filter-region').value = _initialParams.region;
-                    if (_initialParams.category) document.getElementById('filter-category').value = _initialParams.category;
-                    if (_initialParams.metric) document.getElementById('filter-metric').value = _initialParams.metric;
-                }
-
-                // Helper to show/hide spinner
-                function showSpinner() {
-                    let spinner = document.getElementById('chart-spinner');
-                    if (!spinner) {
-                        spinner = document.createElement('div');
-                        spinner.id = 'chart-spinner';
-                        spinner.innerHTML = '<div class="spinner-content">Loading chart...</div>';
-                            document.body.appendChild(spinner);
-                    }
-                    spinner.style.display = 'block';
-                }
-                function hideSpinner() {
-                    const spinner = document.getElementById('chart-spinner');
-                    if (spinner) spinner.style.display = 'none';
-                }
-
-                // Helper: return selected plot type from left-bar links
-                function getSelectedPlotType() {
-                        // prefer aria-current, then Pico 'contrast' class, then fallback to first link
-                        let el = document.querySelector('.plot-link[aria-current="true"]');
-                        if (!el) el = document.querySelector('.plot-link.contrast');
-                        if (!el) el = document.querySelector('.plot-link');
-                        return el ? el.dataset.plot : 'utility';
-                }
-
-                function setActivePlot(plot) {
-                    const links = document.querySelectorAll('.plot-link');
-                    links.forEach(l => {
-                        const isActive = l.dataset.plot === plot;
-                        l.classList.toggle('contrast', isActive);
-                        if (isActive) {
-                            l.setAttribute('aria-current', 'true');
-                        } else {
-                            l.removeAttribute('aria-current');
-                        }
-                    });
-                    updateFilterVisibility();
-                    // if we switched to utility, reload pawn-select so it appears
-                    if (plot === 'utility' && window.htmx && htmx.ajax) {
-                        htmx.ajax('GET', '{% url "dashboard:pawn_select_partial" %}', {target:'#pawn-select-container'});
-                    }
-                }
-
-                function buildChartQuery() {
-                    const plotType = getSelectedPlotType();
-                    if (plotType === 'utility') {
-                        const pawn = document.getElementById('pawn-select') ? document.getElementById('pawn-select').value : '';
-                        return '?pawn_name=' + encodeURIComponent(pawn) + '&plot_type=' + encodeURIComponent(plotType);
-                    } else if (plotType === 'state_bar') {
-                        const region = document.getElementById('filter-region') ? document.getElementById('filter-region').value : '';
-                        return '?plot_type=' + encodeURIComponent(plotType) + '&region=' + encodeURIComponent(region);
-                    } else if (plotType === 'reward_scatter') {
-                        const category = document.getElementById('filter-category') ? document.getElementById('filter-category').value : '';
-                        return '?plot_type=' + encodeURIComponent(plotType) + '&category=' + encodeURIComponent(category);
-                    } else if (plotType === 'histogram') {
-                        const metric = document.getElementById('filter-metric') ? document.getElementById('filter-metric').value : '';
-                        return '?plot_type=' + encodeURIComponent(plotType) + '&metric=' + encodeURIComponent(metric);
-                    }
-                    return '?plot_type=' + encodeURIComponent(plotType);
-                }
-
-                function requestChart() {
-                    const form = document.getElementById('pawn-form');
-                    const chartUrl = form && form.getAttribute('data-chart-url') || '{% url "dashboard:chart_partial" %}';
-                    showSpinner();
-                    const query = buildChartQuery();
-                    if (window.htmx && htmx.ajax) {
-                        htmx.ajax('GET', chartUrl + query, {target:'#vis'});
-                    } else {
-                        fetch(chartUrl + query)
-                            .then(r => r.text())
-                            .then(html => { document.getElementById('vis').innerHTML = html; })
-                            .finally(hideSpinner);
-                    }
-                }
-
-                // When the pawn select partial is loaded by HTMX, wire up its change handler.
-                document.body.addEventListener('htmx:afterSwap', (evt) => {
-                    try {
-                        // pawn-select loaded into pawn-select-container
-                        if (evt.detail && evt.detail.target && evt.detail.target.id === 'pawn-select-container') {
-                            const pawnSelect = document.getElementById('pawn-select');
-                            if (!pawnSelect) return;
-                            // When selection changes, request the server-side chart partial (server cache will be used)
-                            pawnSelect.addEventListener('change', (e) => {
-                                requestChart();
-                            });
-
-                            // If the URL requested a pawn_name, set it now (the select options are present after swap)
-                            if (_initialParams.pawn_name) {
-                                try {
-                                    pawnSelect.value = _initialParams.pawn_name;
-                                } catch (e) {}
-                            }
-
-                            // Trigger an initial chart load (after pawn-select arrives)
-                            requestChart();
-                        }
-
-                        // Chart partial swapped into #vis — hide spinner and render vega spec
-                        if (evt.detail && evt.detail.target && evt.detail.target.id === 'vis') {
-                            hideSpinner();
-                            try {
-                                const target = evt.detail.target;
-                                // look for <script type="application/json" class="vega-spec"> inside the swapped content
-                                const specScript = target.querySelector && target.querySelector('script.vega-spec[type="application/json"]');
-                                if (specScript) {
-                                    let spec = null;
-                                    try { spec = JSON.parse(specScript.textContent); } catch (e) { spec = null; }
-                                    if (spec && window.vegaEmbed) {
-                                        // Clear any existing content inside target then render
-                                        target.innerHTML = '';
-                                        const wrapper = document.createElement('div');
-                                        wrapper.id = 'vega-inner';
-                                        wrapper.style.width = '100%';
-                                        wrapper.style.height = '100%';
-                                        target.appendChild(wrapper);
-                                        vegaEmbed(wrapper, spec, {actions: false}).catch((err) => console.error('vegaEmbed error', err));
-                                    }
-                                }
-                            } catch (e) { console.warn('Error rendering vega spec after swap', e); }
-                        }
-                    } catch (e) {
-                        console.warn('Error in htmx afterSwap handler', e);
-                    }
-                });
-
-                // When the DB path fragment is swapped in, reload pawn-select container
-                document.body.addEventListener('htmx:afterSwap', (evt) => {
-                    try {
-                        if (evt.detail && evt.detail.target && evt.detail.target.id === 'db-path-container') {
-                            // Reload the pawn select so it uses the new DB path from session
-                            if (window.htmx && htmx.ajax) {
-                                htmx.ajax('GET', '{% url "dashboard:pawn_select_partial" %}', {target:'#pawn-select-container'});
-                            }
-                        }
-                    } catch (e) { }
-                });
-
-                // HTMX hooks: show spinner when a chart request starts
-                document.body.addEventListener('htmx:beforeRequest', (evt) => {
-                    try {
-                        const cfg = evt.detail && evt.detail.requestConfig;
-                        const path = cfg && (cfg.path || cfg.url) || '';
-                        if (String(path).indexOf('chart_partial') !== -1) showSpinner();
-                    } catch (e) {}
-                });
-
-                // Show/hide filter inputs and pawn-select depending on plot type
-                function updateFilterVisibility() {
-                    const plotType = getSelectedPlotType();
-                    const pawnContainer = document.getElementById('pawn-select-container');
-                    if (pawnContainer) pawnContainer.style.display = (plotType === 'utility') ? 'inline-block' : 'none';
-
-                    document.getElementById('filter-region-container').style.display = (plotType === 'state_bar') ? 'inline-block' : 'none';
-                    document.getElementById('filter-category-container').style.display = (plotType === 'reward_scatter') ? 'inline-block' : 'none';
-                    document.getElementById('filter-metric-container').style.display = (plotType === 'histogram') ? 'inline-block' : 'none';
-                }
-
-                // Wire handlers for left-bar plot links
-                const plotLinks = document.querySelectorAll('.plot-link');
-                function makePlotHref(plot) {
-                    const base = '{% url "dashboard:chart_view" %}';
-                    let q = '?plot_type=' + encodeURIComponent(plot);
-                    if (plot === 'utility') {
-                        const pawn = document.getElementById('pawn-select') ? document.getElementById('pawn-select').value : '';
-                        if (pawn) q += '&pawn_name=' + encodeURIComponent(pawn);
-                    } else if (plot === 'state_bar') {
-                        const region = document.getElementById('filter-region') ? document.getElementById('filter-region').value : '';
-                        if (region) q += '&region=' + encodeURIComponent(region);
-                    } else if (plot === 'reward_scatter') {
-                        const category = document.getElementById('filter-category') ? document.getElementById('filter-category').value : '';
-                        if (category) q += '&category=' + encodeURIComponent(category);
-                    } else if (plot === 'histogram') {
-                        const metric = document.getElementById('filter-metric') ? document.getElementById('filter-metric').value : '';
-                        if (metric) q += '&metric=' + encodeURIComponent(metric);
-                    }
-                    return base + q;
-                }
-
-                plotLinks.forEach(link => {
-                    // On mousedown (fired before click) set the href so middle-click or open-in-new-tab works
-                    link.addEventListener('mousedown', (ev) => {
-                        try {
-                            const plot = link.dataset.plot;
-                            link.href = makePlotHref(plot);
-                        } catch (e) {}
-                    });
-
-                    link.addEventListener('click', (ev) => {
-                        // If user used a modifier (ctrl/cmd/shift/alt) or non-left button, allow browser default (open in new tab/window)
-                        if (ev.ctrlKey || ev.metaKey || ev.shiftKey || ev.altKey || ev.button !== 0) {
-                            return; // allow default
-                        }
-                        ev.preventDefault();
-                        const plot = link.dataset.plot;
-                        setActivePlot(plot);
-                        requestChart();
-                    });
-                });
-
-                // initial visibility
-                updateFilterVisibility();
-
-                // Refresh button triggers a reload of the pawn select partial (which will re-trigger chart load)
-                refreshBtn.addEventListener('click', () => {
-                    if (window.htmx && htmx.ajax) {
-                        htmx.ajax('GET', '{% url "dashboard:pawn_select_partial" %}', {target:'#pawn-select-container'});
-                    } else {
-                        // fallback: reload the page
-                        location.reload();
-                    }
-                });
-
-                autoRefreshCheckbox.addEventListener('change', (event) => {
-                    if (event.target.checked) {
-                        autoRefreshInterval = setInterval(() => {
-                            if (window.htmx && htmx.ajax) {
-                                htmx.ajax('GET', '{% url "dashboard:pawn_select_partial" %}', {target:'#pawn-select-container'});
-                            }
-                        }, 5000);
-                    } else {
-                        clearInterval(autoRefreshInterval);
-                    }
-                });
-
-                // Toggle DB path form
-                const showDbFormBtn = document.getElementById('show-db-form-btn');
-                const dbForm = document.getElementById('db-form');
-                const cancelDbFormBtn = document.getElementById('cancel-db-form');
-                if (showDbFormBtn && dbForm) {
-                    showDbFormBtn.addEventListener('click', () => { dbForm.style.display = 'block'; showDbFormBtn.style.display = 'none'; });
-                }
-                if (cancelDbFormBtn && dbForm && showDbFormBtn) {
-                    cancelDbFormBtn.addEventListener('click', () => { dbForm.style.display = 'none'; showDbFormBtn.style.display = 'inline-block'; });
-                }
-
-            </script>
+    <footer>
+        This is the page footer
+    </footer>
+ 
+</body>
+</html>

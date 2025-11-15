@@ -105,7 +105,7 @@ def grid_heatmap(position_data):
     # Slider for time
     min_time = int(position_data['time'].min())
     max_time = int(position_data['time'].max())
-    time_slider = alt.binding_range(min=min_time, max=max_time, step=1, name='Time: ')
+    time_slider = alt.binding_range(min=min_time, max=max_time, step=1, name='Time:N')
     time_select = alt.selection_single(name="time_selection", fields=['time'], bind=time_slider, init={'time': min_time})
 
     # Slider for grid aggregation level

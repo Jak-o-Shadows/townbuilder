@@ -91,3 +91,7 @@ The SOCI library is used to better support different database types. This allows
 
 ### Visualisation
 As the database is a regular database, most programming languages can open them. We want to be able to visualise the data in a live dashboard, but also do auto-exports so we can setup automatic reports. We choose Python and Django for the live dashboard, with the Altair plotting library. Python supports data analysis and plotting well, and Django is a mature choice that enables quite a complex dashboard. The Altair plotting library is one of the few Python plotting libraries (the other being Matplotlib) that can export plots to png WITHOUT having to render them via a web-browser (even if that web-browser is something more like selenium - it's still a pain and not possible on the server we want to do the reports on).
+
+#### Web-App Ethos
+ * Minimal javascript
+ * Be able to middle click each plot to let the user open new tabs easily with the various plots
