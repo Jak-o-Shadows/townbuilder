@@ -1,0 +1,43 @@
+name: SonarQube
+on:
+  push:
+    branches:
+      - main
+      - dev
+  pull_request:
+    types: [opened, synchronize, reopened]
+jobs:
+  build:
+    name: Build and analyze
+    runs-on: windows-latest
+    steps:
+      # Checkout code
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Setup Python (for Conan)
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      # Install Conan
+      - name: Install Conan
+        run: pip install conan=2.*
+
+      # Install conan dependencies
+      - name: Install dependencies
+        run: conan install . --build=missing -pr:a ${{ github.workspace }}/.github/workflows/windows_clang
+
+      # Build the project
+      - name: Build project
+        run: conan build . -pr:a ${{ github.workspace }}/.github/workflows/windows_clang
+
+      # SonarQube Scan
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@v6
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            --define "sonar.cfamily.compile-commands=${{ github.workspace }}/compile_commands.json"

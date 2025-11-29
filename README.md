@@ -13,3 +13,39 @@
    * This is required due to the ability to call Python code from the C++
 
 
+## Setup
+
+### Conan
+
+### Clang
+`conda install clang clangdev clangxx lld`
+
+### Conan Profiles
+
+MSVC
+```
+[settings]
+arch=x86_64
+build_type=Release
+compiler=msvc
+compiler.cppstd=20
+compiler.runtime=dynamic
+compiler.version=194
+os=Windows
+```
+
+Clang on Windows (via Conda)
+```
+[settings]
+arch=x86_64
+build_type=Release
+compiler=clang
+compiler.cppstd=20
+compiler.runtime=dynamic
+compiler.runtime_version=v144
+compiler.version=20
+os=Windows
+
+[conf]
+tools.cmake.cmaketoolchain:generator=Ninja
+```

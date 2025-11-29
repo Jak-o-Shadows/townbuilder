@@ -162,3 +162,13 @@ add_custom_command(TARGET ${PROJECT_NAME}
 
 # Python embedding - Pybind module for writing Python scripts
 add_subdirectory(src/pythonEcsBinding)
+
+
+# Copy compile_commands.json to a consistent location
+# Define a custom target that copies the file after build
+add_custom_target(copy_compile_commands ALL
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "${CMAKE_BINARY_DIR}/compile_commands.json"
+            "${CMAKE_SOURCE_DIR}/compile_commands.json"
+    DEPENDS "${CMAKE_BINARY_DIR}/compile_commands.json"
+)

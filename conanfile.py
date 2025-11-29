@@ -17,6 +17,7 @@ class FlecsOrbitSimConan(ConanFile):
 
     def build_requirements(self):
         self.build_requires("cmake/4.1.1")
+        self.build_requires("ninja/1.11.1")
 
     def requirements(self):
         self.requires("flecs/4.1.1")
