@@ -164,11 +164,11 @@ add_custom_command(TARGET ${PROJECT_NAME}
 add_subdirectory(src/pythonEcsBinding)
 
 
-# Copy compile_commands.json to a consistent location
-# Define a custom target that copies the file after build
-add_custom_target(copy_compile_commands ALL
+# Copy compile_commands.json to a consistent location after build
+add_custom_command(TARGET ${PROJECT_NAME}
+    POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            "${CMAKE_BINARY_DIR}/compile_commands.json"
-            "${CMAKE_SOURCE_DIR}/compile_commands.json"
-    DEPENDS "${CMAKE_BINARY_DIR}/compile_commands.json"
+        "$<TARGET_FILE_DIR:${PROJECT_NAME}>/compile_commands.json"
+        "${CMAKE_SOURCE_DIR}/compile_commands.json"
+    COMMENT "Copying compile_commands.json to source directory"
 )
