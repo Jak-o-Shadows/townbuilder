@@ -23,7 +23,7 @@ jobs:
 
       # Install Conan
       - name: Install Conan
-        run: pip install conan=2.*
+        run: pip install conan==2.*
 
       # Install conan dependencies
       - name: Install dependencies
