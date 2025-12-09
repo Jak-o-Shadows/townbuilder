@@ -9,3 +9,4 @@ os=Linux
 
 [conf]
 tools.cmake.cmaketoolchain:generator=Ninja
+tools.system.package_manager:mode=install
