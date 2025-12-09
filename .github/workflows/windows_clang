@@ -2,11 +2,14 @@
 arch=x86_64
 build_type=Release
 compiler=clang
-compiler.cppstd=20
+compiler.cppstd=17
 compiler.runtime=dynamic
 compiler.runtime_version=v144
 compiler.version=20
 os=Windows
+
+townBuilder*:compiler.cppstd=20
+spdlog*:compiler.cppstd=20
 
 [conf]
 tools.cmake.cmaketoolchain:generator=Ninja
