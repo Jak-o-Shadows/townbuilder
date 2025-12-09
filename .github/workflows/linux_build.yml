@@ -25,11 +25,11 @@ jobs:
       - name: Install Conan
         run: pip install conan==2.*
 
-      # # Install build tools
-      # - name: Install build tools
-      #   run: |
-      #     sudo apt-get update
-      #     sudo apt-get install -y clang
+      # Install LLVM and Clang
+      - name: Install LLVM and Clang
+        uses: KyleMayes/install-llvm-action@v2
+        with:
+          version: '20'
 
       # Install conan dependencies
       - name: Install dependencies

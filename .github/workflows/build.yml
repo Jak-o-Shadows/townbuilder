@@ -25,6 +25,12 @@ jobs:
       - name: Install Conan
         run: pip install conan==2.*
 
+      # Install LLVM and Clang
+      - name: Install LLVM and Clang
+        uses: KyleMayes/install-llvm-action@v2
+        with:
+          version: '20'
+
       # Install conan dependencies
       - name: Install dependencies
         run: conan install . --build=missing -pr:a ${{ github.workspace }}/.github/workflows/windows_clang
