@@ -33,7 +33,7 @@ jobs:
 
       # Install conan dependencies
       - name: Install dependencies
-        run: conan install . --build=missing -pr:a ${{ github.workspace }}/.github/workflows/linux_clang
+        run: sudo conan install . --build=missing -pr:a ${{ github.workspace }}/.github/workflows/linux_clang
 
       # Build the project
       - name: Build project
