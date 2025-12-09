@@ -4,9 +4,8 @@ build_type=Release
 compiler=clang
 compiler.cppstd=20
 compiler.runtime=dynamic
-compiler.runtime_version=v144
 compiler.version=20
-os=Windows
+os=Linux
 
 [conf]
 tools.cmake.cmaketoolchain:generator=Ninja
