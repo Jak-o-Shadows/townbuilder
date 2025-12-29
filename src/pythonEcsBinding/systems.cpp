@@ -38,8 +38,6 @@ systems::systems(flecs::world& ecs) {
         .event(flecs::OnAdd)
         .each([](flecs::entity e, PythonFile& pf) {
             ZoneScopedN("InitialisePythonFile");
-            //pybind11::subinterpreter blah = pybind11::subinterpreter();
-            //std::cout << blah.id() << std::endl;
             interpreters.emplace_back(pybind11::subinterpreter().create());
             pf.interpreter_idx = interpreters.size() - 1;
             pybind11::subinterpreter_scoped_activate (interpreters.at(pf.interpreter_idx));

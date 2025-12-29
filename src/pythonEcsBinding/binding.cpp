@@ -76,8 +76,16 @@ void bind_component(py::module_ &m) {
                         [member_offset](const T &c) -> const std::string& { return *reinterpret_cast<const std::string*>(reinterpret_cast<const char*>(&c) + member_offset); },
                         [member_offset](T &c, const std::string &value) { *reinterpret_cast<std::string*>(reinterpret_cast<char*>(&c) + member_offset) = value;
                     });
+                } else if (member_type_ent == g_ecs->component<uint64_t>()) {
+                    component_class.def_property(member_name,
+                        [member_offset](const T &c) {
+                            return *reinterpret_cast<const uint64_t*>(reinterpret_cast<const char*>(&c) + member_offset);
+                        },
+                        [member_offset](T &c, uint64_t value) {
+                            *reinterpret_cast<uint64_t*>(reinterpret_cast<char*>(&c) + member_offset) = value;
+                        });
                 } else {
-                    std::cout << "  Skipping unsupported member type for: " << member_name << std::endl;
+                    std::cout << "  Skipping unsupported member type for member: " << member_name << std::endl;
                 }
             }
         } else {
@@ -110,17 +118,17 @@ PYBIND11_MODULE(pythonEcsBinding, m) {
     ecs.import<Logging::systems>();
     std::cout << "Logger imported" << std::endl;
     // Then import all the components
-    ecs.import<Buildings::components>();
-    ecs.import<Coordinates::components>();
+    //ecs.import<Buildings::components>();
+    //ecs.import<Coordinates::components>();
     //ecs.import<fdis::components>();
     //ecs.import<Map::components>();
     //ecs.import<Pathfinding::components>();
-    ecs.import<Pawn::components>();
+    //ecs.import<Pawn::components>();
     ecs.import<Plugin::components>();
     //ecs.import<Python::components>();
     //ecs.import<Render::components>();
     //ecs.import<Statemachine::components>();
-    ecs.import<UI::components>();
+    //ecs.import<UI::components>();
 
     g_ecs = &ecs;
 

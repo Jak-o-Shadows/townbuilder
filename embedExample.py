@@ -1,5 +1,10 @@
 import sys
+import pprint
 
-#sys.path.append("build/src/pythonEcsBinding/Release")
-#import pythonEcsBinding
+print(f"My Script: {__file__}")
+
+sys.path.append("build/src/pythonEcsBinding/Release")
+import pythonEcsBinding
+
+pprint.pprint(dir(pythonEcsBinding))
 
