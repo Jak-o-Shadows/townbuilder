@@ -12,7 +12,7 @@
 #include "component_registry.h"
 
 // Forward declaration for our main world object
-flecs::world* g_ecs;
+flecs::world* g_ecs = nullptr;
 
 namespace py = pybind11;
 
@@ -108,33 +108,47 @@ void for_each_in_tuple(Func &&f, std::index_sequence<Is...>) {
     (f.template operator()<std::tuple_element_t<Is, Tuple>>(), ...);
 }
 
+void init_ecs_bindings(pybind11::object world_obj) {
+    g_ecs = world_obj.cast<flecs::world*>();
+    if (!g_ecs) {
+        throw std::runtime_error("Failed to cast Python world object to flecs::world*");
+    }
 
-PYBIND11_MODULE(pythonEcsBinding, m) {
-    m.doc() = "Automated bindings for TownBuilder ECS components";
-
-    flecs::world ecs;
+    py::module_ m = py::module_::import("pythonEcsBinding");
+    
     // Logger imported first as the other modules use it on their import
-    ecs.import<Logging::components>();
-    ecs.import<Logging::systems>();
+    g_ecs->import<Logging::components>();
+    g_ecs->import<Logging::systems>();
     std::cout << "Logger imported" << std::endl;
     // Then import all the components
-    //ecs.import<Buildings::components>();
-    //ecs.import<Coordinates::components>();
-    //ecs.import<fdis::components>();
-    //ecs.import<Map::components>();
-    //ecs.import<Pathfinding::components>();
-    //ecs.import<Pawn::components>();
-    ecs.import<Plugin::components>();
-    //ecs.import<Python::components>();
-    //ecs.import<Render::components>();
-    //ecs.import<Statemachine::components>();
-    //ecs.import<UI::components>();
-
-    g_ecs = &ecs;
+    //g_ecs->import<Buildings::components>();
+    //g_ecs->import<Coordinates::components>();
+    //g_ecs->import<fdis::components>();
+    //g_ecs->import<Map::components>();
+    //g_ecs->import<Pathfinding::components>();
+    //g_ecs->import<Pawn::components>();
+    g_ecs->import<Plugin::components>();
+    //g_ecs->import<Python::components>();
+    //g_ecs->import<Render::components>();
+    //g_ecs->import<Statemachine::components>();
+    //g_ecs->import<UI::components>();
 
     // Create a lambda that calls bind_component for a given type
     auto bind_all = [&m]<typename T>() { bind_component<T>(m); };
 
     // Iterate over all components in our AllComponents tuple and bind them
     for_each_in_tuple<AllComponents>(bind_all, std::make_index_sequence<std::tuple_size_v<AllComponents>>{});
+
+}
+
+
+PYBIND11_MODULE(pythonEcsBinding, m) {
+    m.doc() = "Automated bindings for TownBuilder ECS components";
+
+    // Expose the flecs::world class to Python
+    py::class_<flecs::world>(m, "World")
+        .def(py::init<>()); // Allow Python to create new flecs::world instances
+
+    m.def("init_ecs_bindings", &init_ecs_bindings, "Initialize ECS bindings with existing Flecs world",
+          py::arg("world_obj"));
 }
