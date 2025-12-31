@@ -29,7 +29,9 @@ try:  # Giant try-except to catch errors when running from C++
         executable_name = os.path.basename(sys.executable).lower()
         return not executable_name.startswith("python")
 
-
+    def my_test_func():
+        print("Hello from Python test function!")
+        
 
     def init_from_cpp(world):
         print("Initialising from C++")

@@ -20,6 +20,8 @@ components::components(flecs::world& ecs) {
     //Register components
     ecs.component<PythonFile>()
         .member<std::string>("filepath");
+    ecs.component<PythonFileUninitialised>()
+        .set_doc_brief("Component to mark that a PythonFile has not yet been fully initialised");
 
     componentsLogger->trace("Components Registered");
 };

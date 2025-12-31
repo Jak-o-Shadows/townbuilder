@@ -42,15 +42,26 @@ systems::systems(flecs::world& ecs) {
             pf.interpreter_idx = interpreters.size() - 1;
             pybind11::subinterpreter_scoped_activate (interpreters.at(pf.interpreter_idx));
             systemsLogger->trace("Interpreter created for PythonFile on entity {}", std::string(e.path()));
+            e.add<PythonFileUninitialised>();
         });
 
     ecs.system<PythonFile>("TickPythonFile")
         .tick_source(Ticks::tick_python)
-        .each([](flecs::entity e, PythonFile& pf) {
+        .each([&ecs](flecs::entity e, PythonFile& pf) {
             ZoneScopedN("TickPythonFile");
             systemsLogger->trace("Ticking PythonFile on entity {}", std::string(e.path()));
             pybind11::subinterpreter_scoped_activate (interpreters.at(pf.interpreter_idx));
-            pybind11::eval_file(pf.filepath);
+            if (e.has<PythonFileUninitialised>()) {
+                e.remove<PythonFileUninitialised>();
+                pybind11::eval_file(pf.filepath);
+
+                // Get world from entity and pass to python
+                flecs::world& world = ecs;
+                pybind11::module_::import("__main__").attr("ecs_world") = pybind11::cast(&world, pybind11::return_value_policy::reference);
+                pybind11::exec("init_from_cpp(ecs_world)");
+                
+                systemsLogger->debug("PythonFile on entity {} initialised", std::string(e.path()));
+            }
         });
 
     systemsLogger->trace("Systems Registered");

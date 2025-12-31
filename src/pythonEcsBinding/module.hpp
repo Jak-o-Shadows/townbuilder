@@ -14,6 +14,8 @@ struct PythonFile {
     size_t interpreter_idx;  // Couldn't get any kind of direct or pointer working, so bugger it
 };
 
+struct PythonFileUninitialised {};
+
 struct components {
      components(flecs::world& ecs);
  };
