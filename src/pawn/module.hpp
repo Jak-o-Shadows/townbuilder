@@ -68,6 +68,7 @@ using M = hfsm2::MachineT<hfsm2::Config::ContextT<Statemachine::Context>>;
 
 
 // Events
+struct Dummy_Event {};
 struct Destination_Event {
     Coordinates::Grid target;
     Coordinates::Cell local;
@@ -126,25 +127,28 @@ using PawnFSM = M::PeerRoot<
 
 template <typename TemplateState>
 struct BasePawnState : PawnFSM::State {
-    // BasePawnState is a base class for all Pawn states, providing default reactions
-    //  TODO: Test if this actually works
-    void react(const Destination_Event&, FullControl& control) {};
-    void react(const Arrived_Event&, FullControl& control) {};
-    void react(const SecondaryEvent&, FullControl& control) {};
-    void react(const Attacked&, FullControl& control) {};
-    // and default enter and exit
+    // BasePawnState is a base class for all Pawn states, providing the default entry, exit
+    void react(const Dummy_Event& event, FullControl& control) {};  // Doesn't seem to be called, but fixes compiler stuff?
+    void react(const Attacked& event, FullControl& control) {std::cout << "base attacked" << std::endl;};
+    using PawnFSM::State::react;
+
     void enter(Control& control) {
         flecs::entity e = flecs::entity(control.context().ecs, control.context().id);
         fsmLogger->trace("Pawn {} entering state {}", std::string(e.path()), Statemachine::TypeName<TemplateState>());
-          // TODO: Try to replace this with e.ensure
+          // TODO: Try to replace this with e.ensure - UPDATE 2026-01-01 - ensure doesn't work with relationships?
         Statemachine::StateTiming* timing;
         timing = e.try_get_mut<Statemachine::StateTiming, TemplateState>();
         if (!timing) {
+            fsmLogger->trace("Creating timing data for Pawn {} state {}", std::string(e.path()), Statemachine::TypeName<TemplateState>());
+            // By zero-initialising it, we can just skip having to modify it after.
+            //  this is important because this reaction may be called from a system which defers
+            //  ECS changes - and hence we may not be able to set the component,
+            //  and then modify it with a get_mut right after
             e.set<Statemachine::StateTiming, TemplateState>({0, 0});
-            timing = e.try_get_mut<Statemachine::StateTiming, TemplateState>();
+        } else {
+            // Reset how long we've been in this state
+            timing->timeInState_s = 0;
         }
-        // Reset how long we've been in this state
-        timing->timeInState_s = 0;
         e.add<TemplateState>();
     }
     void exit(Control& control) {
@@ -156,8 +160,10 @@ struct BasePawnState : PawnFSM::State {
 
 // As the `utility` function is only defined for utilitarian states, need a separate
 //  base class for those states
+//  Note that utilitarian states MUST use EventControl for their reactions; FullControl DOES NOT work (compiles, but never called)
 template <typename TemplateState>
 struct BaseUtilityState : BasePawnState<TemplateState> {
+    using BasePawnState<TemplateState>::react;
     float utility(const typename PawnFSM::Control& control) const {
         flecs::entity e = flecs::entity(control.context().ecs, control.context().id);
         const Statemachine::StateUtility* util = e.try_get<Statemachine::StateUtility, TemplateState>();  // try_get so I can be lazy and not have it defined for all
@@ -169,50 +175,61 @@ struct BaseUtilityState : BasePawnState<TemplateState> {
     }
 };
 
-
 // Overall Pawn States
-
+// Explicitly bring the base class's react methods into this scope
+// to resolve ambiguity for the compiler.
 struct Alive : BaseUtilityState<Alive> {
+    void react(const Arrived_Event& event, EventControl& control);
+    void react(const Attacked& event, EventControl& control);
+    using BaseUtilityState<Alive>::react;
 };
 
 struct Idle : BaseUtilityState<Idle> {
-    void react(const Destination_Event& event, FullControl& control);
+    using BaseUtilityState<Idle>::react;
 };
 
 struct Working : BaseUtilityState<Working> {
+    using BaseUtilityState<Working>::react;
 };
 
 struct Walking : BaseUtilityState<Walking> {
-    void react(const Destination_Event& event, FullControl& control);
-    void react(const Arrived_Event&, FullControl& control);
+    void react(const Destination_Event& dest, EventControl& control);
+    void react(const Arrived_Event& event, EventControl& control);
+    using BaseUtilityState<Walking>::react;
 };
 
 struct Combat : BaseUtilityState<Combat> {
-    void update(FullControl& control) {};
+    using BaseUtilityState<Combat>::react;
 };
 
 struct Fleeing : BaseUtilityState<Fleeing> {
+    using BaseUtilityState<Fleeing>::react;
 };
 
-struct Dead : BaseUtilityState<Dead> {
+struct Dead : BasePawnState<Dead> {
+    using BasePawnState<Dead>::react;
 };
 
 
 // Occupation Pawn States
 struct PawnOccupationUnemployed : BasePawnState<PawnOccupationUnemployed> {
+    using BasePawnState<PawnOccupationUnemployed>::react;
 };
 
 struct PawnOccupationWoodcutter : BasePawnState<PawnOccupationWoodcutter> {
+    using BasePawnState<PawnOccupationWoodcutter>::react;
 };
 
 struct PawnWoodcutterStateWalkingTo : BasePawnState<PawnWoodcutterStateWalkingTo> {
-    void react(const Arrived_Event&, FullControl& control);
+    using BasePawnState<PawnWoodcutterStateWalkingTo>::react;
 };
 
 struct PawnWoodcutterStateReturning : BasePawnState<PawnWoodcutterStateReturning> {
+    using BasePawnState<PawnWoodcutterStateReturning>::react;
 };
 
 struct PawnWoodcutterStateChopping : BasePawnState<PawnWoodcutterStateChopping> {
+    using BasePawnState<PawnWoodcutterStateChopping>::react;
 };
 
 

@@ -107,21 +107,7 @@ systems::systems(flecs::world& ecs) {
         });
 
     
-    // System to create the pawn_state_utility table on startup
-    ecs.system<Database::Connection>("CreateTable_PawnStateUtility")
-        .kind(flecs::OnStart)
-        .each([](Database::Connection& conn) {
-            try {
-                conn.sql->create_table("pawn_state_utility")
-                    .column("time", soci::dt_double)
-                    .column("pawn_name", soci::dt_string)
-                    .column("state_name", soci::dt_string)
-                    .column("utility", soci::dt_double);
-                systemsLogger->info("Table 'pawn_state_utility' created.");
-            } catch (const std::exception& e) {
-                systemsLogger->error("Error creating table 'pawn_state_utility': {}", e.what());
-            }
-        });
+
     
    // Use the `create_async_system` to periodically flush the database to disk via copying the in-memory SQLITE,
    //   then writing it to disk
@@ -144,6 +130,24 @@ systems::systems(flecs::world& ecs) {
         .gather(gather_database_snapshot_fn)
         // No .apply() needed, the default does nothing for an empty results tuple.
         .build();
+
+    /////////////// Pawn ///////////////////////////////
+
+    // System to create the pawn_state_utility table on startup
+    ecs.system<Database::Connection>("CreateTable_PawnStateUtility")
+        .kind(flecs::OnStart)
+        .each([](Database::Connection& conn) {
+            try {
+                conn.sql->create_table("pawn_state_utility")
+                    .column("time", soci::dt_double)
+                    .column("pawn_name", soci::dt_string)
+                    .column("state_name", soci::dt_string)
+                    .column("utility", soci::dt_double);
+                systemsLogger->info("Table 'pawn_state_utility' created.");
+            } catch (const std::exception& e) {
+                systemsLogger->error("Error creating table 'pawn_state_utility': {}", e.what());
+            }
+        });
     
     ecs.system<const Statemachine::StateUtility, Database::Connection>("LogPawnStateUtility")
         .term_at(0).in()
@@ -151,6 +155,8 @@ systems::systems(flecs::world& ecs) {
         .with<Pawn::PawnFSMContainer>()
         .tick_source(Ticks::tick_pawn_behaviour)
         .run([](flecs::iter& it) {
+            ZoneScopedN("LogPawnStateUtility");
+            systemsLogger->trace("Logging state utilities for {} pawns for a single state", it.count());
             while (it.next()) {
                 auto state_utils = it.field<const Statemachine::StateUtility>(0);
                 auto db_conn = it.field<Database::Connection>(1);
@@ -159,7 +165,6 @@ systems::systems(flecs::world& ecs) {
                 //  Note that this system runs per StateUtility Second, so the system runs once per State, not
                 //  once
                 soci::transaction tr(*(db_conn->sql));
-                systemsLogger->trace("Logging state utilities for {} pawns", it.count());
                 for (auto i : it) {
                     double time = static_cast<double>(it.world().get_info()->world_time_total);
                     flecs::entity pawn = it.entity(i);
@@ -180,7 +185,148 @@ systems::systems(flecs::world& ecs) {
                 tr.commit();
             }
         });
+
+    // System to create the pawn current table on startup
+    ecs.system<Database::Connection>("CreateTable_PawnActiveStates")
+        .kind(flecs::OnStart)
+        .each([](Database::Connection& conn) {
+            try {
+                conn.sql->create_table("pawn_active_states")
+                    .column("time", soci::dt_double)
+                    .column("pawn_name", soci::dt_string)
+                    .column("Alive", soci::dt_integer)
+                    .column("Idle", soci::dt_integer)
+                    .column("Working", soci::dt_integer)
+                    .column("PawnOccupationUnemployed", soci::dt_integer)
+                    .column("PawnOccupationWoodcutter", soci::dt_integer)
+                    .column("PawnWoodcutterStateReturning", soci::dt_integer)
+                    .column("PawnWoodcutterStateChopping", soci::dt_integer)
+                    .column("Walking", soci::dt_integer)
+                    .column("Fleeing", soci::dt_integer)
+                    .column("Combat", soci::dt_integer)
+                    .column("Dead", soci::dt_integer)
+                    ;
+                systemsLogger->info("Table 'pawn_active_states' created.");
+            } catch (const std::exception& e) {
+                systemsLogger->error("Error creating table 'pawn_active_states': {}", e.what());
+            }
+        });    
+
+    ecs.system<Pawn::PawnFSMContainer, Database::Connection>("LogPawnStateActive")
+        .tick_source(Ticks::tick_pawn_behaviour)
+        .run([](flecs::iter& it) {
+            ZoneScopedN("LogPawnStateActive");
+            systemsLogger->trace("Logging active states for {} pawns", it.count());
+            while (it.next()) {
+                auto fsmc = it.field<Pawn::PawnFSMContainer>(0);
+                auto db_conn = it.field<Database::Connection>(1);
+
+                // Use a single transaction for all the pawn inserts for efficiency               
+                soci::transaction tr(*(db_conn->sql));
+                double time = static_cast<double>(it.world().get_info()->world_time_total);
+                for (auto i : it) {
+                    flecs::entity pawn = it.entity(i);
+                    std::string pawn_name = std::string(pawn.path());
+
+                    // SOCI can't take the values directly inline, so must assign to variables first
+                    int alive =               static_cast<int>(fsmc->machine->isActive<Pawn::Alive>());
+                    int idle =                static_cast<int>(fsmc->machine->isActive<Pawn::Idle>());
+                    int working =             static_cast<int>(fsmc->machine->isActive<Pawn::Working>());
+                    int unemployed =          static_cast<int>(fsmc->machine->isActive<Pawn::PawnOccupationUnemployed>());
+                    int woodcutter =          static_cast<int>(fsmc->machine->isActive<Pawn::PawnOccupationWoodcutter>());
+                    int woodcutter_returning = static_cast<int>(fsmc->machine->isActive<Pawn::PawnWoodcutterStateReturning>());
+                    int woodcutter_chopping = static_cast<int>(fsmc->machine->isActive<Pawn::PawnWoodcutterStateChopping>());
+                    int walking =             static_cast<int>(fsmc->machine->isActive<Pawn::Walking>());
+                    int fleeing =             static_cast<int>(fsmc->machine->isActive<Pawn::Fleeing>());
+                    int combat =              static_cast<int>(fsmc->machine->isActive<Pawn::Combat>());
+                    int dead =                static_cast<int>(fsmc->machine->isActive<Pawn::Dead>());
+
+                    *db_conn->sql << "INSERT INTO pawn_active_states (time, pawn_name, Alive, Idle, Working, PawnOccupationUnemployed, PawnOccupationWoodcutter, PawnWoodcutterStateReturning, PawnWoodcutterStateChopping, Walking, Fleeing, Combat, Dead) "
+                                    "VALUES (:time, :pawn, :alive, :idle, :working, :unemployed, :woodcutter, :woodcutter_returning, :woodcutter_chopping, :walking, :fleeing, :combat, :dead)",
+                                    soci::use(time, "time"),
+                                    soci::use(pawn_name, "pawn"),
+                                    soci::use(alive, "alive"),
+                                    soci::use(idle, "idle"),
+                                    soci::use(working, "working"),
+                                    soci::use(unemployed, "unemployed"),
+                                    soci::use(woodcutter, "woodcutter"),
+                                    soci::use(woodcutter_returning, "woodcutter_returning"),
+                                    soci::use(woodcutter_chopping, "woodcutter_chopping"),
+                                    soci::use(walking, "walking"),
+                                    soci::use(fleeing, "fleeing"),
+                                    soci::use(combat, "combat"),
+                                    soci::use(dead, "dead");
+                }
+                tr.commit();
+            }
+        });
+
+    ////////////////// Coordinates ////////////////////////
+        ecs.system<Database::Connection>("CreateTable_entity_map_position")
+        .kind(flecs::OnStart)
+        .each([](Database::Connection& conn) {
+            try {
+                conn.sql->create_table("entity_map_position")
+                    .column("time", soci::dt_double)
+                    .column("entity_name", soci::dt_string)
+                    .column("Cell_x", soci::dt_double)
+                    .column("Cell_y", soci::dt_double)
+                    .column("Grid_x", soci::dt_integer)
+                    .column("Grid_y", soci::dt_integer)
+                    .column("CellVelocity_x", soci::dt_double)
+                    .column("CellVelocity_y", soci::dt_double);
+                systemsLogger->info("Table 'entity_map_position' created.");
+            } catch (const std::exception& e) {
+                systemsLogger->error("Error creating table 'entity_map_position': {}", e.what());
+            }
+        })
+        .set_doc_brief("System to create the position logger table on startup");
         
+    ecs.system<const Coordinates::Grid, const Coordinates::Cell, const Coordinates::CellVelocity, Database::Connection>("LogPawnStateUtility")
+        .term_at(0).in()
+        .term_at(1).in()
+        .term_at(2).in()
+        .tick_source(Ticks::tick_render)  //TODO: This should probably be a different tick
+        .run([](flecs::iter& it) {
+            while (it.next()) {
+                auto db_conn = it.field<Database::Connection>(1);
+                auto grids = it.field<const Coordinates::Grid>(0);
+                auto cells = it.field<const Coordinates::Cell>(1);
+                auto cell_velocities = it.field<const Coordinates::CellVelocity>(2);
+
+
+                // Use a single transaction for all the pawn inserts for efficiency
+                //  Note that this system runs per StateUtility Second, so the system runs once per State, not
+                //  once
+                soci::transaction tr(*(db_conn->sql));
+                systemsLogger->trace("Logging Entity Position/Velocity/Attitude for {} entities", it.count());
+                for (auto i : it) {
+                    double time = static_cast<double>(it.world().get_info()->world_time_total);
+                    flecs::entity e = it.entity(i);
+                    std::string entity_name = std::string(e.path());
+
+                    // Must convert to double for soci
+                    double cell_x = static_cast<double>(cells[i].x);
+                    double cell_y = static_cast<double>(cells[i].y);
+                    double vel_x = static_cast<double>(cell_velocities[i].x);
+                    double vel_y = static_cast<double>(cell_velocities[i].y);
+
+                    *db_conn->sql << "INSERT INTO entity_map_position (time, entity_name, Cell_x, Cell_y, Grid_x, Grid_y, CellVelocity_x, CellVelocity_y) "
+                                    "VALUES (:time, :entity_name, :cell_x, :cell_y, :grid_x, :grid_y, :vel_x, :vel_y)",
+                                    soci::use(time, "time"),
+                                    soci::use(entity_name, "entity_name"),
+                                    soci::use(cell_x, "cell_x"),
+                                    soci::use(cell_y, "cell_y"),
+                                    soci::use(grids[i].x, "grid_x"),
+                                    soci::use(grids[i].y, "grid_y"),
+                                    soci::use(vel_x, "vel_x"),
+                                    soci::use(vel_y, "vel_y");
+                }
+                tr.commit();
+            }
+        })
+        .set_doc_brief("Log the map position of each entity");
+
 }
 
 }

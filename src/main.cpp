@@ -21,6 +21,7 @@
 #include "tracy_zones.hpp"
 
 #include <flecs.h>
+#include <flecs/addons/meta.h>
 #include <tracy/Tracy.hpp>
 #include <tracy/TracyC.h>
 
@@ -135,11 +136,11 @@ int main(int, char *[]) {
     // Create and add the ImGui log sink component. This must be done before importing modules
     // because they may create loggers during their import, which then wouldn't be linked to the sync
     ecs.import<Render::components>();  // Suffer through not having render components log to imgui
-    std::shared_ptr<Render::ImGuiLogSink_mt> imgui_sink = std::make_shared<Render::ImGuiLogSink_mt>();
-    ecs.set<Render::ImGuiLogSinkComponent>({imgui_sink});
+    //std::shared_ptr<Render::ImGuiLogSink_mt> imgui_sink = std::make_shared<Render::ImGuiLogSink_mt>();
+    //ecs.set<Render::ImGuiLogSinkComponent>({imgui_sink});
     // Add the ImGui sink to the logger sinks
-    ecs.get_mut<Logging::LoggerSink>().sinks.push_back(imgui_sink);
-    std::cout << "ImGui log sink created and added to LoggerSink" << std::endl;
+    //ecs.get_mut<Logging::LoggerSink>().sinks.push_back(imgui_sink);
+    //std::cout << "ImGui log sink created and added to LoggerSink" << std::endl;
 
     // Then import all the comopnents
     ecs.import<Buildings::components>();
@@ -165,9 +166,10 @@ int main(int, char *[]) {
     ecs.import<Render::systems>();
     ecs.import<Statemachine::systems>();
 
-    // Examples are a little special
+    // Examples are a little special in that we didn't bother doing the split between comopnents and systems
     ecs.import<Example::async>();
     ecs.import<Example::statemachine>();
+    ecs.import<Example::database>();
 
 
     // Ticks is kinda odd one out
@@ -285,7 +287,7 @@ int main(int, char *[]) {
     
 
     
-    constexpr int numPawns = 30;
+    constexpr int numPawns = 20;
     for (int pawnNumber=0; pawnNumber < numPawns; pawnNumber++){
         int targetX = xDist(rng);
         int targetY = yDist(rng);
@@ -417,7 +419,7 @@ int main(int, char *[]) {
 
 
 
-
+    
     ecs.system<Pawn::PawnFSMContainer>("Add destination")
         .term_at(0).inout()
         .interval(10)
@@ -426,19 +428,36 @@ int main(int, char *[]) {
         .each([&xDist, &yDist, &rng](flecs::entity e, Pawn::PawnFSMContainer& fsmc){
             ZoneScopedN("Add destination");
             // If the pawn doesn't have a destination, give it one
+            std::cout << "Adding destination for " << std::string(e.path()) << std::endl;
             int targetX = xDist(rng);
             int targetY = yDist(rng);
             Pawn::Destination_Event dest{{targetX, targetY}, {0, 0.25}};
-            // The state mchien reacting isn't working, so just force it
+            // The state machine reacting isn't working, so just force it
             // TODO: Fix this
-            //fsmc.machine->changeTo<Pawn::Walking>();
-            e.set<Pawn::Destination_Event>(dest);
-            //fsmc.machine->react(dest);
+            //std::cout << "About to changeTo<Walking>() and react for " << std::string(e.path()) << std::endl;
+            fsmc.machine->changeTo<Pawn::Walking>();
+            // Ensure the changeTo is applied before reacting so the event dispatches to Walking
+            fsmc.machine->update();
+            //e.set<Pawn::Destination_Event>(dest);
+            //std::cout << "Calling machine->react(Destination_Event) for " << std::string(e.path()) << std::endl;
+            fsmc.machine->react(Pawn::Destination_Event{{targetX, targetY}, {0, 0.25}});
+            //std::cout << "Called react; calling machine->update() to apply any pending transitions" << std::endl;
+            //fsmc.machine->update();
             //std::cout << "Set destination for " << std::string(e.path()) << " to (" << targetX << ", " << targetY << ")" << std::endl;
+
         })
         .set_doc_brief("Set a random destination for pawns that don't have one");
+    
 
-
+    ecs.system<Pawn::PawnFSMContainer>("TestEvent")
+        .term_at(0).inout()
+        .interval(30)
+        .each([](flecs::entity e, Pawn::PawnFSMContainer& fsmc){
+            ZoneScopedN("TestEvent");
+            std::cout << "Sending TestEvent to " << std::string(e.path()) << std::endl;
+            fsmc.machine->react(Pawn::Attacked{});
+        })
+        .set_doc_brief("Send a Pawn::Attacked to all pawns' state machines");
 
     std::cout << "Systems in main.cpp defined" << std::endl;
 

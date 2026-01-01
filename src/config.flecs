@@ -4,22 +4,23 @@ Coordinates.components {Logging.components.LoggerControls: {info}}
 Coordinates.systems    {Logging.components.LoggerControls: {info}}
 Database.components {Logging.components.LoggerControls: {info}}
 Database.systems    {Logging.components.LoggerControls: {info}}
-Example.async {Logging.components.LoggerControls: {info}}
-Example.statemachine {Logging.components.LoggerControls: {info}}
+Example.async {Logging.components.LoggerControls: {warn}}
+Example.statemachine {Logging.components.LoggerControls: {warn}}
+Example.database {Logging.components.LoggerControls: {warn}}
 //fdis.components {Logging.components.LoggerControls: {info}}
 //fdis.systems     {Logging.components.LoggerControls: {info}}
 Map.components {Logging.components.LoggerControls: {info}}
 Pathfinding.components {Logging.components.LoggerControls: {info}}
-Pawn.components {Logging.components.LoggerControls: {info}}
-Pawn.systems    {Logging.components.LoggerControls: {info}}
+Pawn.components {Logging.components.LoggerControls: {debug}}
+Pawn.systems    {Logging.components.LoggerControls: {debug}}
 Plugin.components {Logging.components.LoggerControls: {info}}
 Plugin.systems    {Logging.components.LoggerControls: {info}}
 Python.components {Logging.components.LoggerControls: {info}}
 Python.systems    {Logging.components.LoggerControls: {info}}
 Render.components {Logging.components.LoggerControls: {info}}
 Render.systems    {Logging.components.LoggerControls: {info}}
-Statemachine.components {Logging.components.LoggerControls: {info}}
-Statemachine.systems    {Logging.components.LoggerControls: {info}}
+Statemachine.components {Logging.components.LoggerControls: {trace}}
+Statemachine.systems    {Logging.components.LoggerControls: {trace}}
 UI.components {Logging.components.LoggerControls: {info}}
 // and the odd ones out
 Ticks.module {Logging.components.LoggerControls: {info}}
@@ -46,9 +47,9 @@ myCurveEntity {
 }
 
 // The python file needs more care about the environment. So it can cause crashess
-//myPythonEntity {
-//    Python.components.PythonFile: {"../../embedExample.py"}
-//}
+myPythonEntity {
+    Python.components.PythonFile: {"../../embedExample.py"}
+}
 
 /*
 // Debug Systems
@@ -57,7 +58,6 @@ Coordinates.module.System_CoordPrint { Disabled }
 SaveWorld {Disabled}
 
 */
-
 
 
 

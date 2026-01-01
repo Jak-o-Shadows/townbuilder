@@ -57,7 +57,7 @@ systems::systems(flecs::world& ecs){
     // TODO: Should I make a function for this in msgLogging/module.hpp?
     const auto& sinks = ecs.get<Logging::LoggerSink>().sinks;
     fsmLogger = std::make_shared<spdlog::logger>(std::string(m.path()) + ".fsm", sinks.begin(), sinks.end());
-    fsmLogger->set_level(spdlog::level::trace);
+    fsmLogger->set_level(spdlog::level::info);
     spdlog::register_logger(fsmLogger);
 
     ecs.observer<PawnFSMContainer>("Observer_PawnFsmContainer")
@@ -162,6 +162,7 @@ systems::systems(flecs::world& ecs){
         .term_at(0).in()
         .term_at(1).in()
         .term_at(2).in()
+        .without<Pawn::Idle>()  // Only check pawns that aren't idle (as idle pawns won't be moving)
         .each([](flecs::entity e,
             const Coordinates::Grid& grid,
             const Coordinates::Cell& local,
@@ -169,14 +170,12 @@ systems::systems(flecs::world& ecs){
             PawnFSMContainer& fsmc){
             ZoneScopedN("System_GiveEventPawnArrived");
             // If the pawn is at the destination, emit an Arrived_Event
-            const float epsilon = 0.01f;
+            const float epsilon = 0.1f;
             if (grid.x == dest.target.x && grid.y == dest.target.y &&
                 std::abs(local.x - dest.local.x) < epsilon && std::abs(local.y - dest.local.y) < epsilon) {
-                systemsLogger->trace("Pawn {} has arrived at its destination", std::string(e.path()));
+                systemsLogger->debug("Pawn {} has arrived at its destination", std::string(e.path()));
                 // Notify the FSM that we've arrived
-                //fsmc.machine->react(Arrived_Event{});
-                // TODO: The react isn't working, so do it manually
-                e.remove<Destination_Event>();
+                fsmc.machine->react(Arrived_Event{});
             }
         });
 
