@@ -1,9 +1,11 @@
 
 
+from turtle import title
+import numpy as np
 import pandas as pd
 import altair as alt
 
-alt.data_transformers.enable("vegafusion")
+#alt.data_transformers.enable("vegafusion")
 
 def pawn_utility(utility_data, pawn_name):
     """
@@ -34,6 +36,72 @@ def pawn_utility(utility_data, pawn_name):
         width="container",
         height="container"
     ).interactive()
+
+    return chart
+
+def active_states(active_states_data):
+    """
+    Plots the active states of a given pawn over time as a stacked area chart.
+
+    Parameters
+    ----------
+    - active_states_data: DataFrame with columns ['time', 'state_name', 'is_active']
+
+    Returns
+    -------
+    - Altair Chart object
+    """
+
+    if active_states_data.empty:
+        return alt.Chart().mark_text(text="No data to display").properties(
+            title='Active States Over Time'
+        )
+
+    # Ensure time is parsed as temporal. If numeric, assume it's elapsed seconds
+    # (relative game time). If values look like epoch milliseconds, handle that.
+    if pd.api.types.is_numeric_dtype(active_states_data['time']):
+        maxv = active_states_data['time'].abs().max()
+        # If values are very large (e.g. epoch ms ~1e12), treat as milliseconds,
+        # otherwise treat as seconds (relative game time).
+        unit = 'ms' if maxv > 1e11 else 's'
+        active_states_data['time'] = pd.to_datetime(active_states_data['time'], unit=unit, errors='coerce')
+    else:
+        active_states_data['time'] = pd.to_datetime(active_states_data['time'], errors='coerce')
+
+
+    df = active_states_data.sort_values(["state_name", "time"])
+
+    # For each state, shift the time column to get the next timestamp
+    df["end_time"] = df.groupby("state_name")["time"].shift(-1)
+
+    # Keep only rows where active == True
+    #   Interval segments are where is_active is True and end_time is not NaN
+    #   Single points still need to be shown
+    segments = df[df["is_active"] == True].dropna(subset=["end_time"])
+    single_points = df[(df["is_active"] == True) & ((df["end_time"].isna()) | (df["end_time"] == df["time"]))]
+
+    chart = (
+        alt.Chart(segments).mark_rule(size=4   # a thick line segment
+            ).encode(
+                x="time:T",
+                x2="end_time:T",
+                y=alt.Y("state_name:N", sort=None),
+                color="state_name:N",
+                tooltip=["state_name", "time"]
+            ) + \
+        alt.Chart(single_points).mark_circle(
+                size=80
+            ).encode(
+                x="time:T",
+                y=alt.Y("state_name:N", sort=None),
+                color="state_name:N",
+                tooltip=["state_name", "time"]
+            )
+        ).properties(
+            title='Active States Over Time',
+            width="container",
+            height="container"
+        ).interactive()
 
     return chart
 

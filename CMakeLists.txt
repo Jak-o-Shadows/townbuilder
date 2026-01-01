@@ -19,6 +19,7 @@ target_sources(${PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src/dis/systems.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/example/async.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/example/statemachine.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/example/database.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/map/components.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/msgLogging/components.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/msgLogging/systems.cpp

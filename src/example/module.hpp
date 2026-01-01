@@ -12,4 +12,8 @@ struct statemachine {
     statemachine(flecs::world& ecs);
 };
 
+struct database {
+    database(flecs::world& ecs);
+};
+
 }
