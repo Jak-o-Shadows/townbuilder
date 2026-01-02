@@ -156,7 +156,7 @@ public:
 };
 
 
-
+/*
 flecs::id_t pathfind(flecs::world &ecs, const Grid& map, int currentX, int currentY, int targetX, int targetY){
     ZoneScopedN("Function_Pathfind");
 
@@ -277,5 +277,6 @@ flecs::id_t pathfind(flecs::world &ecs, const Grid& map, int currentX, int curre
     //std::cout << prevSpot << flecs::entity(ecs, prevSpot).name() << std::endl;
     return prevSpot;
 }
+*/
 
 }

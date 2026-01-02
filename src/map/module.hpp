@@ -53,7 +53,7 @@ private:
 
 
 // Main pathfinding function. Gives the next cell to move towards
-flecs::id_t pathfind(flecs::world &ecs, const Grid* map, int currentX, int currentY, int targetX, int targetY);
+//flecs::id_t pathfind(flecs::world &ecs, const Grid* map, int currentX, int currentY, int targetX, int targetY);
 
 
 void setCellConnectivity(flecs::world& ecs, const Grid& map, int x, int y, float left, float right, float up, float down, bool reversible);

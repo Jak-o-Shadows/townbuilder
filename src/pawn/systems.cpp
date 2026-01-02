@@ -22,8 +22,8 @@ std::tuple<Coordinates::CellVelocity> calculate_next_velocity(
     const PawnAbilityTraits& ability){
         ZoneScopedN("calculate_next_velocity");
         // Calculate the velocity needed to go towards the destination
-        float dx = (dest.target.x - current.x) + (dest.local.x - local.x)/2.0f;
-        float dy = (dest.target.y - current.y) + (dest.local.y - local.y)/2.0f;
+        float dx = static_cast<float>(dest.target.x - current.x) + (dest.local.x - local.x)/2.0f;
+        float dy = static_cast<float>(dest.target.y - current.y) + (dest.local.y - local.y)/2.0f;
         // Clamp as per speed
         //  Remember that this is per second, as in movement it is scaled by delta time
         dx = std::clamp(dx, -ability.speed, ability.speed);
@@ -158,7 +158,7 @@ systems::systems(flecs::world& ecs){
 
     ecs.system<PawnFSMContainer>("System_PawnFSM_Update")
         .tick_source(Ticks::tick_pawn_behaviour)
-        .each([](flecs::entity e, PawnFSMContainer& fsmc){
+        .each([](PawnFSMContainer& fsmc){
             ZoneScopedN("System_PawnFSM_Update");
             fsmc.machine->update();
         })

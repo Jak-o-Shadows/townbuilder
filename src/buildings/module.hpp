@@ -10,7 +10,7 @@ struct components {
     components(flecs::world& ecs);
 };
 
-
+struct Building_Prefab {};
 struct Granary_Prefab {};
 
 struct Location {

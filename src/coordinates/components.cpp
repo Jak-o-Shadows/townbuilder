@@ -99,6 +99,12 @@ components::components(flecs::world& ecs) {
         .member<bool>("hasVel_")
         .member<bool>("hasOri_")
         .member<bool>("hasAcc_");
+
+    // The tags must be registered to use them from flecs script
+    ecs.component<GridBase>("GridBase");
+    ecs.component<NedBase>("NedBase");
+    ecs.component<LlaBase>("LlaBase");
+    ecs.component<EcefBase>("EcefBase");
     
     componentsLogger->trace("Components Registered");
 

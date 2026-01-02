@@ -30,9 +30,10 @@ void save_buffer_to_file(const std::string& destFilename, const std::shared_ptr<
     systemsLogger->debug("Saving database to file {}", destFilename);
     try {
         std::ofstream of(destFilename, std::ios::binary);
+        of.exceptions(std::ios::failbit | std::ios::badbit);
         of.write(reinterpret_cast<const char*>(buffer->data()), buffer->size());
         systemsLogger->debug("Database successfully saved to {}", destFilename);
-    } catch (const std::exception& e) {
+    } catch (const std::ios_base::failure& e) {
         systemsLogger->error("Failed to write database to file {}: {}", destFilename, e.what());
     }
 }
@@ -71,7 +72,7 @@ std::tuple<Snapshot> gather_database_snapshot(flecs::world&, const Connection& c
 }
 
 std::tuple<> work_save_database_snapshot(const Snapshot& snapshot) {
-    if (snapshot.buffer) {  // TODO: Is this really neccessary? If it's empty, why not jsut write it
+    if (snapshot.buffer) {  // TODO: Is this really neccessary? If it's empty, why not just write it
         systemsLogger->trace("Saving database snapshot to file.");
         save_buffer_to_file(snapshot.destination_filename, snapshot.buffer);
     }
@@ -166,7 +167,7 @@ systems::systems(flecs::world& ecs) {
                 //  once
                 soci::transaction tr(*(db_conn->sql));
                 for (auto i : it) {
-                    double time = static_cast<double>(it.world().get_info()->world_time_total);
+                    double time = it.world().get_info()->world_time_total;
                     flecs::entity pawn = it.entity(i);
                     std::string pawn_name = std::string(pawn.path());
                     std::string state_name = std::string(it.pair(0).second().name());
@@ -223,7 +224,7 @@ systems::systems(flecs::world& ecs) {
 
                 // Use a single transaction for all the pawn inserts for efficiency               
                 soci::transaction tr(*(db_conn->sql));
-                double time = static_cast<double>(it.world().get_info()->world_time_total);
+                double time = it.world().get_info()->world_time_total;
                 for (auto i : it) {
                     flecs::entity pawn = it.entity(i);
                     std::string pawn_name = std::string(pawn.path());

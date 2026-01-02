@@ -26,16 +26,7 @@ UI.components {Logging.components.LoggerControls: {info}}
 Ticks.module {Logging.components.LoggerControls: {info}}
 
 
-// Buildings
-/*
-Building.module.buildings.Granary1: Building.module.buildings.Granary_Prefab {
-    Building.Location: {3, 8}
-}
 
-Building.module.buildings.Granary2: Building.module.buildings.Granary_Prefab {
-    Building.Location: {5, 10}
-}
-*/
 
 // Disabled because not actually providing it valid data yet
 //myplugin_entity {
@@ -59,10 +50,26 @@ SaveWorld {Disabled}
 
 */
 
-// Pawns spawned from C++ main loop, converted to flecs script
-// Note: The PawnFSMContainer component contains a C++ object (shared_ptr)
-// and cannot be initialized from the script. It must be set from C++ code.
 
+// Buildings
+// First define the prefabs
+prefab Buildings.Building_Prefab {}
+prefab Buildings.Granary_Prefab: Buildings.Building_Prefab {
+    Buildings.components.BuildingUI: {3, -3, -1, 0}
+    Buildings.components.Resources: {0, 0, 0}
+}
+// Add buildings
+Buildings.components.buildingsParent {
+    Granary1: Buildings.Granary_Prefab {
+        Buildings.components.Location: {3, 8}
+    }
+    Granary2: Buildings.Granary_Prefab {
+        Buildings.components.Location: {5, 10}
+    }
+}
+
+
+// Pawns
 Pawn.pawnsParent {
     Pawn0: Pawn.Pawn_Prefab {
         Pawn.components.IsAPawn

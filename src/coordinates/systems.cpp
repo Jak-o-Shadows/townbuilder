@@ -33,13 +33,13 @@ systems::systems(flecs::world& ecs) {
         .term_at(2).in()
         .term_at(3).in()
         .with<GridBase>()
-        .each([](flecs::entity pawn, NED& ned, const Grid& grid, const Cell& cell, const CellVelocity& vel){
+        .each([](flecs::entity e, NED& ned, const Grid& grid, const Cell& cell, const CellVelocity& vel){
             ZoneScopedN("System_GridToNed");
             float scale_m_per_cell = 20;
             systemsLogger->trace("loc: {}, {}; pos: {}, {} -> ned: {}, {}", grid.x, grid.y, cell.x, cell.y, scale_m_per_cell * (grid.y + cell.y), scale_m_per_cell * (grid.x + cell.x));
-            ned.setPosition(scale_m_per_cell * (grid.y + cell.y), scale_m_per_cell * (grid.x + cell.x), 0);
+            ned.setPosition(scale_m_per_cell * static_cast<float>(grid.y + cell.y), scale_m_per_cell * static_cast<float>(grid.x + cell.x), 0);
             ned.setVelocity(scale_m_per_cell * vel.y, scale_m_per_cell * vel.x, 0);
-            systemsLogger->trace("ned: {}, {}, {} m, {}, {}, {} m/s", ned.x(), ned.y(), ned.z(), ned.vx(), ned.vy(), ned.vz());
+            systemsLogger->trace("{} ned: {}, {}, {} m, {}, {}, {} m/s", std::string(e.path()), ned.x(), ned.y(), ned.z(), ned.vx(), ned.vy(), ned.vz());
         })
         .set_doc_brief("Set NED coordinates based on Grid and Cell coordinates, and CellVelocity");
 
@@ -116,8 +116,8 @@ systems::systems(flecs::world& ecs) {
             float scale_m_per_cell = 20;
             grid.x = static_cast<int>(ned.x() / scale_m_per_cell);
             grid.y = static_cast<int>(ned.y() / scale_m_per_cell);
-            cell.x = static_cast<int>((ned.x() - grid.x * scale_m_per_cell) / scale_m_per_cell * 2 - 1);
-            cell.y = static_cast<int>((ned.y() - grid.y * scale_m_per_cell) / scale_m_per_cell * 2 - 1);
+            cell.x = (ned.x() - grid.x * scale_m_per_cell) / scale_m_per_cell * 2 - 1;
+            cell.y = (ned.y() - grid.y * scale_m_per_cell) / scale_m_per_cell * 2 - 1;
             vel.x = ned.vx();
             vel.y = ned.vy();
         })
@@ -187,12 +187,12 @@ systems::systems(flecs::world& ecs) {
 
 
 
-    auto move_sys = ecs.system<Cell, const CellVelocity>("System_IntraGridMovement")
+    ecs.system<Cell, const CellVelocity>("System_IntraGridMovement")
     .term_at(0).inout()
     .term_at(1).in()
     .with<GridBase>()
     .tick_source(Ticks::tick_pawn_behaviour)
-    .each([](flecs::iter& it, size_t i, Cell& p, const CellVelocity& v){
+    .each([](flecs::iter& it, size_t, Cell& p, const CellVelocity& v){
         ZoneScopedN("System_IntraGridMovement");
         p.x += v.x * it.delta_system_time();
         p.y += v.y * it.delta_system_time();

@@ -21,11 +21,9 @@ components::components(flecs::world& ecs) {
     m.set<Logging::LoggerControls>({spdlog::level::trace});
     logger->trace("Module Created");
     
-    buildingsParent = ecs.entity("buildings");
-
+    buildingsParent = ecs.entity("buildingsParent");
 
     // Register components with reflection data
-    
     ecs.component<Location>()
         .member<int>("x")
         .member<int>("y");
@@ -40,30 +38,6 @@ components::components(flecs::world& ecs) {
         .member<int>("doorY");
     logger->trace("Components Registered");
     
-
-    flecs::entity building_prefab = ecs.prefab("building_prefab");
-
-
-
-
-
-
-
-    // Start some buildings!
-
-    flecs::entity granary_prefab = ecs.prefab<Granary_Prefab>()
-        .is_a(building_prefab)
-        .child_of(buildingsParent)
-        .set<BuildingUI>({3, 3, -1, 0})
-        .set<Resources>({0, 0, 0});
-    logger->trace("Granary Prefab Created");
-
-
-
-
-
-
-
 
     logger->trace("Module Setup Complete");
 };

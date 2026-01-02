@@ -1,5 +1,7 @@
 #pragma once
 
+#include <numbers>
+
 #include <flecs.h>
 
 #include "simdis/CoordinateConverter.h"
@@ -56,7 +58,7 @@ struct Converter {
     simCore::CoordinateConverter converter;
 
     Converter() {
-        converter.setReferenceOrigin(-25.23069496914944*3.14159265/180, 133.80168159420796*3.14159265/180, 0);
+        converter.setReferenceOrigin(-25.23069496914944*std::numbers::pi/180, 133.80168159420796*std::numbers::pi/180, 0);
     }
 
 };
