@@ -176,7 +176,6 @@ int main(int, char *[]) {
     ecs.import<Ticks::module>();
     std::cout << "Modules imported" << std::endl;
 
-
     // TODO: Determine if this is required to be done after the loggers created
     spdlog::flush_on(spdlog::level::trace);
     spdlog::flush_every(std::chrono::seconds(1));
@@ -284,42 +283,7 @@ int main(int, char *[]) {
     std::uniform_int_distribution<int> yDist(0, map.m_height-1);
     std::uniform_real_distribution<float> speedDist(3, 10);
     std::cout << "Random distributions created" << std::endl;
-    
-
-    
-    constexpr int numPawns = 20;
-    for (int pawnNumber=0; pawnNumber < numPawns; pawnNumber++){
-        int targetX = xDist(rng);
-        int targetY = yDist(rng);
-        int myX = xDist(rng);
-        int myY = yDist(rng);
-        float speed = (float) speedDist(rng);
-        char pawnName[200];
-        sprintf(pawnName, "Pawn%d", pawnNumber);  // TODO: Replace with std::format
-        flecs::entity pawn = ecs.entity(pawnName)
-            .child_of(Pawn::pawnsParent)  // TODO: Put the IsAPawn into the prefab
-            .is_a<Pawn::Pawn_Prefab>();
-        std::cout << myX << ", " << myY << " -> " << targetX << ", " << targetY << std::endl;
-        //pawn.set<Coordinates::Grid>({myX, myY});
-        pawn.set<Coordinates::Grid>({3, 3});
-        std::cout << "Pawn Grid set: " << pawn.path() << std::endl;
-        pawn.set<Coordinates::Cell>({0, 0});
-        std::cout << "Pawn Coordinates set: " << pawn.path() << std::endl;
-        pawn.set<Coordinates::CellVelocity>({0, 0});
-        pawn.add<Coordinates::GridBase>();
-        pawn.set<Pawn::PawnAbilityTraits>({0, speed});
-        std::cout << "First part of pawn created: " << pawn.path() << std::endl;
-        // Set utility curves
-        pawn.set<Statemachine::CurveFile, Pawn::Alive>({"../../state1.csv"});
-
-        Statemachine::Context blah{pawn.id(), ecs};  // No idea why this has to be a separate variable, but it does, so bugger it
-        pawn.set<Pawn::PawnFSMContainer>({std::shared_ptr<Pawn::PawnFSM::Instance>(new Pawn::PawnFSM::Instance(blah))});
-
-    }
-    
-
-    //logger->trace("Created pawns");
-
+      
 
 
 
@@ -481,7 +445,7 @@ int main(int, char *[]) {
         });
     ecs.defer_end();
     */
-
+    std::cout << "Loading flecs script" << std::endl;
     ecs_script_run_file(ecs, "../../src/config.flecs");
     std::cout << "Flecs script loaded" << std::endl;
 

@@ -28,7 +28,7 @@ if __name__ == "__main__":
 
 
     query = "SELECT time, pawn_name, state_name, utility FROM pawn_state_utility WHERE pawn_name = ?"
-    pawn_name = "::Pawn::components::pawns::Pawn1"
+    pawn_name = "::Pawn::pawnsParent::Pawn0"
     df = pd.read_sql_query(query, con, params=(pawn_name,))
     df['time'] = pd.to_numeric(df['time'], errors='coerce')
     df = df.dropna(subset=['time'])
@@ -39,6 +39,7 @@ if __name__ == "__main__":
 
     query = "SELECT * FROM pawn_active_states"
     df = pd.read_sql_query(query, con)
+    print(df["pawn_name"].unique())
     df_melted = df.melt(id_vars=['time', 'pawn_name'], var_name='state_name', value_name='is_active')
     df_melted['time'] = pd.to_numeric(df_melted['time'], errors='coerce')
     df_melted = df_melted.dropna(subset=['time'])

@@ -42,12 +42,32 @@ components::components(flecs::world& ecs) {
     ecs.component<Destination_Event>()
         .member<Coordinates::Grid>("target")
         .member<Coordinates::Cell>("local");
+    ecs.component<IsAPawn>();
+    
+    
+    // Must register all the FSM states to allow them to be used from the flecs script (e.g. for the utility curve relationships)
+    ecs.component<Alive>();
+    ecs.component<Idle>();
+    ecs.component<Working>();
+    ecs.component<PawnOccupationUnemployed>();
+    ecs.component<PawnOccupationWoodcutter>();
+    ecs.component<PawnWoodcutterStateWalkingTo>();
+    ecs.component<PawnWoodcutterStateReturning>();
+    ecs.component<PawnWoodcutterStateChopping>();
+    ecs.component<Walking>();
+    ecs.component<Fleeing>();
+    ecs.component<Combat>();
+    ecs.component<Dead>();
+    
     componentsLogger->trace("Components Registered");
     
     // Need to give the entities a parent so they show nicer in the flecs explorer
     pawnsParent = ecs.entity("pawns");
 
 
+    ecs.prefab("Pawn_Prefab")
+        .child_of(pawnsParent)
+        .add<IsAPawn>();
 
 
     componentsLogger->trace("Module Setup Complete");

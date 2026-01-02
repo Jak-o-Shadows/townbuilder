@@ -60,6 +60,21 @@ systems::systems(flecs::world& ecs){
     fsmLogger->set_level(spdlog::level::info);
     spdlog::register_logger(fsmLogger);
 
+
+    
+    ecs.observer<Pawn::IsAPawn>("Observer_AddPawnFSM")
+        .event(flecs::OnAdd)
+        .each([&ecs](flecs::entity e, const Pawn::IsAPawn&) {
+            ZoneScopedN("Observer_AddPawnFSM");
+            if (!e.has<Pawn::PawnFSMContainer>()) {
+                systemsLogger->trace("Creating Pawn FSM for {}", std::string(e.path()));
+                Statemachine::Context context{e.id(), ecs};
+                e.set<Pawn::PawnFSMContainer>({std::shared_ptr<Pawn::PawnFSM::Instance>(new Pawn::PawnFSM::Instance(context))});
+                systemsLogger->debug("Created Pawn FSM for {}", std::string(e.path()));
+            }
+        });
+
+
     ecs.observer<PawnFSMContainer>("Observer_PawnFsmContainer")
         .event(flecs::OnAdd)
         .each([](flecs::entity pawn, PawnFSMContainer&) {
@@ -85,16 +100,21 @@ systems::systems(flecs::world& ecs){
    
     // Put systems in
     
+    /*
     ecs.observer<const Coordinates::Grid>("Observer_PawnOccupying")
         .with<IsAPawn>()
         .term_at(0).in()
         .event(flecs::OnSet)
         .each([&ecs](flecs::entity pawn, const Coordinates::Grid& grid){
             ZoneScopedN("Observer_PawnOccupying");
-            const Map::Grid& map = ecs.get<Map::Grid>();
-            pawn.add<PawnOccupying>(flecs::entity(pawn.world(), map.get(grid.x, grid.y)));
+            const Map::Grid* map = ecs.try_get<Map::Grid>();  // TODO: This is incorrect, as the map:Grid is NOT a singleton, but is attached to an entity (for multipe level reasons?)
+            if (!map) {
+                systemsLogger->error("Cannot set PawnOccupying for {} as Map::Grid component not found", std::string(pawn.path()));
+                return;
+            }
+            pawn.add<PawnOccupying>(flecs::entity(pawn.world(), map->get(grid.x, grid.y)));
         });
-
+    */
 
 
 
