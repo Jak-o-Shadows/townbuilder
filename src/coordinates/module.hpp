@@ -72,4 +72,6 @@ struct systems {
     systems(flecs::world& ecs);
 };
 
+flecs::entity find_nearest_by_grid(flecs::world& world, flecs::entity source_entity, flecs::entity prefab);
+
 }

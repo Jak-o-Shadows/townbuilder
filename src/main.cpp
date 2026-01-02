@@ -249,9 +249,10 @@ int main(int, char *[]) {
                 auto tree = ecs.entity()
                     .child_of(Map::resourcesParent)
                     .is_a<Map::Tree_Prefab>()
+                    .set<Coordinates::Grid>({x, y})
+                    .set<Coordinates::Cell>({0, 0})
                     .set<Buildings::Location>({x, y})
-                    .set<Buildings::Resources>({0, 100, 0})
-                    .add<Buildings::NatureType>();
+                    .set<Buildings::Resources>({0, 100, 0});
             }
         }
     }
@@ -379,8 +380,29 @@ int main(int, char *[]) {
 
 
     
+    ecs.system("Nearest_tree_printer")
+        .with<Coordinates::Grid>()
+        .with<Coordinates::Cell>()
+        .with<Pawn::Alive>()  // TODO: This type of check makes sense for specific states, not the root Alive
+        .tick_source(Ticks::tick_pawn_behaviour)
+        .each([&ecs](flecs::entity pawn) {
+            ZoneScopedN("Nearest_tree_printer");
+            flecs::entity tree_prefab = ecs.lookup("::Map::Tree_Prefab");
 
-
+            if (!tree_prefab) {
+                std::cout << "Tree prefab not found" << std::endl;
+                return;
+            }
+            
+            flecs::entity nearest = Coordinates::find_nearest_by_grid(ecs, pawn, tree_prefab);
+            if (nearest){
+                std::cout << std::format("Nearest {} to {} is {}",
+                    std::string(tree_prefab.path()),
+                    std::string(pawn.path()),
+                    std::string(nearest.path())) << std::endl;
+            }
+        });
+    
 
 
     

@@ -234,20 +234,61 @@ systems::systems(flecs::world& ecs) {
         })
         .set_doc_brief("Update Grid position based on Cell position, if outside of [-1, 1] range");
 
+        systemsLogger->trace("Systems Registered");
 
 
 
 
 
-    systemsLogger->trace("Systems Registered");
+    };
 
+    flecs::entity find_nearest_by_grid(flecs::world& world, flecs::entity source_entity, flecs::entity prefab)
+    {
+        systemsLogger->debug("Finding nearest prefab {} to {}", std::string(prefab.path()), std::string(source_entity.path()));
+        const Grid& source_grid = source_entity.get<Grid>();
+        const Cell& source_cell = source_entity.get<Cell>();
 
+        // Calculate the source position in the map coordinate system
+        float source_x = static_cast<float>(source_grid.x) + source_cell.x;
+        float source_y = static_cast<float>(source_grid.y) + source_cell.y;
+        systemsLogger->trace("Own Position: {}, {}", source_x, source_y);
 
+        flecs::entity closest_entity = flecs::entity::null();
+        float min_dist_sq = -1;
 
+        flecs::query<> q = world.query_builder<>()
+            .with(flecs::IsA, prefab)  // Only entities that are instances(prefab)
+            .with<Grid>()
+            .with<Cell>()
+            .build();
 
+        q.each([&](flecs::entity e) {
+            if (e == source_entity) {
+                return;
+            }
+            const Grid* target_grid = e.try_get<Grid>();
+            const Cell* target_cell = e.try_get<Cell>();
+            if (!target_grid || !target_cell) {
+                std::cout << std::format("{} does not have a Grid or Cell component(s)", std::string(e.path())) << std::endl;
+                return;
+            }
 
+            // Calculate the target position in the map coordinate system
+            float target_x = static_cast<float>(target_grid->x) + target_cell->x;
+            float target_y = static_cast<float>(target_grid->y) + target_cell->y;
 
+            // Calculate the squared distance between the source and target positions
+            float dx = target_x - source_x;
+            float dy = target_y - source_y;
+            float dist_sq = dx * dx + dy * dy;
 
-};
+            if (closest_entity.is_valid() == false || dist_sq < min_dist_sq) {
+                min_dist_sq = dist_sq;
+                closest_entity = e;
+            }
+        });
+
+        return closest_entity;
+    }
 
 }

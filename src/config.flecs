@@ -68,6 +68,10 @@ Buildings.components.buildingsParent {
     }
 }
 
+// Gaia
+prefab Map.Tree_Prefab {
+    //Buildings.NatureType  // TODO: Put this back in if it has a purpose
+}
 
 // Pawns
 Pawn.pawnsParent {
