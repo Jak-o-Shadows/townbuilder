@@ -1,9 +1,0 @@
-<form id="pawn-form" method="get" action="" data-chart-url="{% url 'dashboard:chart_view' %}">
-    <select id="pawn-select" name="pawn_name"
-        hx-get="{% url 'dashboard:chart_view' %}" hx-trigger="change" hx-target="#vis" hx-select="#vis" hx-push-url="true"
-        hx-include="#pawn-select, #filter-region, #filter-category, #filter-metric">
-    {% for pawn in pawns %}
-        <option value="{{ pawn }}" {% if pawn == selected %}selected{% endif %}>{{ pawn }}</option>
-    {% endfor %}
-    </select>
-</form>

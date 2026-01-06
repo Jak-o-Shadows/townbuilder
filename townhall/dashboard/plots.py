@@ -7,6 +7,7 @@ import altair as alt
 
 #alt.data_transformers.enable("vegafusion")
 
+
 def pawn_utility(utility_data, pawn_name):
     """
     Plots the utility values of different states for a given pawn over time.

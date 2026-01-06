@@ -1,0 +1,50 @@
+<div class="sidebar"><aside>
+    <details open>
+        <summary>☰</summary>
+        <nav>
+            <div class="title">Plots</div>
+            <ul>
+                <li>
+                    <button class="outline"
+                        hx-get="{% url 'dashboard:plot_pawn_utility' %}",
+                        hx-target="article",
+                        hx-push-url="true">
+                        Utility
+                    </button>
+                </li>
+                <li>
+                    <button class="outline"
+                        hx-get="{% url 'dashboard:plot_entity_positions' %}",
+                        hx-target="article",
+                        hx-push-url="true">
+                        Entity Positions
+                    </button>
+                </li>
+                <li>
+                    <button class="outline"
+                        hx-get="{% url 'dashboard:plot_example_state' %}",
+                        hx-target="article",
+                        hx-push-url="true">
+                        Example State
+                    </button>
+                </li>
+                <li>
+                    <button class="outline"
+                        hx-get="{% url 'dashboard:plot_pawn_state' %}",
+                        hx-target="article",
+                        hx-push-url="true">
+                        Pawn State
+                    </button>
+                </li>
+                <li>
+                    <button class="outline"
+                        hx-get="{% url 'dashboard:log_viewer' %}",
+                        hx-target="article",
+                        hx-push-url="true">
+                        Log Viewer
+                    </button>
+                </li>
+            </ul>
+        </nav>
+        </details>
+</aside></div> <!-- .sidebar -->

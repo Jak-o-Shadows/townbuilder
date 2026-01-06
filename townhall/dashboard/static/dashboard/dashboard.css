@@ -19,3 +19,19 @@
 .sidebar {
     padding: 1em
 }
+
+.log-container {
+  border: 1px solid #ccc;
+  padding: 10px;
+  height: 80vh;
+  overflow-y: scroll;
+  font-family: monospace;
+}
+.log-line { white-space: pre; }
+.level-trace { color: #999; }
+.level-debug { color: #777; }
+.level-info { color: #00a; }
+.level-warn { color: #a60; }
+.level-error { color: #a00; }
+.level-critical { color: #f00; font-weight: bold; }
+.logger-name { font-weight: bold; }

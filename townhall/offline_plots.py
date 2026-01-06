@@ -28,7 +28,7 @@ if __name__ == "__main__":
 
 
     query = "SELECT time, pawn_name, state_name, utility FROM pawn_state_utility WHERE pawn_name = ?"
-    pawn_name = "::Pawn::pawnsParent::Pawn0"
+    pawn_name = "::Pawn::pawnsParent::CustomPawn0"
     df = pd.read_sql_query(query, con, params=(pawn_name,))
     df['time'] = pd.to_numeric(df['time'], errors='coerce')
     df = df.dropna(subset=['time'])
