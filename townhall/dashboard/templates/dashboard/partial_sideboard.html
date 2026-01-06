@@ -2,46 +2,57 @@
     <details open>
         <summary>☰</summary>
         <nav>
-            <div class="title">Plots</div>
+            <div class="title">Analysis Displays</div>
             <ul>
                 <li>
-                    <button class="outline"
-                        hx-get="{% url 'dashboard:plot_pawn_utility' %}",
-                        hx-target="article",
+                    <button class="outline">
+                    <!--- Putting the get inside the button tag means that middle click works -->
+                    <a href="{% url 'dashboard:plot_pawn_utility' %}"
+                        hx-get="{% url 'dashboard:plot_pawn_utility' %}"
+                        hx-target="article"
                         hx-push-url="true">
                         Utility
+                    </a>
                     </button>
                 </li>
                 <li>
-                    <button class="outline"
-                        hx-get="{% url 'dashboard:plot_entity_positions' %}",
-                        hx-target="article",
+                    <button class="outline">
+                    <a href="{% url 'dashboard:plot_entity_positions' %}"
+                        hx-get="{% url 'dashboard:plot_entity_positions' %}"
+                        hx-target="article"
                         hx-push-url="true">
                         Entity Positions
+                    </a>
                     </button>
                 </li>
                 <li>
-                    <button class="outline"
-                        hx-get="{% url 'dashboard:plot_example_state' %}",
-                        hx-target="article",
+                    <button class="outline">
+                    <a href="{% url 'dashboard:plot_example_state' %}"
+                        hx-get="{% url 'dashboard:plot_example_state' %}"
+                        hx-target="article"
                         hx-push-url="true">
                         Example State
+                    </a>
                     </button>
                 </li>
                 <li>
-                    <button class="outline"
-                        hx-get="{% url 'dashboard:plot_pawn_state' %}",
-                        hx-target="article",
+                    <button class="outline">
+                    <a href="{% url 'dashboard:plot_pawn_state' %}"
+                        hx-get="{% url 'dashboard:plot_pawn_state' %}"
+                        hx-target="article"
                         hx-push-url="true">
                         Pawn State
+                    </a>
                     </button>
                 </li>
                 <li>
-                    <button class="outline"
-                        hx-get="{% url 'dashboard:log_viewer' %}",
-                        hx-target="article",
+                    <button class="outline">
+                    <a href="{% url 'dashboard:log_viewer' %}"
+                        hx-get="{% url 'dashboard:log_viewer' %}"
+                        hx-target="article"
                         hx-push-url="true">
                         Log Viewer
+                    </a>
                     </button>
                 </li>
             </ul>

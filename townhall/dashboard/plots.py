@@ -118,8 +118,8 @@ def coordGrid_to_map(df, grid_size_x=20, grid_size_y=20):
     Returns:
     - DataFrame with additional columns ['map_x', 'map_y']
     """
-    df['map_x'] = df['Cell_x'] + (df['Grid_x'] * grid_size_x)
-    df['map_y'] = df['Cell_y'] + (df['Grid_y'] * grid_size_y)
+    df['map_x'] = df['Grid_x'] + df['Cell_x']/2
+    df['map_y'] = df['Grid_y'] + df['Cell_y']/2
     return df
 
 def entity_positions(position_data):

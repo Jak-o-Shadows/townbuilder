@@ -67,10 +67,11 @@ def plot_pawn_utility(request):
         df['time'] = pd.to_numeric(df['time'], errors='coerce')
         df = df.dropna(subset=['time'])
         chart = plots.pawn_utility(df, pawn_name)
+        
+        content_paragraphs = [f"This plot shows the utility values over time for the pawn named '{pawn_name}'."]
 
     except Exception as e:
-        # Log the error
-        pass
+        content_paragraphs = [f"An error occurred while generating the plot: {e}"]
     finally:
         if con:
             con.close()
@@ -78,7 +79,10 @@ def plot_pawn_utility(request):
     
 
     spec = chart.to_dict(format="vega")
-    html = render_to_string('dashboard/partial_single_altair_plot.html', {'spec_json': json.dumps(spec)})
+    html = render_to_string('dashboard/partial_single_altair_plot.html', {'spec_json': json.dumps(spec),
+                                                                          'content_header': "Pawn State Machine state utility",
+                                                                          'content_paragraphs': content_paragraphs
+                                                                          })
         
     return html
 
@@ -98,15 +102,18 @@ def plot_entity_positions(request):
         df = df.dropna(subset=['time'])
         chart = plots.entity_positions(df)
 
+        content_paragraphs = ["This plot shows the positions of entities on the map over time. Each point represents an entity's location at a specific timestamp."]
     except Exception as e:
-        # Log the error
-        pass
+        content_paragraphs = [f"An error occurred while generating the plot: {e}"]
     finally:
         if con:
             con.close()
 
     spec = chart.to_dict(format="vega")
-    html = render_to_string('dashboard/partial_single_altair_plot.html', {'spec_json': json.dumps(spec)})
+    html = render_to_string('dashboard/partial_single_altair_plot.html', {'spec_json': json.dumps(spec),
+                                                                          'content_header': "Entity Positions on Map Over Time",
+                                                                          'content_paragraphs': content_paragraphs
+                                                                          })
         
     return html
 
@@ -130,15 +137,19 @@ def plot_example_state(request):
         entity_data = df_melted[df_melted['entity_name'] == entity_name]
         #plot
         chart = plots.active_states(entity_data)
+
+        content_paragraphs = [f"This plot shows the active states over time for the entity named '{entity_name}'. This is purely an example that serves as an example of how to use a HFSM2 state machine, and how to log the active state."]
     except Exception as e:
-        # Log the error
-        pass
+        content_paragraphs = [f"An error occurred while generating the plot: {e}"]
     finally:
         if con:
             con.close()
 
     spec = chart.to_dict(format="vega")
-    html = render_to_string('dashboard/partial_single_altair_plot.html', {'spec_json': json.dumps(spec)})
+    html = render_to_string('dashboard/partial_single_altair_plot.html', {'spec_json': json.dumps(spec),
+                                                                          'content_header': "Example Active States",
+                                                                          'content_paragraphs': content_paragraphs
+                                                                          })
 
     return html
 
@@ -162,15 +173,20 @@ def plot_pawn_state(request):
         pawn_data = df_melted[df_melted['pawn_name'] == pawn_name]
         # Plot
         chart = plots.active_states(pawn_data)
+
+        content_paragraphs = [f"This plot shows the active states over time for the pawn named '{pawn_name}'."]
+
     except Exception as e:
-        # Log the error
-        pass
+        content_paragraphs = [f"An error occurred while generating the plot: {e}"]
     finally:
         if con:
             con.close()
 
     spec = chart.to_dict(format="vega")
-    html = render_to_string('dashboard/partial_single_altair_plot.html', {'spec_json': json.dumps(spec)})
+    html = render_to_string('dashboard/partial_single_altair_plot.html', {'spec_json': json.dumps(spec),
+                                                                          'content_header': "Pawn Active States",
+                                                                          'content_paragraphs': content_paragraphs
+                                                                          })
 
     return html
 
