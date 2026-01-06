@@ -256,9 +256,8 @@ def log_entries(request):
     # build next_url preserving existing query params; advance start to `end` for the next chunk
     from urllib.parse import urlencode
     params = dict(request.GET.items())
-    params['start_message'] = str(end)
-    # keep count parameter explicit so next_url is stable
-    params['count'] = str(int(request.GET.get('count')) if request.GET.get('count') and request.GET.get('count').isdigit() else DEFAULT_COUNT)
+    params["start_message"] = str(end)
+    params["end_message"] = str(end + DEFAULT_COUNT)
     next_url = request.path + '?' + urlencode(params)
 
     # Return full table wrapper only when starting at 0; otherwise return rows-only for append

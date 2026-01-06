@@ -8,7 +8,7 @@
 {% endfor %}
 
 {% if has_more %}
-<tr>
+<tr class="htmx-sentinel">
   <td colspan="4">
     <!-- Sentinel element: when revealed by scrolling, HTMX will fetch the next page and append rows -->
     <div hx-trigger="revealed" hx-get="{{ next_url }}" hx-target="#log-rows" hx-swap="beforeend"></div>

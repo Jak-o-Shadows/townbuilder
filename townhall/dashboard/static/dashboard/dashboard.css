@@ -35,3 +35,19 @@
 .level-error { color: #a00; }
 .level-critical { color: #f00; font-weight: bold; }
 .logger-name { font-weight: bold; }
+
+/* Sticky filter form for log viewer */
+#log-filters {
+  position: sticky;
+  top: 0;
+  background: var(--form-element-valid-border-color, white);
+  padding: 1rem;
+  border-bottom: 2px solid var(--form-element-border-color, #ddd);
+  z-index: 10;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Hide sentinel rows for infinite scroll */
+tr.htmx-sentinel {
+  display: none;
+}
