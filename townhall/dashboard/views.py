@@ -232,7 +232,7 @@ def log_entries(request):
         messages = [m for m in messages if logger in m['logger']]
     if q:
         qlower = q.lower()
-        messages = [m for m in messages if qlower in m['message'].lower() or qlower in m['logger'].lower()]
+        messages = [m for m in messages if qlower in m['message'].lower()]
 
     # Range-based pagination using integer start_message and end_message indexes.
     # If end_message is omitted, we use a default count to form the range [start, start+count).
