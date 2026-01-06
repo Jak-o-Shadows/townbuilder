@@ -5,6 +5,7 @@
 #include "ticks/module.hpp"
 #include "coordinates/module.hpp"
 #include "map/module.hpp"
+#include "buildings/module.hpp"
 #include "async_system.hpp"
 
 #include <functional>
@@ -48,6 +49,9 @@ systems::systems(flecs::world& ecs){
     ecs.import<Statemachine::components>();
     ecs.import<Coordinates::components>();
     ecs.import<Ticks::module>();
+    ecs.import<Map::components>();
+    ecs.import<Buildings::components>();
+
 
     systemsLogger->trace("Other flecs modules imported");
 
@@ -57,7 +61,7 @@ systems::systems(flecs::world& ecs){
     // TODO: Should I make a function for this in msgLogging/module.hpp?
     const auto& sinks = ecs.get<Logging::LoggerSink>().sinks;
     fsmLogger = std::make_shared<spdlog::logger>(std::string(m.path()) + ".fsm", sinks.begin(), sinks.end());
-    fsmLogger->set_level(spdlog::level::info);
+    fsmLogger->set_level(spdlog::level::trace);
     spdlog::register_logger(fsmLogger);
 
 
@@ -198,6 +202,96 @@ systems::systems(flecs::world& ecs){
                 fsmc.machine->react(Arrived_Event{});
             }
         });
+
+
+        
+    ecs.observer<Target>("Observer_PawnTarget_Woodcutter")
+        .event(flecs::OnAdd)
+        .term_at(0).second(flecs::Wildcard)
+        .with<PawnOccupationWoodcutter>()
+        .with<PawnFSMContainer>()
+        .each([](flecs::iter& it, size_t i, const Target&){
+            ZoneScopedN("Observer_PawnTarget_Woodcutter");
+            flecs::entity pawn = it.entity(i);
+            systemsLogger->debug("Setting walking destination for Pawn {}", std::string(pawn.path()));
+            flecs::entity tree = pawn.target<Target>();
+            // Tell the pawn to walk to the tree
+            PawnFSMContainer& fsmc = pawn.get_mut<PawnFSMContainer>();
+            systemsLogger->trace("Sending Destination_Event to FSM on {}", std::string(pawn.path()));
+            Destination_Event dest{tree.get<Coordinates::Grid>(), tree.get<Coordinates::Cell>()};
+            systemsLogger->trace("Destination is: ({}, {}), ({}, {})",
+                dest.target.x, dest.target.y,
+                dest.local.x, dest.local.y);
+            fsmc.machine->react(dest);
+        });
+
+    ecs.observer<Target>("Observer_PawnTargetRemoved_Woodcutter")
+        .event(flecs::OnRemove)
+        .term_at(0).second(flecs::Wildcard)
+        .with<PawnWoodcutterStateChopping>()
+        .with<PawnFSMContainer>()
+        .each([&ecs](flecs::iter& it, size_t i, const Target&){
+            ZoneScopedN("Observer_PawnTargetRemoved_Woodcutter");
+            flecs::entity pawn = it.entity(i);
+            systemsLogger->debug("Seeking new tree to cut for Pawn {}", std::string(pawn.path()));
+
+            PawnFSMContainer& fsmc = pawn.get_mut<PawnFSMContainer>();
+            fsmc.machine->changeTo<PawnWoodcutterStateWalkingTo>();
+            fsmc.machine->update();
+
+            // TODO: A LOT of redundant code with Woodcutter::enter. We also don't have the whole "return" part in
+
+            // Now find the narest tree, and set it as the destination
+            flecs::entity tree_prefab = ecs.lookup("::Map::Tree_Prefab");
+
+            if (!tree_prefab) {
+                systemsLogger->trace("Tree prefab not found - cannot tell pawn to go towards a tree");
+                return;
+            }
+
+            flecs::entity nearest = Coordinates::find_nearest_by_grid(ecs, pawn, tree_prefab);
+            if (nearest){
+                systemsLogger->trace("Nearest {} to {} is {}",
+                    std::string(tree_prefab.path()),
+                    std::string(pawn.path()),
+                    std::string(nearest.path()));
+                // Set the tree as the "target". This will then trigger the destination event
+                pawn.add<Target>(nearest);
+            } else {
+                systemsLogger->trace("Cannot find any trees");
+            }
+        });
+        
+    
+    ecs.system<const PawnAbilityTraits, const Coordinates::Grid>("System_PawnWoodcut")
+        .term_at(0).in()
+        .term_at(1).in()
+        .with<Target>().second(flecs::Wildcard)
+        .with<PawnWoodcutterStateChopping>()
+        .tick_source(Ticks::tick_pawn_behaviour)
+        .each([](flecs::iter& it, size_t i,
+            const PawnAbilityTraits& ability,
+            const Coordinates::Grid& grid){
+                ZoneScopedN("System_PawnWoodcut");
+                flecs::entity pawn = it.entity(0);
+
+                // Get the second of the target. This should be the tree we're at
+                flecs::entity tree = pawn.target<Target>();
+                if (!tree){
+                    systemsLogger->error("Pawn {} has no Pawn::Target for woodcutting", std::string(pawn.path()));
+                    return;
+                }
+
+                float damage = ability.woodcut_speed * it.delta_system_time();
+
+                const Coordinates::Grid& tree_grid = tree.get<Coordinates::Grid>();
+                if (tree_grid.x == grid.x && tree_grid.y == grid.y) {
+                    Buildings::Resources& resources = tree.get_mut<Buildings::Resources>();
+                    resources.wood -= damage;
+                }
+            });
+
+    
 
 
 

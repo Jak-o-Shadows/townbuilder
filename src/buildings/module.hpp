@@ -19,9 +19,9 @@ struct Location {
 };
 
 struct Resources {
-    int fish;
-    int stone;
-    int wood;
+    float fish;
+    float stone;
+    float wood;
 };
 
 

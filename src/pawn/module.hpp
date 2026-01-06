@@ -44,6 +44,7 @@ struct PawnLifeTraits {
 struct PawnAbilityTraits {
     float strength;
     float speed;
+    float woodcut_speed;
 };
 
 
@@ -51,6 +52,8 @@ struct PawnAbilityTraits {
 struct PawnOccupying {};
 
 struct Likes { };
+
+struct Target {};
 
 
 extern std::shared_ptr<spdlog::logger> fsmLogger;
@@ -145,16 +148,19 @@ struct BasePawnState : PawnFSM::State {
             //  ECS changes - and hence we may not be able to set the component,
             //  and then modify it with a get_mut right after
             e.set<Statemachine::StateTiming, TemplateState>({0, 0});
+            fsmLogger->trace("Created timing data for Pawn {} state {}", std::string(e.path()), Statemachine::TypeName<TemplateState>());
         } else {
             // Reset how long we've been in this state
             timing->timeInState_s = 0;
         }
         e.add<TemplateState>();
+        fsmLogger->trace("Pawn {} entered state {}", std::string(e.path()), Statemachine::TypeName<TemplateState>());
     }
     void exit(Control& control) {
         flecs::entity e = flecs::entity(control.context().ecs, control.context().id);
         fsmLogger->trace("Pawn {} exiting state {}", std::string(e.path()), Statemachine::TypeName<TemplateState>());
         e.remove<TemplateState>();
+        fsmLogger->trace("Pawn {} exited state {}", std::string(e.path()), Statemachine::TypeName<TemplateState>());
     }
 };
 
@@ -179,7 +185,7 @@ struct BaseUtilityState : BasePawnState<TemplateState> {
 // Explicitly bring the base class's react methods into this scope
 // to resolve ambiguity for the compiler.
 struct Alive : BaseUtilityState<Alive> {
-    void react(const Arrived_Event& event, EventControl& control);
+    //void react(const Arrived_Event& event, EventControl& control);
     void react(const Attacked& event, EventControl& control);
     using BaseUtilityState<Alive>::react;
 };
@@ -217,10 +223,13 @@ struct PawnOccupationUnemployed : BasePawnState<PawnOccupationUnemployed> {
 };
 
 struct PawnOccupationWoodcutter : BasePawnState<PawnOccupationWoodcutter> {
+    void react(const Destination_Event& dest, EventControl& control);
     using BasePawnState<PawnOccupationWoodcutter>::react;
+    void enter(Control& control);
 };
 
 struct PawnWoodcutterStateWalkingTo : BasePawnState<PawnWoodcutterStateWalkingTo> {
+    void react(const Arrived_Event& event, EventControl& control);
     using BasePawnState<PawnWoodcutterStateWalkingTo>::react;
 };
 

@@ -1,6 +1,7 @@
 #include "pawn/module.hpp"
 
 #include "map/module.hpp"
+#include "coordinates/module.hpp"
 
 namespace Pawn{
 
@@ -12,12 +13,12 @@ void Alive::react(const Attacked& event, EventControl& control) {
     control.changeTo<Combat>();
 }
 
-void Alive::react(const Arrived_Event& event, EventControl& control){
-    flecs::entity e = flecs::entity(control.context().ecs, control.context().id);
-    fsmLogger->debug("Alive::react(Arrived_Event) called for entity {}", std::string(e.path()));
+//void Alive::react(const Arrived_Event& event, EventControl& control){
+//    flecs::entity e = flecs::entity(control.context().ecs, control.context().id);
+//    fsmLogger->debug("Alive::react(Arrived_Event) called for entity {}", std::string(e.path()));
     //e.remove<Destination_Event>();
     //control.changeTo<Idle>();
-}
+//}
 
 
 
@@ -67,13 +68,52 @@ void Walking::react(const Destination_Event& dest, EventControl& control) {
     e.set<Destination_Event>(dest);
 }
 
-/*
-void PawnWoodcutterStateWalkingTo::react(const Arrived_Event&, FullControl& control) {
+
+void PawnOccupationWoodcutter::enter(Control& control) {
+    // Call the base class enter
+    BasePawnState<PawnOccupationWoodcutter>::enter(control);
+    fsmLogger->trace("Entered PawnOccupationWoodcutter: Selecting nearest tree to go towards");
+    
+    // Now find the narest tree, and set it as the destination
+    flecs::entity pawn = flecs::entity(control.context().ecs, control.context().id);
+    flecs::entity tree_prefab = control.context().ecs.lookup("::Map::Tree_Prefab");
+
+    if (!tree_prefab) {
+        fsmLogger->trace("Tree prefab not found - cannot tell pawn to go towards a tree");
+        return;
+    }
+    
+    flecs::entity nearest = Coordinates::find_nearest_by_grid(control.context().ecs, pawn, tree_prefab);
+    if (nearest){
+        fsmLogger->trace("Nearest {} to {} is {}",
+            std::string(tree_prefab.path()),
+            std::string(pawn.path()),
+            std::string(nearest.path()));
+        // Set the tree as the "target". This will then trigger the destination event
+        pawn.add<Target>(nearest);
+    } else {
+        fsmLogger->trace("Cannot find any trees");
+    }
+
+}
+
+void PawnOccupationWoodcutter::react(const Destination_Event& dest, EventControl& control) {
+    flecs::entity e = flecs::entity(control.context().ecs, control.context().id);
+    fsmLogger->debug("PawnOccupationWoodcutter::react(Destination_Event) called for entity {} with destination ({}, {})", std::string(e.path()), dest.target.x, dest.target.y);
+    // The event itself is now the destination, which will be picked up by the
+    // OnEnterWalkingState_RequestPath observer.
+    e.set<Destination_Event>(dest);
+}
+
+
+
+
+void PawnWoodcutterStateWalkingTo::react(const Arrived_Event& event, EventControl& control) {
     flecs::entity e = flecs::entity(control.context().ecs, control.context().id);
     fsmLogger->debug("PawnWoodcutterStateWalkingTo::react(Arrived_Event) called for entity {}", std::string(e.path()));
+    e.remove<Destination_Event>();
     control.changeTo<PawnWoodcutterStateChopping>();
 }
-*/
     
 
 

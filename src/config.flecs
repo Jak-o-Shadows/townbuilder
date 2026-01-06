@@ -10,9 +10,10 @@ Example.database {Logging.components.LoggerControls: {warn}}
 //fdis.components {Logging.components.LoggerControls: {info}}
 //fdis.systems     {Logging.components.LoggerControls: {info}}
 Map.components {Logging.components.LoggerControls: {info}}
+Map.systems    {Logging.components.LoggerControls: {info}}
 Pathfinding.components {Logging.components.LoggerControls: {info}}
 Pawn.components {Logging.components.LoggerControls: {info}}
-Pawn.systems    {Logging.components.LoggerControls: {info}}
+Pawn.systems    {Logging.components.LoggerControls: {debug}}
 Plugin.components {Logging.components.LoggerControls: {info}}
 Plugin.systems    {Logging.components.LoggerControls: {info}}
 Python.components {Logging.components.LoggerControls: {info}}
@@ -50,6 +51,9 @@ SaveWorld {Disabled}
 
 */
 
+System_ChangePawnToWoodcutter{ Disabled }
+Pawn_FakeAttack{ Disabled }
+
 
 // Buildings
 // First define the prefabs
@@ -75,22 +79,26 @@ prefab Map.Tree_Prefab {
 
 // Pawns
 Pawn.pawnsParent {
-    Pawn0: Pawn.Pawn_Prefab {
+//    for x in 0 .. 10 {
+//        Pawn{x}: Pawn.Pawn_Prefab {
+//            Pawn.components.IsAPawn
+//            Coordinates.components.Grid: {x: x, y: 3}
+//            Coordinates.components.Cell: {x: 0, y: 0}
+//            Coordinates.components.CellVelocity: {x: 0, y: 0}
+//            Coordinates.components.GridBase
+//            Pawn.components.PawnAbilityTraits: {strength: 0, speed: 5.0}
+//            (Statemachine.components.CurveFile, Pawn.components.Alive): {filename: "../../state1.csv"}
+//        }
+    //}
+    CustomPawn0: Pawn.Pawn_Prefab {
         Pawn.components.IsAPawn
-        Coordinates.components.Grid: {x: 3, y: 3}
-        Coordinates.components.Cell: {x: 0, y: 0}
-        Coordinates.components.CellVelocity: {x: 0, y: 0}
-        Coordinates.components.GridBase
-        Pawn.components.PawnAbilityTraits: {strength: 0, speed: 5.0}
-        (Statemachine.components.CurveFile, Pawn.components.Alive): {filename: "../../state1.csv"}
-    }
-    Pawn2: Pawn.Pawn_Prefab {
-        Pawn.components.IsAPawn
-        Coordinates.components.Grid: {x: 10, y: 3}
+        Coordinates.components.Grid: {x: 13, y: 3}
         Coordinates.components.Cell: {x: 0, y: 0}
         Coordinates.components.CellVelocity: {x: 0, y: 0}
         Coordinates.components.GridBase
         Pawn.components.PawnAbilityTraits: {strength: 0, speed: 10.0}
         (Statemachine.components.CurveFile, Pawn.components.Alive): {filename: "../../state1.csv"}
     }
+
+    
 }

@@ -21,6 +21,9 @@ struct components {
     components(flecs::world& ecs);
 };
 
+struct systems {
+    systems(flecs::world& ecs);
+};
 
 extern flecs::entity resourcesParent;
 

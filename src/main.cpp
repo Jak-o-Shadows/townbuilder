@@ -160,6 +160,7 @@ int main(int, char *[]) {
     ecs.import<Coordinates::systems>();
     ecs.import<Database::systems>();
     //ecs.import<fdis::systems>();
+    ecs.import<Map::systems>();
     ecs.import<Pawn::systems>();
     ecs.import<Plugin::systems>();
     ecs.import<Python::systems>();
@@ -252,7 +253,7 @@ int main(int, char *[]) {
                     .set<Coordinates::Grid>({x, y})
                     .set<Coordinates::Cell>({0, 0})
                     .set<Buildings::Location>({x, y})
-                    .set<Buildings::Resources>({0, 100, 0});
+                    .set<Buildings::Resources>({0, 0, 100});
             }
         }
     }
@@ -384,7 +385,7 @@ int main(int, char *[]) {
         .with<Coordinates::Grid>()
         .with<Coordinates::Cell>()
         .with<Pawn::Alive>()  // TODO: This type of check makes sense for specific states, not the root Alive
-        .tick_source(Ticks::tick_pawn_behaviour)
+        .interval(3)
         .each([&ecs](flecs::entity pawn) {
             ZoneScopedN("Nearest_tree_printer");
             flecs::entity tree_prefab = ecs.lookup("::Map::Tree_Prefab");
@@ -406,11 +407,12 @@ int main(int, char *[]) {
 
 
     
-    ecs.system<Pawn::PawnFSMContainer>("Add destination")
+    ecs.system<Pawn::PawnFSMContainer>("AddWalkingDestination")
         .term_at(0).inout()
         .interval(10)
         .tick_source(Ticks::tick_pawn_behaviour)
         .without<Pawn::Destination_Event>()
+        .with<Pawn::Walking>()
         .each([&xDist, &yDist, &rng](flecs::entity e, Pawn::PawnFSMContainer& fsmc){
             ZoneScopedN("Add destination");
             // If the pawn doesn't have a destination, give it one
@@ -418,24 +420,20 @@ int main(int, char *[]) {
             int targetX = xDist(rng);
             int targetY = yDist(rng);
             Pawn::Destination_Event dest{{targetX, targetY}, {0, 0.25}};
-            // The state machine reacting isn't working, so just force it
-            // TODO: Fix this
-            //std::cout << "About to changeTo<Walking>() and react for " << std::string(e.path()) << std::endl;
-            fsmc.machine->changeTo<Pawn::Walking>();
-            // Ensure the changeTo is applied before reacting so the event dispatches to Walking
-            fsmc.machine->update();
-            //e.set<Pawn::Destination_Event>(dest);
-            //std::cout << "Calling machine->react(Destination_Event) for " << std::string(e.path()) << std::endl;
             fsmc.machine->react(Pawn::Destination_Event{{targetX, targetY}, {0, 0.25}});
-            //std::cout << "Called react; calling machine->update() to apply any pending transitions" << std::endl;
-            //fsmc.machine->update();
-            //std::cout << "Set destination for " << std::string(e.path()) << " to (" << targetX << ", " << targetY << ")" << std::endl;
-
         })
         .set_doc_brief("Set a random destination for pawns that don't have one");
     
+    ecs.system<Pawn::PawnFSMContainer>("System_ChangePawnToWoodcutter")
+        .term_at(0).inout()
+        .with<Pawn::Idle>()
+        .each([](flecs::entity, Pawn::PawnFSMContainer& fsmc){
+            ZoneScopedN("System_ChangePawnToWoodcutter");
+            fsmc.machine->changeTo<Pawn::PawnOccupationWoodcutter>();
+        });
+    
 
-    ecs.system<Pawn::PawnFSMContainer>("TestEvent")
+    ecs.system<Pawn::PawnFSMContainer>("Pawn_FakeAttack")
         .term_at(0).inout()
         .interval(30)
         .each([](flecs::entity e, Pawn::PawnFSMContainer& fsmc){

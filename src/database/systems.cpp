@@ -283,17 +283,17 @@ systems::systems(flecs::world& ecs) {
         })
         .set_doc_brief("System to create the position logger table on startup");
         
-    ecs.system<const Coordinates::Grid, const Coordinates::Cell, const Coordinates::CellVelocity, Database::Connection>("LogPawnStateUtility")
+    ecs.system<const Coordinates::Grid, const Coordinates::Cell, const Coordinates::CellVelocity, Database::Connection>("LogEntityMapPosition")
         .term_at(0).in()
         .term_at(1).in()
         .term_at(2).in()
         .tick_source(Ticks::tick_render)  //TODO: This should probably be a different tick
         .run([](flecs::iter& it) {
             while (it.next()) {
-                auto db_conn = it.field<Database::Connection>(1);
                 auto grids = it.field<const Coordinates::Grid>(0);
                 auto cells = it.field<const Coordinates::Cell>(1);
                 auto cell_velocities = it.field<const Coordinates::CellVelocity>(2);
+                auto db_conn = it.field<Database::Connection>(3);
 
 
                 // Use a single transaction for all the pawn inserts for efficiency
@@ -311,15 +311,19 @@ systems::systems(flecs::world& ecs) {
                     double cell_y = static_cast<double>(cells[i].y);
                     double vel_x = static_cast<double>(cell_velocities[i].x);
                     double vel_y = static_cast<double>(cell_velocities[i].y);
+                    int32_t grid_x = grids[i].x;
+                    int32_t grid_y = grids[i].y;
+                    systemsLogger->trace("Entity: {}, Grid: ({}, {}), Cell: ({}, {}), CellVelocity: ({}, {})", 
+                        entity_name, grid_x, grid_y, cell_x, cell_y, vel_x, vel_y);
 
                     *db_conn->sql << "INSERT INTO entity_map_position (time, entity_name, Cell_x, Cell_y, Grid_x, Grid_y, CellVelocity_x, CellVelocity_y) "
-                                    "VALUES (:time, :entity_name, :cell_x, :cell_y, :grid_x, :grid_y, :vel_x, :vel_y)",
+                                    "VALUES (:time, :entity_name, :cell_x, :cell_y, CAST(:grid_x AS INTEGER), CAST(:grid_y AS INTEGER), :vel_x, :vel_y)",
                                     soci::use(time, "time"),
                                     soci::use(entity_name, "entity_name"),
                                     soci::use(cell_x, "cell_x"),
                                     soci::use(cell_y, "cell_y"),
-                                    soci::use(grids[i].x, "grid_x"),
-                                    soci::use(grids[i].y, "grid_y"),
+                                    soci::use(grid_x, "grid_x"),
+                                    soci::use(grid_y, "grid_y"),
                                     soci::use(vel_x, "vel_x"),
                                     soci::use(vel_y, "vel_y");
                 }

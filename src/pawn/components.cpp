@@ -38,11 +38,13 @@ components::components(flecs::world& ecs) {
         .member<float>("comfort");
     ecs.component<PawnAbilityTraits>()
         .member<float>("strength")
-        .member<float>("speed");
+        .member<float>("speed")
+        .member<float>("woodcut_speed");
     ecs.component<Destination_Event>()
         .member<Coordinates::Grid>("target")
         .member<Coordinates::Cell>("local");
     ecs.component<IsAPawn>();
+    ecs.component<Target>();
     
     
     // Must register all the FSM states to allow them to be used from the flecs script (e.g. for the utility curve relationships)
