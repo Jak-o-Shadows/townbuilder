@@ -1,17 +1,33 @@
-<div>
-    <div>
-        <label for="level-select">Log Level:</label>
-        <select id="level-select">
-            <option value="">All</option>
-        </select>
-        <label for="logger-select">Logger:</label>
-        <select id="logger-select">
-            <option value="">All</option>
-        </select>
-        <button id="refresh-btn">Refresh</button>
-        <input type="checkbox" id="auto-refresh-checkbox">
-        <label for="auto-refresh-checkbox">Auto-refresh</label>
-    </div>
+<header>
+    Log Viewer
+</header>
 
-    <div class="log-container" id="log-container"></div>
-</div>
+<section>
+    <form id="log-filters"
+                method="get"
+                hx-get="{% url 'dashboard:log_entries' %}"
+                hx-target="#log-results"
+                hx-swap="innerHTML">
+        <label hx-get="{% url 'dashboard:log_levels' %}"
+               hx-trigger="load"
+               hx-target="#log-level-select"
+               hx-swap="innerHTML"
+               id="log-level-select">
+            <!-- Log levels will be loaded here -->
+        </label>
+        <label hx-get="{% url 'dashboard:log_loggers' %}"
+               hx-trigger="load"
+               hx-target="#log-logger-select"
+               hx-swap="innerHTML"
+               id="log-logger-select">
+            <!-- Log loggers will be loaded here -->
+        </label>
+        <button type="submit" class="outline">Apply</button>
+    </form>
+
+    <div id="log-results" hx-get="{% url 'dashboard:log_entries' %}" hx-swap="innerHTML">
+        <!-- Initial results loaded here by HTMX -->
+    </div>
+</section>
+
+<footer></footer>

@@ -11,6 +11,7 @@ import pandas as pd
 import altair as alt
 
 from . import plots
+from . import models
 
 from django.shortcuts import render
 from django.http import JsonResponse, HttpResponse
@@ -19,7 +20,9 @@ from django.core.cache import cache
 
 alt.data_transformers.enable("vegafusion")
 
-DEFAULT_FILEPATH_DB = "../build/Release/database_backup.sqlite3"
+DEFAULT_FILEPATH_DB =  "../build/Release/database_backup.sqlite3"
+DEFAULT_FILEPATH_LOG = "../build/Release/logs.log"
+
 
 def hx_or_full(template_name="dashboard/full.html"):
     """Decorator for view functions that return an HTML fragment.
@@ -196,7 +199,107 @@ def log_viewer(request):
     return render_to_string('dashboard/partial_logs.html')
 
 def log_entries(request):
-    return HttpResponse("Log entries stream endpoint - to be implemented")
+    # Read and parse the log file, support filtering and pagination.
+    log_file_path = DEFAULT_FILEPATH_LOG
+    log_pattern = re.compile(r'^\[(.*?)\]\s+\[(.*?)\]\s+\[(.*?)\]\s+\[(.*?)\]\s+(.*)$')
+
+    messages = []
+    try:
+        with open(log_file_path, 'r', encoding='utf-8', errors='replace') as f:
+            for line in f:
+                m = log_pattern.match(line.strip())
+                if not m:
+                    continue
+                timestamp, game_timestamp, level, logger, message = m.groups()
+                messages.append({
+                    'timestamp': timestamp,
+                    'game_timestamp': game_timestamp,
+                    'level': level,
+                    'logger': logger,
+                    'message': message
+                })
+    except FileNotFoundError:
+        return HttpResponse('<div class="error">Log file not found</div>', status=404)
+
+    # Apply filters
+    level = request.GET.get('level', '').strip()
+    logger = request.GET.get('logger', '').strip()
+    q = request.GET.get('q', '').strip()
+
+    if level:
+        messages = [m for m in messages if m['level'] == level]
+    if logger:
+        messages = [m for m in messages if logger in m['logger']]
+    if q:
+        qlower = q.lower()
+        messages = [m for m in messages if qlower in m['message'].lower() or qlower in m['logger'].lower()]
+
+    # Range-based pagination using integer start_message and end_message indexes.
+    # If end_message is omitted, we use a default count to form the range [start, start+count).
+    DEFAULT_COUNT = 100
+
+    total = len(messages)
+    # Parse start and end as integers if present; default start=0
+    start_param = request.GET.get('start_message', "0")
+    end_param = request.GET.get('end_message', str(DEFAULT_COUNT))
+
+    start = int(start_param)
+    end = int(end_param)
+
+    # Bound start/end
+    start = max(0, min(start, total))
+    end = max(start, min(end, total))
+
+    page_msgs = messages[start:end]
+    has_more = end < total
+
+    # build next_url preserving existing query params; advance start to `end` for the next chunk
+    from urllib.parse import urlencode
+    params = dict(request.GET.items())
+    params['start_message'] = str(end)
+    # keep count parameter explicit so next_url is stable
+    params['count'] = str(int(request.GET.get('count')) if request.GET.get('count') and request.GET.get('count').isdigit() else DEFAULT_COUNT)
+    next_url = request.path + '?' + urlencode(params)
+
+    # Return full table wrapper only when starting at 0; otherwise return rows-only for append
+    if start <= 0:
+        html = render_to_string('dashboard/partial_log_results.html', {
+            'logs': page_msgs,
+            'has_more': has_more,
+            'next_url': next_url,
+        })
+    else:
+        html = render_to_string('dashboard/partial_log_rows.html', {
+            'logs': page_msgs,
+            'has_more': has_more,
+            'next_url': next_url,
+        })
+
+    return HttpResponse(html)
+
+def log_levels(request):
+    levels = ["trace", "debug", "info", "warning", "error", "critical"]
+    html = render_to_string('dashboard/partial_log_levels.html', {'log_levels': levels})
+    return HttpResponse(html)
+
+def log_loggers(request):
+    log_file_path = DEFAULT_FILEPATH_LOG
+    log_pattern = re.compile(r'^\[(.*?)\]\s+\[(.*?)\]\s+\[(.*?)\]\s+\[(.*?)\]\s+(.*)$')
+    loggers = set()
+    try:
+        with open(log_file_path, 'r', encoding='utf-8', errors='replace') as f:
+            for line in f:
+                m = log_pattern.match(line.strip())
+                if not m:
+                    continue
+                _, _, _, logger, _ = m.groups()
+                loggers.add(logger)
+    except FileNotFoundError:
+        return HttpResponse('<select name="logger"><option value="">All</option></select>')
+
+    sorted_loggers = sorted(loggers)
+    html = render_to_string('dashboard/partial_log_loggers.html', {'loggers': sorted_loggers})
+    return HttpResponse(html)
 
 
 ########################### Log Viewer ###########################
@@ -205,6 +308,31 @@ def log_entries(request):
 
 
 
+
+
+
+########################## Setting what database to open ##########################
+
+def dataset(request):
+    """Set the dataset (database filepath and game id) in the user's session (POST from HTMX)
+    and return a small fragment that displays the currently-set dataset. HTMX will swap this
+    fragment into the page; after swap the client-side HTMX afterSwap handler will reload
+    the pawn select.
+    """
+    if request.method == 'POST':
+        new_filepath_db = request.POST.get('filepath_db', '').strip()
+        
+        if new_filepath_db:
+            # Load the game_id from the database
+            # TODO: Put this logic in properly
+            new_game_id = "placeholder"
+
+            settings, created = models.DatasetModel.objects.get_or_create()
+            settings.filepath_db = new_filepath_db
+            settings.game_id = new_game_id
+            settings.save()
+
+    # TODO: THIS ISN"T FINISHED. NOT SURE HOW TO WORK WITH HTMX AND DJANGO MODELS YET
 
 
 

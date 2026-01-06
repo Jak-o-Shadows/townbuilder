@@ -1,0 +1,7 @@
+Level:
+<select name="level">
+    <option value="">All</option>
+    {% for level in log_levels %}
+    <option class="level-{{ level }}">{{ level }}</option>
+    {% endfor %}
+</select>

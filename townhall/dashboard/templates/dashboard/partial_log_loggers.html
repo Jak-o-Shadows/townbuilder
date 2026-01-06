@@ -1,0 +1,7 @@
+Logger:
+<select name="logger">
+  <option value="">All</option>
+  {% for logger in loggers %}
+  <option value="{{ logger }}">{{ logger }}</option>
+  {% endfor %}
+</select>

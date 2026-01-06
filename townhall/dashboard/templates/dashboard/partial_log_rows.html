@@ -1,0 +1,17 @@
+{% for r in logs %}
+<tr>
+  <td>{{ r.timestamp }}</td>
+  <td class="level-{{ r.level }}">{{ r.level }}</td>
+  <td>{{ r.logger }}</td>
+  <td>{{ r.message }}</td>
+</tr>
+{% endfor %}
+
+{% if has_more %}
+<tr>
+  <td colspan="4">
+    <!-- Sentinel element: when revealed by scrolling, HTMX will fetch the next page and append rows -->
+    <div hx-trigger="revealed" hx-get="{{ next_url }}" hx-target="#log-rows" hx-swap="beforeend"></div>
+  </td>
+</tr>
+{% endif %}

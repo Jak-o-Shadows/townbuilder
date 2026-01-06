@@ -24,4 +24,6 @@ urlpatterns = [
 
     # The logger has a separate endpoint, so we can stream log entries
     path("log_entries/", views.log_entries, name="log_entries"),
+    path("log_levels/", views.log_levels, name="log_levels"),
+    path("log_loggers/", views.log_loggers, name="log_loggers"),
 ]
