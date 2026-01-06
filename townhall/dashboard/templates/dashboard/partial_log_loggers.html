@@ -1,7 +1,8 @@
 Logger:
-<select name="logger">
+<input list="log-loggers" name="logger" />
+<datalist id="log-loggers">
   <option value="">All</option>
   {% for logger in loggers %}
   <option value="{{ logger }}">{{ logger }}</option>
   {% endfor %}
-</select>
+</datalist>
