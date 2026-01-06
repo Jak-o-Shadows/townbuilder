@@ -9,3 +9,20 @@
 <script src="https://cdn.jsdelivr.net/npm/vega-embed@6"></script>
 <!-- Project Custom CSS -->
 <link rel="stylesheet" href="{% static 'dashboard/dashboard.css' %}">
+<!-- HTMX helper: immediately replace a target with a temporary inline spinner
+		 when the trigger has `data-immediate-target="<selector>"`. The real
+		 response will replace the target when the request completes. -->
+<script>
+document.addEventListener('htmx:beforeRequest', function(evt){
+	try{
+		var trigger = evt && evt.detail && evt.detail.elt;
+		if(!trigger) return;
+		var sel = trigger.getAttribute && trigger.getAttribute('spinner-before-load-target');
+		if(!sel) return;
+		document.querySelectorAll(sel).forEach(function(target){
+			// insert a small inline spinner that will be replaced by the server response
+			target.innerHTML = '<p>Loading...</p><div aria-busy="true" aria-live="polite"></div>';
+		});
+	}catch(e){ console.error(e); }
+});
+</script>

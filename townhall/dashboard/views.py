@@ -14,7 +14,7 @@ from . import plots
 from . import models
 
 from django.shortcuts import render
-from django.http import JsonResponse, HttpResponse
+from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.core.cache import cache
 
