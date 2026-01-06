@@ -200,6 +200,7 @@ systems::systems(flecs::world& ecs) {
                     .column("Working", soci::dt_integer)
                     .column("PawnOccupationUnemployed", soci::dt_integer)
                     .column("PawnOccupationWoodcutter", soci::dt_integer)
+                    .column("PawnWoodcutterStateWalkingTo", soci::dt_integer)
                     .column("PawnWoodcutterStateReturning", soci::dt_integer)
                     .column("PawnWoodcutterStateChopping", soci::dt_integer)
                     .column("Walking", soci::dt_integer)
@@ -230,20 +231,21 @@ systems::systems(flecs::world& ecs) {
                     std::string pawn_name = std::string(pawn.path());
 
                     // SOCI can't take the values directly inline, so must assign to variables first
-                    int alive =               static_cast<int>(fsmc->machine->isActive<Pawn::Alive>());
-                    int idle =                static_cast<int>(fsmc->machine->isActive<Pawn::Idle>());
-                    int working =             static_cast<int>(fsmc->machine->isActive<Pawn::Working>());
-                    int unemployed =          static_cast<int>(fsmc->machine->isActive<Pawn::PawnOccupationUnemployed>());
-                    int woodcutter =          static_cast<int>(fsmc->machine->isActive<Pawn::PawnOccupationWoodcutter>());
+                    int alive =                static_cast<int>(fsmc->machine->isActive<Pawn::Alive>());
+                    int idle =                 static_cast<int>(fsmc->machine->isActive<Pawn::Idle>());
+                    int working =              static_cast<int>(fsmc->machine->isActive<Pawn::Working>());
+                    int unemployed =           static_cast<int>(fsmc->machine->isActive<Pawn::PawnOccupationUnemployed>());
+                    int woodcutter =           static_cast<int>(fsmc->machine->isActive<Pawn::PawnOccupationWoodcutter>());
+                    int woodcutter_walkingto = static_cast<int>(fsmc->machine->isActive<Pawn::PawnWoodcutterStateWalkingTo>());
                     int woodcutter_returning = static_cast<int>(fsmc->machine->isActive<Pawn::PawnWoodcutterStateReturning>());
-                    int woodcutter_chopping = static_cast<int>(fsmc->machine->isActive<Pawn::PawnWoodcutterStateChopping>());
-                    int walking =             static_cast<int>(fsmc->machine->isActive<Pawn::Walking>());
-                    int fleeing =             static_cast<int>(fsmc->machine->isActive<Pawn::Fleeing>());
-                    int combat =              static_cast<int>(fsmc->machine->isActive<Pawn::Combat>());
-                    int dead =                static_cast<int>(fsmc->machine->isActive<Pawn::Dead>());
+                    int woodcutter_chopping =  static_cast<int>(fsmc->machine->isActive<Pawn::PawnWoodcutterStateChopping>());
+                    int walking =              static_cast<int>(fsmc->machine->isActive<Pawn::Walking>());
+                    int fleeing =              static_cast<int>(fsmc->machine->isActive<Pawn::Fleeing>());
+                    int combat =               static_cast<int>(fsmc->machine->isActive<Pawn::Combat>());
+                    int dead =                 static_cast<int>(fsmc->machine->isActive<Pawn::Dead>());
 
-                    *db_conn->sql << "INSERT INTO pawn_active_states (time, pawn_name, Alive, Idle, Working, PawnOccupationUnemployed, PawnOccupationWoodcutter, PawnWoodcutterStateReturning, PawnWoodcutterStateChopping, Walking, Fleeing, Combat, Dead) "
-                                    "VALUES (:time, :pawn, :alive, :idle, :working, :unemployed, :woodcutter, :woodcutter_returning, :woodcutter_chopping, :walking, :fleeing, :combat, :dead)",
+                    *db_conn->sql << "INSERT INTO pawn_active_states (time, pawn_name, Alive, Idle, Working, PawnOccupationUnemployed, PawnOccupationWoodcutter, PawnWoodcutterStateWalkingTo, PawnWoodcutterStateReturning, PawnWoodcutterStateChopping, Walking, Fleeing, Combat, Dead) "
+                                    "VALUES (:time, :pawn, :alive, :idle, :working, :unemployed, :woodcutter, :woodcutter_walkingto, :woodcutter_returning, :woodcutter_chopping, :walking, :fleeing, :combat, :dead)",
                                     soci::use(time, "time"),
                                     soci::use(pawn_name, "pawn"),
                                     soci::use(alive, "alive"),
@@ -251,6 +253,7 @@ systems::systems(flecs::world& ecs) {
                                     soci::use(working, "working"),
                                     soci::use(unemployed, "unemployed"),
                                     soci::use(woodcutter, "woodcutter"),
+                                    soci::use(woodcutter_walkingto, "woodcutter_walkingto"),
                                     soci::use(woodcutter_returning, "woodcutter_returning"),
                                     soci::use(woodcutter_chopping, "woodcutter_chopping"),
                                     soci::use(walking, "walking"),
