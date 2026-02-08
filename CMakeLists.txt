@@ -24,6 +24,7 @@ target_sources(${PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src/map/systems.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/msgLogging/components.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/msgLogging/systems.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/msgLogging/db_sink.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pathfinding/components.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pawn/components.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pawn/systems.cpp

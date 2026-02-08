@@ -2,13 +2,14 @@
 
 #include <flecs.h>
 #include <soci/soci.h>
+#include <soci/connection-pool.h>
 #include <memory>
 #include <string>
 
 namespace Database {
 
 struct Connection {
-    std::shared_ptr<soci::session> sql;
+    std::shared_ptr<soci::connection_pool> pool;
 };
 
 struct Snapshot {

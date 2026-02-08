@@ -15,6 +15,7 @@
 #include <cstdio> // For std::remove
 #include <future>
 #include <fstream>
+#include <soci/connection-pool.h>
 
 namespace Database {
 
@@ -66,7 +67,8 @@ std::shared_ptr<std::vector<unsigned char>> serialize_database(soci::session& so
 
 std::tuple<Snapshot> gather_database_snapshot(flecs::world&, const Connection& conn) {
     systemsLogger->debug("Creating database snapshot for async save.");
-    std::shared_ptr<std::vector<unsigned char>> buffer = serialize_database(*conn.sql);
+    soci::session sql(*conn.pool);
+    std::shared_ptr<std::vector<unsigned char>> buffer = serialize_database(sql);
     std::string dest_filename = "database_backup.sqlite3";
     return std::make_tuple(Snapshot({buffer, dest_filename}));
 }
@@ -90,26 +92,26 @@ systems::systems(flecs::world& ecs) {
     ecs.observer<Connection>("Observer_OpenDatabaseConnection")
         .event(flecs::OnSet)
         .each([](Connection& conn) {
-            systemsLogger->trace("Creating in-memory database connection");
+            systemsLogger->trace("Creating in-memory database connection pool");
             const char* db_connection_string = ":memory:";
+            const std::size_t pool_size = 8;
 
-            // Create and assign the new session
             try {
-                conn.sql = std::make_shared<soci::session>(soci::sqlite3, db_connection_string);
-                systemsLogger->info("In-memory database established.");
+                conn.pool = std::make_shared<soci::connection_pool>(pool_size);
+                for (std::size_t i = 0; i < pool_size; ++i) {
+                    soci::session& sql = conn.pool->at(i);
+                    sql.open(soci::sqlite3, db_connection_string);
+                    // Enable Write-Ahead Logging for each connection.
+                    sql << "PRAGMA journal_mode=WAL;";
+                }
+                systemsLogger->info("In-memory database connection pool established with {} connections.", pool_size);
 
-                // Enable Write-Ahead Logging.
-                *conn.sql << "PRAGMA journal_mode=WAL;";
-                systemsLogger->info("SQLite journal_mode set to WAL.");
             } catch (const std::exception& e) {
-                systemsLogger->error("Failed to open in-memory database connection: {}", e.what());
-                conn.sql = nullptr;
+                systemsLogger->error("Failed to open in-memory database connection pool: {}", e.what());
+                conn.pool = nullptr;
             }
         });
 
-    
-
-    
    // Use the `create_async_system` to periodically flush the database to disk via copying the in-memory SQLITE,
    //   then writing it to disk
    //   Note that a custom "tick source" is required because `create_async_system` doesn't support the `.interval`,
@@ -139,7 +141,8 @@ systems::systems(flecs::world& ecs) {
         .kind(flecs::OnStart)
         .each([](Database::Connection& conn) {
             try {
-                conn.sql->create_table("pawn_state_utility")
+                soci::session sql(*conn.pool);
+                sql.create_table("pawn_state_utility")
                     .column("time", soci::dt_double)
                     .column("pawn_name", soci::dt_string)
                     .column("state_name", soci::dt_string)
@@ -162,10 +165,8 @@ systems::systems(flecs::world& ecs) {
                 auto state_utils = it.field<const Statemachine::StateUtility>(0);
                 auto db_conn = it.field<Database::Connection>(1);
 
-                // Use a single transaction for all the pawn inserts for efficiency
-                //  Note that this system runs per StateUtility Second, so the system runs once per State, not
-                //  once
-                soci::transaction tr(*(db_conn->sql));
+                soci::session sql(*db_conn->pool);
+                soci::transaction tr(sql);
                 for (auto i : it) {
                     double time = it.world().get_info()->world_time_total;
                     flecs::entity pawn = it.entity(i);
@@ -176,7 +177,7 @@ systems::systems(flecs::world& ecs) {
 
                     double utility = static_cast<double>(state_utils[i].utility);
 
-                    *db_conn->sql << "INSERT INTO pawn_state_utility (time, pawn_name, state_name, utility) "
+                    sql << "INSERT INTO pawn_state_utility (time, pawn_name, state_name, utility) "
                                     "VALUES (:time, :pawn, :state, :util)",
                                     soci::use(time, "time"),
                                     soci::use(pawn_name, "pawn"),
@@ -192,7 +193,8 @@ systems::systems(flecs::world& ecs) {
         .kind(flecs::OnStart)
         .each([](Database::Connection& conn) {
             try {
-                conn.sql->create_table("pawn_active_states")
+                soci::session sql(*conn.pool);
+                sql.create_table("pawn_active_states")
                     .column("time", soci::dt_double)
                     .column("pawn_name", soci::dt_string)
                     .column("Alive", soci::dt_integer)
@@ -223,8 +225,9 @@ systems::systems(flecs::world& ecs) {
                 auto fsmc = it.field<Pawn::PawnFSMContainer>(0);
                 auto db_conn = it.field<Database::Connection>(1);
 
-                // Use a single transaction for all the pawn inserts for efficiency               
-                soci::transaction tr(*(db_conn->sql));
+    
+                soci::session sql(*db_conn->pool);
+                soci::transaction tr(sql);
                 double time = it.world().get_info()->world_time_total;
                 for (auto i : it) {
                     flecs::entity pawn = it.entity(i);
@@ -244,7 +247,7 @@ systems::systems(flecs::world& ecs) {
                     int combat =               static_cast<int>(fsmc->machine->isActive<Pawn::Combat>());
                     int dead =                 static_cast<int>(fsmc->machine->isActive<Pawn::Dead>());
 
-                    *db_conn->sql << "INSERT INTO pawn_active_states (time, pawn_name, Alive, Idle, Working, PawnOccupationUnemployed, PawnOccupationWoodcutter, PawnWoodcutterStateWalkingTo, PawnWoodcutterStateReturning, PawnWoodcutterStateChopping, Walking, Fleeing, Combat, Dead) "
+                    sql << "INSERT INTO pawn_active_states (time, pawn_name, Alive, Idle, Working, PawnOccupationUnemployed, PawnOccupationWoodcutter, PawnWoodcutterStateWalkingTo, PawnWoodcutterStateReturning, PawnWoodcutterStateChopping, Walking, Fleeing, Combat, Dead) "
                                     "VALUES (:time, :pawn, :alive, :idle, :working, :unemployed, :woodcutter, :woodcutter_walkingto, :woodcutter_returning, :woodcutter_chopping, :walking, :fleeing, :combat, :dead)",
                                     soci::use(time, "time"),
                                     soci::use(pawn_name, "pawn"),
@@ -270,7 +273,8 @@ systems::systems(flecs::world& ecs) {
         .kind(flecs::OnStart)
         .each([](Database::Connection& conn) {
             try {
-                conn.sql->create_table("entity_map_position")
+                soci::session sql(*conn.pool);
+                sql.create_table("entity_map_position")
                     .column("time", soci::dt_double)
                     .column("entity_name", soci::dt_string)
                     .column("Cell_x", soci::dt_double)
@@ -299,10 +303,8 @@ systems::systems(flecs::world& ecs) {
                 auto db_conn = it.field<Database::Connection>(3);
 
 
-                // Use a single transaction for all the pawn inserts for efficiency
-                //  Note that this system runs per StateUtility Second, so the system runs once per State, not
-                //  once
-                soci::transaction tr(*(db_conn->sql));
+                soci::session sql(*db_conn->pool);
+                soci::transaction tr(sql);
                 systemsLogger->trace("Logging Entity Position/Velocity/Attitude for {} entities", it.count());
                 for (auto i : it) {
                     double time = static_cast<double>(it.world().get_info()->world_time_total);
@@ -319,7 +321,7 @@ systems::systems(flecs::world& ecs) {
                     systemsLogger->trace("Entity: {}, Grid: ({}, {}), Cell: ({}, {}), CellVelocity: ({}, {})", 
                         entity_name, grid_x, grid_y, cell_x, cell_y, vel_x, vel_y);
 
-                    *db_conn->sql << "INSERT INTO entity_map_position (time, entity_name, Cell_x, Cell_y, Grid_x, Grid_y, CellVelocity_x, CellVelocity_y) "
+                    sql << "INSERT INTO entity_map_position (time, entity_name, Cell_x, Cell_y, Grid_x, Grid_y, CellVelocity_x, CellVelocity_y) "
                                     "VALUES (:time, :entity_name, :cell_x, :cell_y, CAST(:grid_x AS INTEGER), CAST(:grid_y AS INTEGER), :vel_x, :vel_y)",
                                     soci::use(time, "time"),
                                     soci::use(entity_name, "entity_name"),

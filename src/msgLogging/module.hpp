@@ -14,11 +14,14 @@
 
 #include <tracy/Tracy.hpp>
 
+#include <spdlog/formatter.h>
+
 namespace Logging {
 
 // Flecs Components
 struct LoggerSink{
     std::vector<std::shared_ptr<spdlog::sinks::sink>> sinks;
+    std::shared_ptr<spdlog::formatter> formatter;
 };
 
 struct LoggerControls {

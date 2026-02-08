@@ -156,9 +156,11 @@ int main(int, char *[]) {
     ecs.import<Statemachine::components>();
     ecs.import<UI::components>();
 
+    // Database systems next. This enables logging to the database
+    ecs.import<Database::systems>();
+
     // Systems next
     ecs.import<Coordinates::systems>();
-    ecs.import<Database::systems>();
     //ecs.import<fdis::systems>();
     ecs.import<Map::systems>();
     ecs.import<Pawn::systems>();
@@ -183,7 +185,7 @@ int main(int, char *[]) {
 
     // Add an empty Connection singleton for data logging. The observer will populate it.
     ecs.set<Database::Connection>({nullptr});
-
+    std::cout << "Datbase Connection Added" << std::endl;
 
 
     // Export positions to DIS - this is how playback/recording will work.

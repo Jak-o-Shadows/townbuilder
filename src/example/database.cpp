@@ -30,7 +30,8 @@ database::database(flecs::world& ecs) {
             ZoneScopedN("CreateTable_ExampleActiveStates");
             databaseLogger->trace("Creating table 'example_active_states'");
             try {
-                conn.sql->create_table("example_active_states")
+                soci::session sql(*conn.pool);
+                sql.create_table("example_active_states")
                     .column("time", soci::dt_double)
                     .column("entity_name", soci::dt_string)
                     .column("State1", soci::dt_integer)
@@ -53,20 +54,22 @@ database::database(flecs::world& ecs) {
                 auto fsmc = it.field<Example::FSMContainer>(0);
                 auto db_conn = it.field<Database::Connection>(1);
 
+                soci::session sql(*db_conn->pool);
+
                 // Use a single transaction for all the entity inserts for efficiency
-                soci::transaction tr(*(db_conn->sql));
+                soci::transaction tr(sql);
                 double time = static_cast<double>(it.world().get_info()->world_time_total);
                 for (auto i : it) {
                     flecs::entity e = it.entity(i);
                     std::string entity_name = std::string(e.path());
 
                     // SOCI can't take the values directly inline, so must assign to variables first
-                    int state1 = static_cast<int>(fsmc->machine->isActive<Example::State1>());
-                    int state2 = static_cast<int>(fsmc->machine->isActive<Example::State2>());
-                    int state3 = static_cast<int>(fsmc->machine->isActive<Example::State3>());
-                    int state4 = static_cast<int>(fsmc->machine->isActive<Example::State4>());
+                    int state1 = static_cast<int>(fsmc[i].machine->isActive<Example::State1>());
+                    int state2 = static_cast<int>(fsmc[i].machine->isActive<Example::State2>());
+                    int state3 = static_cast<int>(fsmc[i].machine->isActive<Example::State3>());
+                    int state4 = static_cast<int>(fsmc[i].machine->isActive<Example::State4>());
 
-                    *db_conn->sql << "INSERT INTO example_active_states (time, entity_name, State1, State2, State3, State4) "
+                    sql << "INSERT INTO example_active_states (time, entity_name, State1, State2, State3, State4) "
                                     "VALUES (:time, :entity_name, :state1, :state2, :state3, :state4)",
                                     soci::use(time, "time"),
                                     soci::use(entity_name, "entity_name"),

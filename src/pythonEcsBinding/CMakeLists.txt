@@ -16,6 +16,7 @@ target_sources(pythonEcsBinding PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../../src/map/components.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../../src/msgLogging/components.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../../src/msgLogging/systems.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../src/msgLogging/db_sink.cpp
 #    ${CMAKE_CURRENT_SOURCE_DIR}/../../src/pathfinding/components.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../../src/pawn/components.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../../src/pawn/systems.cpp
@@ -58,9 +59,10 @@ target_compile_definitions(pythonEcsBinding PRIVATE _USE_MATH_DEFINES)
 # project headers.
 target_include_directories(pythonEcsBinding PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../  # Access to all headers in src/
-    target_include_directories(${PROJECT_NAME} PRIVATE ${DIR_DEPS})
+    ${DIR_DEPS}
     ${flecs_INCLUDE_DIRS}
     ${flecs_INCLUDE_DIRS}/flecs # Add path for flecs.hpp
+    ${spdlog_INCLUDE_DIRS}
 )
 
 # Link against the flecs library, which is necessary for the reflection API.
@@ -86,9 +88,9 @@ target_link_libraries(pythonEcsBinding PRIVATE Eigen3::Eigen)
 find_package(rapidcsv REQUIRED CONFIG)
 target_link_libraries(pythonEcsBinding PRIVATE rapidcsv::rapidcsv)
 
-
-
-
+# SOCI
+find_package(soci REQUIRED)
+target_link_libraries(pythonEcsBinding PRIVATE soci::soci)
 
 find_package(cglm REQUIRED CONFIG)
 target_link_libraries(pythonEcsBinding PRIVATE cglm::cglm)
