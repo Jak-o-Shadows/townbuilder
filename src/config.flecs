@@ -51,7 +51,7 @@ SaveWorld {Disabled}
 
 */
 
-System_ChangePawnToWoodcutter{ Disabled }
+//System_ChangePawnToWoodcutter{ Disabled }
 Pawn_FakeAttack{ Disabled }
 
 
@@ -79,24 +79,24 @@ prefab Map.Tree_Prefab {
 
 // Pawns
 Pawn.pawnsParent {
-//    for x in 0 .. 10 {
-//        Pawn{x}: Pawn.Pawn_Prefab {
-//            Pawn.components.IsAPawn
-//            Coordinates.components.Grid: {x: x, y: 3}
-//            Coordinates.components.Cell: {x: 0, y: 0}
-//            Coordinates.components.CellVelocity: {x: 0, y: 0}
-//            Coordinates.components.GridBase
-//            Pawn.components.PawnAbilityTraits: {strength: 0, speed: 5.0}
-//            (Statemachine.components.CurveFile, Pawn.components.Alive): {filename: "../../state1.csv"}
-//        }
-    //}
+    for x in 0 .. 10 {
+        "Pawn_$x": Pawn.Pawn_Prefab {
+            Pawn.components.IsAPawn
+            Coordinates.components.Grid: {x: 5*x, y: 25-2*x}
+            Coordinates.components.Cell: {x: 0, y: 0}
+            Coordinates.components.CellVelocity: {x: 0, y: 0}
+            Coordinates.components.GridBase
+            Pawn.components.PawnAbilityTraits: {strength: 0, speed: 25.0, woodcut_speed: 15.0}
+            (Statemachine.components.CurveFile, Pawn.components.Alive): {filename: "../../state1.csv"}
+        }
+    }
     CustomPawn0: Pawn.Pawn_Prefab {
         Pawn.components.IsAPawn
-        Coordinates.components.Grid: {x: 13, y: 3}
+        Coordinates.components.Grid: {x: 13, y: 13}
         Coordinates.components.Cell: {x: 0, y: 0}
         Coordinates.components.CellVelocity: {x: 0, y: 0}
         Coordinates.components.GridBase
-        Pawn.components.PawnAbilityTraits: {strength: 0, speed: 10.0}
+        Pawn.components.PawnAbilityTraits: {strength: 0, speed: 50.0, woodcut_speed: 30.0}
         (Statemachine.components.CurveFile, Pawn.components.Alive): {filename: "../../state1.csv"}
     }
 

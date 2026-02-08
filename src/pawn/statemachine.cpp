@@ -72,28 +72,6 @@ void Walking::react(const Destination_Event& dest, EventControl& control) {
 void PawnOccupationWoodcutter::enter(Control& control) {
     // Call the base class enter
     BasePawnState<PawnOccupationWoodcutter>::enter(control);
-    fsmLogger->trace("Entered PawnOccupationWoodcutter: Selecting nearest tree to go towards");
-    
-    // Now find the narest tree, and set it as the destination
-    flecs::entity pawn = flecs::entity(control.context().ecs, control.context().id);
-    flecs::entity tree_prefab = control.context().ecs.lookup("::Map::Tree_Prefab");
-
-    if (!tree_prefab) {
-        fsmLogger->trace("Tree prefab not found - cannot tell pawn to go towards a tree");
-        return;
-    }
-    
-    flecs::entity nearest = Coordinates::find_nearest_by_grid(control.context().ecs, pawn, tree_prefab);
-    if (nearest){
-        fsmLogger->trace("Nearest {} to {} is {}",
-            std::string(tree_prefab.path()),
-            std::string(pawn.path()),
-            std::string(nearest.path()));
-        // Set the tree as the "target". This will then trigger the destination event
-        pawn.add<Target>(nearest);
-    } else {
-        fsmLogger->trace("Cannot find any trees");
-    }
 
 }
 
@@ -111,8 +89,32 @@ void PawnOccupationWoodcutter::react(const Destination_Event& dest, EventControl
 void PawnWoodcutterStateWalkingTo::react(const Arrived_Event& event, EventControl& control) {
     flecs::entity e = flecs::entity(control.context().ecs, control.context().id);
     fsmLogger->debug("PawnWoodcutterStateWalkingTo::react(Arrived_Event) called for entity {}", std::string(e.path()));
+
+    /*
+    // Must set velocity to zero, otherwise pawn will keep moving.
+    e.set<Coordinates::CellVelocity>({0, 0});  
+    // Also remove the future calculation, if it exists, otherwise celLVelocity will get set again
+    flecs::entity future = control.context().ecs.lookup("Pawn_CalculateNextVelocity_Future");
+    e.remove(future);
+    fsmLogger->trace("Zeroed velocity for pawn {}", std::string(e.path()));
+
+    // By definition, if we arrived we are athe right location. Set the location to exactly match the destination,
+    //  as otherwise we might have some floating point error that causes us to never actually arrive.
+    //  Get the location from the Destination_Event, which should still be present on the entity, and set the Cell to match it.
+    const Destination_Event* dest = e.try_get<Destination_Event>();
+    if(dest){
+        e.set<Coordinates::Cell>({dest->local.x, dest->local.y});
+        e.set<Coordinates::Grid>({dest->target.x, dest->target.y});
+        fsmLogger->trace("Set cell for pawn {} to ({}, {})", std::string(e.path()), dest->target.x, dest->target.y);
+    } else {
+        fsmLogger->warn("Pawn {} arrived at destination but no Destination_Event found!", std::string(e.path()));
+    }
+    */
+
     e.remove<Destination_Event>();
+
     control.changeTo<PawnWoodcutterStateChopping>();
+
 }
     
 

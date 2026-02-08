@@ -387,7 +387,7 @@ int main(int, char *[]) {
         .with<Coordinates::Grid>()
         .with<Coordinates::Cell>()
         .with<Pawn::Alive>()  // TODO: This type of check makes sense for specific states, not the root Alive
-        .interval(3)
+        .interval(10)
         .each([&ecs](flecs::entity pawn) {
             ZoneScopedN("Nearest_tree_printer");
             flecs::entity tree_prefab = ecs.lookup("::Map::Tree_Prefab");
@@ -429,8 +429,10 @@ int main(int, char *[]) {
     ecs.system<Pawn::PawnFSMContainer>("System_ChangePawnToWoodcutter")
         .term_at(0).inout()
         .with<Pawn::Idle>()
-        .each([](flecs::entity, Pawn::PawnFSMContainer& fsmc){
+        .each([](flecs::entity e, Pawn::PawnFSMContainer& fsmc){
             ZoneScopedN("System_ChangePawnToWoodcutter");
+            std::cout << std::format("Changing Idle Pawn {} to Woodcutter",
+                std::string(e.path())) << std::endl;
             fsmc.machine->changeTo<Pawn::PawnOccupationWoodcutter>();
         });
     

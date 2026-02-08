@@ -25,10 +25,13 @@ std::tuple<Coordinates::CellVelocity> calculate_next_velocity(
         // Calculate the velocity needed to go towards the destination
         float dx = static_cast<float>(dest.target.x - current.x) + (dest.local.x - local.x)/2.0f;
         float dy = static_cast<float>(dest.target.y - current.y) + (dest.local.y - local.y)/2.0f;
+                
         // Clamp as per speed
         //  Remember that this is per second, as in movement it is scaled by delta time
         dx = std::clamp(dx, -ability.speed, ability.speed);
         dy = std::clamp(dy, -ability.speed, ability.speed);
+
+
 
         // Add a dummy sleep in to pretend this system takes time to run, as if it were actually pathfinding
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -61,7 +64,7 @@ systems::systems(flecs::world& ecs){
     // TODO: Should I make a function for this in msgLogging/module.hpp?
     const auto& sinks = ecs.get<Logging::LoggerSink>().sinks;
     fsmLogger = std::make_shared<spdlog::logger>(std::string(m.path()) + ".fsm", sinks.begin(), sinks.end());
-    fsmLogger->set_level(spdlog::level::trace);
+    fsmLogger->set_level(spdlog::level::debug);
     spdlog::register_logger(fsmLogger);
 
 
@@ -157,7 +160,7 @@ systems::systems(flecs::world& ecs){
             const std::vector<float> testPoints = {timing.timeInState_s, timing.culmulativeTimeInState_s};
             util.utility = Statemachine::utility_calc(curve, testPoints);
             // The longer we've been alive, the less useful it is to stay alive
-            systemsLogger->trace("Pawn {} Alive utility: {}", std::string(e.path()), util.utility);
+            fsmLogger->trace("Pawn {} Alive utility: {}", std::string(e.path()), util.utility);
         });
 
     ecs.system<PawnFSMContainer>("System_PawnFSM_Update")
@@ -225,19 +228,15 @@ systems::systems(flecs::world& ecs){
             fsmc.machine->react(dest);
         });
 
-    ecs.observer<Target>("Observer_PawnTargetRemoved_Woodcutter")
-        .event(flecs::OnRemove)
-        .term_at(0).second(flecs::Wildcard)
-        .with<PawnWoodcutterStateChopping>()
-        .with<PawnFSMContainer>()
-        .each([&ecs](flecs::iter& it, size_t i, const Target&){
-            ZoneScopedN("Observer_PawnTargetRemoved_Woodcutter");
+    ecs.system<PawnFSMContainer>("System_PawnNoTarget_Woodcutter")
+        .term_at(0).inout()
+        .with<PawnWoodcutterStateWalkingTo>()
+        .without<Target>().second(flecs::Wildcard)
+        .tick_source(Ticks::tick_pawn_behaviour)
+        .each([&ecs](flecs::iter& it, size_t i, PawnFSMContainer& fsmc){
+            ZoneScopedN("System_PawnNoTarget_Woodcutter");
             flecs::entity pawn = it.entity(i);
             systemsLogger->debug("Seeking new tree to cut for Pawn {}", std::string(pawn.path()));
-
-            PawnFSMContainer& fsmc = pawn.get_mut<PawnFSMContainer>();
-            fsmc.machine->changeTo<PawnWoodcutterStateWalkingTo>();
-            fsmc.machine->update();
 
             // TODO: A LOT of redundant code with Woodcutter::enter. We also don't have the whole "return" part in
 
@@ -245,21 +244,36 @@ systems::systems(flecs::world& ecs){
             flecs::entity tree_prefab = ecs.lookup("::Map::Tree_Prefab");
 
             if (!tree_prefab) {
-                systemsLogger->trace("Tree prefab not found - cannot tell pawn to go towards a tree");
+                systemsLogger->warn("Tree prefab not found - cannot tell pawn to go towards a tree");
                 return;
             }
 
             flecs::entity nearest = Coordinates::find_nearest_by_grid(ecs, pawn, tree_prefab);
             if (nearest){
-                systemsLogger->trace("Nearest {} to {} is {}",
+                systemsLogger->debug("Nearest {} to {} is {}",
                     std::string(tree_prefab.path()),
                     std::string(pawn.path()),
                     std::string(nearest.path()));
                 // Set the tree as the "target". This will then trigger the destination event
                 pawn.add<Target>(nearest);
             } else {
-                systemsLogger->trace("Cannot find any trees");
+                systemsLogger->debug("Cannot find any trees");
             }
+        });
+
+    ecs.observer<Target>("Observer_PawnTargetRemoved_Woodcutter")
+        .event(flecs::OnRemove)
+        .term_at(0).second(flecs::Wildcard)
+        .with<PawnWoodcutterStateChopping>()
+        .with<PawnFSMContainer>()
+        .each([](flecs::iter& it, size_t i, const Target&){
+            ZoneScopedN("Observer_PawnTargetRemoved_Woodcutter");
+            flecs::entity pawn = it.entity(i);
+            systemsLogger->debug("Target removed for Pawn {}", std::string(pawn.path()));
+
+             PawnFSMContainer& fsmc = pawn.get_mut<PawnFSMContainer>();
+             fsmc.machine->changeTo<PawnWoodcutterStateWalkingTo>();
+            fsmc.machine->update();
         });
         
     
@@ -288,6 +302,16 @@ systems::systems(flecs::world& ecs){
                 if (tree_grid.x == grid.x && tree_grid.y == grid.y) {
                     Buildings::Resources& resources = tree.get_mut<Buildings::Resources>();
                     resources.wood -= damage;
+                    pawn.set<Coordinates::CellVelocity>({0, 0});  // Stop the pawn from moving while chopping
+                    systemsLogger->trace("Pawn {} is chopping tree {}, dealing {} damage. Remaining wood: {}",
+                        std::string(pawn.path()),
+                        std::string(tree.path()),
+                        damage,
+                        resources.wood);
+                } else {
+                    systemsLogger->trace("Pawn {} is not close enough to tree {} to chop it",
+                        std::string(pawn.path()),
+                        std::string(tree.path()));
                 }
             });
 
