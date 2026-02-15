@@ -65,10 +65,12 @@ prefab Buildings.Granary_Prefab: Buildings.Building_Prefab {
 // Add buildings
 Buildings.components.buildingsParent {
     Granary1: Buildings.Granary_Prefab {
-        Buildings.components.Location: {3, 8}
+        Coordinates.components.Grid: {3, 8}
+        Coordinates.components.Cell: {x: 0, y: 0}
     }
     Granary2: Buildings.Granary_Prefab {
-        Buildings.components.Location: {5, 10}
+        Coordinates.components.Grid: {5, 10}
+        Coordinates.components.Cell: {x: 0, y: 0}
     }
 }
 
@@ -79,26 +81,23 @@ prefab Map.Tree_Prefab {
 
 // Pawns
 Pawn.pawnsParent {
-    for x in 0 .. 10 {
+    for x in 0 .. 1 {
         "Pawn_$x": Pawn.Pawn_Prefab {
             Pawn.components.IsAPawn
             Coordinates.components.Grid: {x: 5*x, y: 25-2*x}
             Coordinates.components.Cell: {x: 0, y: 0}
             Coordinates.components.CellVelocity: {x: 0, y: 0}
             Coordinates.components.GridBase
-            Pawn.components.PawnAbilityTraits: {strength: 0, speed: 25.0, woodcut_speed: 15.0}
+            Pawn.components.PawnAbilityTraits: {strength: 0, speed: 300.0, woodcut_speed: 40.0}
             (Statemachine.components.CurveFile, Pawn.components.Alive): {filename: "../../state1.csv"}
+            Buildings.components.Resources: {0, 0, 0}
+            Buildings.components.ResourcesLimits: {wood: 50, stone: 50, fish: 50}
         }
     }
-    CustomPawn0: Pawn.Pawn_Prefab {
-        Pawn.components.IsAPawn
-        Coordinates.components.Grid: {x: 13, y: 13}
-        Coordinates.components.Cell: {x: 0, y: 0}
-        Coordinates.components.CellVelocity: {x: 0, y: 0}
-        Coordinates.components.GridBase
-        Pawn.components.PawnAbilityTraits: {strength: 0, speed: 50.0, woodcut_speed: 30.0}
-        (Statemachine.components.CurveFile, Pawn.components.Alive): {filename: "../../state1.csv"}
-    }
+   
+}
 
-    
+
+$ {
+    Buildings.components.Resources: {0, 0, 0}
 }

@@ -13,17 +13,17 @@ struct components {
 struct Building_Prefab {};
 struct Granary_Prefab {};
 
-struct Location {
-    int x;
-    int y;
-};
-
 struct Resources {
     float fish;
     float stone;
     float wood;
 };
 
+struct ResourcesLimits {
+    float fish;
+    float stone;
+    float wood;
+};
 
 struct BuildingUI {
     int sizeX;

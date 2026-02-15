@@ -7,7 +7,7 @@
 namespace Plugin {
 
 struct PluginGuid {
-    GUID id;
+    uint64_t id;
 };
 
 

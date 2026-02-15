@@ -44,6 +44,7 @@ systems::systems(flecs::world& ecs) {
     // Before using logger, must set the level so the observer can handle it
     m.set<Logging::LoggerControls>({spdlog::level::trace});
     systemsLogger->trace("Module Created");
+    /*
 
     // Load the DLL at runtime
     #ifdef _WIN32
@@ -119,6 +120,7 @@ systems::systems(flecs::world& ecs) {
             PluginResults results = plugin_get_results_ptr(g.id);
             systemsLogger->trace("PluginResults: {} {}", results.success, results.max_location1);
         });
+    */
 
 };
  

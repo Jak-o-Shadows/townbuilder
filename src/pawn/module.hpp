@@ -49,6 +49,7 @@ struct PawnAbilityTraits {
 
 
 
+
 struct PawnOccupying {};
 
 struct Likes { };
@@ -77,6 +78,7 @@ struct Destination_Event {
     Coordinates::Cell local;
 };
 struct Arrived_Event {};  // When you arrive at a location or cell
+struct DropResources_Event {};  // When we need to drop off resources
 struct SecondaryEvent { int payload; };
 struct Attacked {};
 
@@ -224,6 +226,7 @@ struct PawnOccupationUnemployed : BasePawnState<PawnOccupationUnemployed> {
 
 struct PawnOccupationWoodcutter : BasePawnState<PawnOccupationWoodcutter> {
     void react(const Destination_Event& dest, EventControl& control);
+    void react(const DropResources_Event& event, EventControl& control);
     using BasePawnState<PawnOccupationWoodcutter>::react;
     void enter(Control& control);
 };
@@ -234,6 +237,7 @@ struct PawnWoodcutterStateWalkingTo : BasePawnState<PawnWoodcutterStateWalkingTo
 };
 
 struct PawnWoodcutterStateReturning : BasePawnState<PawnWoodcutterStateReturning> {
+    void react(const Arrived_Event& event, EventControl& control);
     using BasePawnState<PawnWoodcutterStateReturning>::react;
 };
 

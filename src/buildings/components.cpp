@@ -24,14 +24,15 @@ components::components(flecs::world& ecs) {
     buildingsParent = ecs.entity("buildingsParent");
 
     // Register components with reflection data
-    ecs.component<Location>()
-        .member<int>("x")
-        .member<int>("y");
     ecs.component<Resources>()
         .member<float>("fish")
         .member<float>("stone")
         .member<float>("wood")
         .set_doc_brief("Having float values allows fractional resources, allowing incremetns per tick to be fractional amounts");
+    ecs.component<ResourcesLimits>()
+        .member<float>("fish")
+        .member<float>("stone")
+        .member<float>("wood");
     ecs.component<BuildingUI>()
         .member<int>("sizeX")
         .member<int>("sizeY")

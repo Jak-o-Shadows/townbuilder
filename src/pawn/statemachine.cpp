@@ -2,6 +2,9 @@
 
 #include "map/module.hpp"
 #include "coordinates/module.hpp"
+#include "buildings/module.hpp"
+
+#include <iostream>
 
 namespace Pawn{
 
@@ -63,8 +66,7 @@ void Walking::react(const Arrived_Event& event, EventControl& control){
 void Walking::react(const Destination_Event& dest, EventControl& control) {
     flecs::entity e = flecs::entity(control.context().ecs, control.context().id);
     fsmLogger->debug("Walking::react(Destination_Event) called for entity {} with destination ({}, {})", std::string(e.path()), dest.target.x, dest.target.y);
-    // The event itself is now the destination, which will be picked up by the
-    // OnEnterWalkingState_RequestPath observer.
+    // The event itself is now the destination, which will be picked up systems
     e.set<Destination_Event>(dest);
 }
 
@@ -83,38 +85,49 @@ void PawnOccupationWoodcutter::react(const Destination_Event& dest, EventControl
     e.set<Destination_Event>(dest);
 }
 
+void PawnOccupationWoodcutter::react(const DropResources_Event& event, EventControl& control) {
+    flecs::entity e = flecs::entity(control.context().ecs, control.context().id);
+    fsmLogger->debug("PawnOccupationWoodcutter::react(DropResources_Event) called for entity {}", std::string(e.path()));
+    e.remove<Target>(flecs::Wildcard);
+    flecs::entity dropoff_building = flecs::entity(control.context().ecs.lookup("::Buildings::components::buildingsParent::Granary1"));
+    fsmLogger->debug("Dropoff building entity: {}", std::string(dropoff_building.path()));
+    e.add<Target>(dropoff_building);
+    control.changeTo<PawnWoodcutterStateReturning>();
+}
 
+void PawnWoodcutterStateReturning::react(const Arrived_Event& event, EventControl& control) {
+    flecs::entity e = flecs::entity(control.context().ecs, control.context().id);
+    fsmLogger->debug("PawnWoodcutterStateReturning::react(Arrived_Event) called for entity {}", std::string(e.path()));
+
+    // Dump the resources into the dropoff
+    flecs::entity pawn = flecs::entity(control.context().ecs, control.context().id);
+    //flecs::entity dropoff = pawn.second<Target>();
+    // TODO: This properly
+    Buildings::Resources& global_resources = control.context().ecs.get_mut<Buildings::Resources>();
+    Buildings::Resources& pawn_resources = pawn.get_mut<Buildings::Resources>();
+    global_resources.fish += pawn_resources.fish;
+    global_resources.stone += pawn_resources.stone;
+    global_resources.wood += pawn_resources.wood;
+    pawn_resources.fish = 0;
+    pawn_resources.stone = 0;
+    pawn_resources.wood = 0;
+    fsmLogger->trace("Pawn {} has returned to dropoff with resources. Global resources are now: fish {}, stone {}, wood {}",
+        std::string(pawn.path()),
+        global_resources.fish,
+        global_resources.stone,
+        global_resources.wood);
+
+    e.remove<Destination_Event>();
+    e.remove<Target>(flecs::Wildcard);
+    control.changeTo<PawnWoodcutterStateWalkingTo>();
+}
 
 
 void PawnWoodcutterStateWalkingTo::react(const Arrived_Event& event, EventControl& control) {
     flecs::entity e = flecs::entity(control.context().ecs, control.context().id);
     fsmLogger->debug("PawnWoodcutterStateWalkingTo::react(Arrived_Event) called for entity {}", std::string(e.path()));
-
-    /*
-    // Must set velocity to zero, otherwise pawn will keep moving.
-    e.set<Coordinates::CellVelocity>({0, 0});  
-    // Also remove the future calculation, if it exists, otherwise celLVelocity will get set again
-    flecs::entity future = control.context().ecs.lookup("Pawn_CalculateNextVelocity_Future");
-    e.remove(future);
-    fsmLogger->trace("Zeroed velocity for pawn {}", std::string(e.path()));
-
-    // By definition, if we arrived we are athe right location. Set the location to exactly match the destination,
-    //  as otherwise we might have some floating point error that causes us to never actually arrive.
-    //  Get the location from the Destination_Event, which should still be present on the entity, and set the Cell to match it.
-    const Destination_Event* dest = e.try_get<Destination_Event>();
-    if(dest){
-        e.set<Coordinates::Cell>({dest->local.x, dest->local.y});
-        e.set<Coordinates::Grid>({dest->target.x, dest->target.y});
-        fsmLogger->trace("Set cell for pawn {} to ({}, {})", std::string(e.path()), dest->target.x, dest->target.y);
-    } else {
-        fsmLogger->warn("Pawn {} arrived at destination but no Destination_Event found!", std::string(e.path()));
-    }
-    */
-
     e.remove<Destination_Event>();
-
     control.changeTo<PawnWoodcutterStateChopping>();
-
 }
     
 

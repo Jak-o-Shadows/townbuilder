@@ -126,22 +126,7 @@ systems::systems(flecs::world& ecs){
 
 
 
-    // State actions
-    /*
-    auto blah_sys = ecs.system<>("ASDF")
-        .with<PawnWoodcutterState>(ecs.component<PawnWoodcutterStateIdle>())
-        .tick_source(tick_pawn_behaviour)
-        .multi_threaded()
-        .iter([](flecs::iter it){
-            ZoneScopedN("Pawn Woodctuter Idle State Actions");
-            for (int i: it){
-                flecs::entity e = it.entity(i);
-                // If they are idle, get them to find the nearest wood and path-find towards it
-                
-            }
-    });
-    */
-    
+    // State actions   
     ecs.system<Statemachine::StateUtility,
               const Statemachine::StateTiming,
               const Statemachine::Curve>("System_UtilityPawnAlive")
@@ -159,7 +144,6 @@ systems::systems(flecs::world& ecs){
             ZoneScopedN("System_UtilityPawnAlive");
             const std::vector<float> testPoints = {timing.timeInState_s, timing.culmulativeTimeInState_s};
             util.utility = Statemachine::utility_calc(curve, testPoints);
-            // The longer we've been alive, the less useful it is to stay alive
             fsmLogger->trace("Pawn {} Alive utility: {}", std::string(e.path()), util.utility);
         });
 
@@ -190,7 +174,7 @@ systems::systems(flecs::world& ecs){
         .term_at(1).in()
         .term_at(2).in()
         .without<Pawn::Idle>()  // Only check pawns that aren't idle (as idle pawns won't be moving)
-        .each([](flecs::entity e,
+        .each([&ecs](flecs::entity e,
             const Coordinates::Grid& grid,
             const Coordinates::Cell& local,
             const Destination_Event& dest,
@@ -201,6 +185,21 @@ systems::systems(flecs::world& ecs){
             if (grid.x == dest.target.x && grid.y == dest.target.y &&
                 std::abs(local.x - dest.local.x) < epsilon && std::abs(local.y - dest.local.y) < epsilon) {
                 systemsLogger->debug("Pawn {} has arrived at its destination", std::string(e.path()));
+
+                // Must set velocity to zero, otherwise pawn will keep moving.
+                e.set<Coordinates::CellVelocity>({0, 0});  
+                // Also remove the future calculation, if it exists, otherwise celLVelocity will get set again
+                flecs::entity future = ecs.lookup("Pawn_CalculateNextVelocity_Future");
+                e.remove(future);
+                systemsLogger->trace("Zeroed velocity for pawn {}", std::string(e.path()));
+
+                // By definition, if we arrived we are athe right location. Set the location to exactly match the destination,
+                //  as otherwise we might have some floating point error that causes us to never actually arrive.
+                //  Get the location from the Destination_Event, which should still be present on the entity, and set the Cell to match it.
+                e.set<Coordinates::Cell>({dest.local.x, dest.local.y});
+                e.set<Coordinates::Grid>({dest.target.x, dest.target.y});
+                systemsLogger->trace("Set cell for pawn {} to ({}, {})", std::string(e.path()), dest.target.x, dest.target.y);
+
                 // Notify the FSM that we've arrived
                 fsmc.machine->react(Arrived_Event{});
             }
@@ -217,11 +216,11 @@ systems::systems(flecs::world& ecs){
             ZoneScopedN("Observer_PawnTarget_Woodcutter");
             flecs::entity pawn = it.entity(i);
             systemsLogger->debug("Setting walking destination for Pawn {}", std::string(pawn.path()));
-            flecs::entity tree = pawn.target<Target>();
-            // Tell the pawn to walk to the tree
+            flecs::entity target = pawn.target<Target>();
+            // Tell the pawn to walk to the target
             PawnFSMContainer& fsmc = pawn.get_mut<PawnFSMContainer>();
             systemsLogger->trace("Sending Destination_Event to FSM on {}", std::string(pawn.path()));
-            Destination_Event dest{tree.get<Coordinates::Grid>(), tree.get<Coordinates::Cell>()};
+            Destination_Event dest{target.get<Coordinates::Grid>(), target.get<Coordinates::Cell>()};
             systemsLogger->trace("Destination is: ({}, {}), ({}, {})",
                 dest.target.x, dest.target.y,
                 dest.local.x, dest.local.y);
@@ -271,21 +270,33 @@ systems::systems(flecs::world& ecs){
             flecs::entity pawn = it.entity(i);
             systemsLogger->debug("Target removed for Pawn {}", std::string(pawn.path()));
 
-             PawnFSMContainer& fsmc = pawn.get_mut<PawnFSMContainer>();
-             fsmc.machine->changeTo<PawnWoodcutterStateWalkingTo>();
-            fsmc.machine->update();
+            //PawnFSMContainer& fsmc = pawn.get_mut<PawnFSMContainer>();
+            //fsmc.machine->changeTo<PawnWoodcutterStateWalkingTo>();
+            //fsmc.machine->update();
         });
         
     
-    ecs.system<const PawnAbilityTraits, const Coordinates::Grid>("System_PawnWoodcut")
+    ecs.system<const PawnAbilityTraits,
+              const Coordinates::Grid,
+              const Buildings::ResourcesLimits,
+              Buildings::Resources,
+              PawnFSMContainer
+              >("System_PawnWoodcut")
         .term_at(0).in()
         .term_at(1).in()
+        .term_at(2).in()
+        .term_at(3).inout()
+        .term_at(4).inout()
         .with<Target>().second(flecs::Wildcard)
         .with<PawnWoodcutterStateChopping>()
         .tick_source(Ticks::tick_pawn_behaviour)
         .each([](flecs::iter& it, size_t i,
             const PawnAbilityTraits& ability,
-            const Coordinates::Grid& grid){
+            const Coordinates::Grid& grid,
+            const Buildings::ResourcesLimits& limits,
+            Buildings::Resources& resources,
+            PawnFSMContainer& fsmc
+        ){
                 ZoneScopedN("System_PawnWoodcut");
                 flecs::entity pawn = it.entity(0);
 
@@ -297,11 +308,18 @@ systems::systems(flecs::world& ecs){
                 }
 
                 float damage = ability.woodcut_speed * it.delta_system_time();
+                float remaining_space = limits.wood - resources.wood;
+                if (remaining_space < 0){
+                    remaining_space = 0;
+                }
+                damage = std::min(damage, remaining_space);
 
                 const Coordinates::Grid& tree_grid = tree.get<Coordinates::Grid>();
                 if (tree_grid.x == grid.x && tree_grid.y == grid.y) {
-                    Buildings::Resources& resources = tree.get_mut<Buildings::Resources>();
-                    resources.wood -= damage;
+                    Buildings::Resources& target_resources = tree.get_mut<Buildings::Resources>();
+                    target_resources.wood -= damage;
+                    resources.wood += damage;
+
                     pawn.set<Coordinates::CellVelocity>({0, 0});  // Stop the pawn from moving while chopping
                     systemsLogger->trace("Pawn {} is chopping tree {}, dealing {} damage. Remaining wood: {}",
                         std::string(pawn.path()),
@@ -312,6 +330,11 @@ systems::systems(flecs::world& ecs){
                     systemsLogger->trace("Pawn {} is not close enough to tree {} to chop it",
                         std::string(pawn.path()),
                         std::string(tree.path()));
+                }
+
+                if (resources.wood >= limits.wood) {
+                    systemsLogger->debug("Pawn {} has filled up on wood", std::string(pawn.path()));
+                    fsmc.machine->react(DropResources_Event{});
                 }
             });
 

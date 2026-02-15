@@ -12,6 +12,7 @@ import altair as alt
 
 from . import plots
 from . import models
+from . import matplotlib_plots
 
 from django.shortcuts import render
 from django.http import HttpResponse
@@ -52,6 +53,17 @@ def index(request):
     return render(request, "dashboard/full.html")
 
 ######################## Plots #######################
+
+@hx_or_full()
+def plot_matplotlib_example(request):
+    """Return an HTML fragment containing the matplotlib plot."""
+    chart_html = matplotlib_plots.example_plot()
+    html = render_to_string('dashboard/partial_single_matplotlib_plot.html', {'chart_html': chart_html,
+                                                                          'content_header': "Matplotlib Example Plot",
+                                                                          'content_paragraphs': ["This is an example of a matplotlib plot rendered with mpld3."]
+                                                                          })
+    return html
+
 
 @hx_or_full()
 def plot_pawn_utility(request):

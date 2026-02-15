@@ -254,7 +254,6 @@ int main(int, char *[]) {
                     .is_a<Map::Tree_Prefab>()
                     .set<Coordinates::Grid>({x, y})
                     .set<Coordinates::Cell>({0, 0})
-                    .set<Buildings::Location>({x, y})
                     .set<Buildings::Resources>({0, 0, 100});
             }
         }

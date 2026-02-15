@@ -24,7 +24,7 @@
  */
 using AllComponents = std::tuple<
     Plugin::PluginGuid
-    //Buildings::Location, Buildings::Resources, Buildings::BuildingUI,
+    //Buildings::Resources, Buildings::BuildingUI,
     //Coordinates::Grid, Coordinates::Cell, Coordinates::CellVelocity, Coordinates::GridBase, Coordinates::NedBase, Coordinates::LlaBase, Coordinates::EcefBase, Coordinates::NED, Coordinates::LLA, Coordinates::ECEF,
     //fdis::
     //Logging::LoggerControls,
