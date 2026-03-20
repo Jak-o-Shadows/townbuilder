@@ -10,3 +10,7 @@ os=Windows
 
 [conf]
 tools.cmake.cmaketoolchain:generator=Ninja
+
+[env]
+CC=clang
+CXX=clang++
