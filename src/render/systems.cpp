@@ -299,25 +299,6 @@ systems::systems(flecs::world& ecs) {
     
 
 
-    // Update render position based on the location
-    // TODO: Not sure why this can't be an observer for OnSet
-    //ecs.observer<
-    ecs.system<
-        const Buildings::Location,
-        flecs::components::transform::Position3>("UpdateRenderPosition")
-        .term_at(0).in()
-        .term_at(1).out()
-        //.event(flecs::OnSet)
-        .each([](flecs::entity, const Buildings::Location& loc,flecs::components::transform::Position3& pos){
-            ZoneScopedN("UpdateRenderPosition");
-            float scale = 20;
-            pos.x = scale * (static_cast<float>(loc.x)-0.5);
-            pos.y = scale * (static_cast<float>(loc.y)-0.5);
-            pos.z = 0;
-        });
-
-
-
 
    
     ecs.observer("Observer_PawnCreate")
@@ -338,12 +319,12 @@ systems::systems(flecs::world& ecs) {
     auto updatePawnRenderLocation_sys = ecs.system<
         Coordinates::Grid,
         Coordinates::Cell,
-        flecs::components::transform::Position3>("Update Pawn Render Location")
+        flecs::components::transform::Position3>("Update Render Location")
     .term_at(0).in()
     .term_at(1).in()
     .term_at(2).out()
     .tick_source(Ticks::tick_render)
-    .each([](flecs::entity pawn, const Coordinates::Grid& grid, const Coordinates::Cell& cell, flecs::components::transform::Position3& renderPos){
+    .each([](flecs::entity, const Coordinates::Grid& grid, const Coordinates::Cell& cell, flecs::components::transform::Position3& renderPos){
         float scale = 20;
         renderPos.x = scale*(grid.x -0.5 + cell.x/2);  // -0.5 because centre of the cell
         renderPos.y = scale*(grid.y -0.5 + cell.y/2);
