@@ -20,10 +20,12 @@
                         <td>
                             {% if not file.is_active %}
                                 <button hx-post="{% url 'dashboard:set_active' file.id %}"
+                                        hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
                                         hx-target="#open-files-list"
                                         hx-swap="innerHTML">Set Active</button>
                             {% endif %}
                             <button hx-post="{% url 'dashboard:close_file' file.id %}"
+                                    hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
                                     hx-target="#open-files-list"
                                     hx-swap="innerHTML">Close</button>
                         </td>
@@ -36,6 +38,7 @@
     {% endif %}
 
     <form hx-post="{% url 'dashboard:open_files' %}" hx-target="#open-files-list" hx-swap="innerHTML" enctype="multipart/form-data">
+        {% csrf_token %}
         <label for="file-input">Select Database Files:</label>
         <input type="file" id="file-input" name="files" multiple accept=".db,.sqlite,.sqlite3">
         <button type="submit">Add Files</button>

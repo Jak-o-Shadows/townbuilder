@@ -19,10 +19,11 @@ from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.core.cache import cache
 from django.conf import settings
+from django.middleware.csrf import get_token
 
 alt.data_transformers.enable("vegafusion")
 
-DEFAULT_FILEPATH_DB =  "../build/Release/database_backup.sqlite3"
+DEFAULT_FILEPATH_DB =  "../build/Release/asdfdatabase_backup.sqlite3"
 DEFAULT_FILEPATH_LOG = "../build/Release/logs.log"
 
 
@@ -217,6 +218,13 @@ def plot_pawn_state(request):
 
     return html
 
+
+
+
+
+
+########################### Log Viewer ###########################
+
 @hx_or_full()
 def log_viewer(request):
     # TODO: Finish log viewer, following the example in the hypermedia.systems book
@@ -353,7 +361,7 @@ def open_database_files(request):
                 first.is_active = True
                 first.save()
     open_files = models.InputDatabaseFile.objects.filter(is_open=True)
-    html = render_to_string('dashboard/partial_open_files.html', {'open_files': open_files})
+    html = render_to_string('dashboard/partial_open_files.html', {'open_files': open_files, 'csrf_token': get_token(request)})
     return html
 
 
@@ -365,7 +373,9 @@ def set_active_file(request, file_id):
         file_obj.save()
     except models.InputDatabaseFile.DoesNotExist:
         pass
-    return HttpResponse('')
+    open_files = models.InputDatabaseFile.objects.filter(is_open=True)
+    html = render_to_string('dashboard/partial_open_files.html', {'open_files': open_files, 'csrf_token': get_token(request)})
+    return HttpResponse(html)
 
 
 def close_file(request, file_id):
@@ -376,173 +386,11 @@ def close_file(request, file_id):
         file_obj.is_active = False
         file_obj.save()
         # If temporary (uploaded), delete the file
-        if file_obj.is_temporary and os.path.exists(file_obj.path):
+        if file_obj.is_temporary:
             os.remove(file_obj.path)
     except models.InputDatabaseFile.DoesNotExist:
         pass
-    return HttpResponse('')
+    open_files = models.InputDatabaseFile.objects.filter(is_open=True)
+    html = render_to_string('dashboard/partial_open_files.html', {'open_files': open_files, 'csrf_token': get_token(request)})
+    return HttpResponse(html)
 
-
-########################### Log Viewer ###########################
-
-
-
-
-
-
-
-
-########################## Setting what database to open ##########################
-
-def dataset(request):
-    """Set the dataset (database filepath and game id) in the user's session (POST from HTMX)
-    and return a small fragment that displays the currently-set dataset. HTMX will swap this
-    fragment into the page; after swap the client-side HTMX afterSwap handler will reload
-    the pawn select.
-    """
-    if request.method == 'POST':
-        new_filepath_db = request.POST.get('filepath_db', '').strip()
-        
-        if new_filepath_db:
-            # Load the game_id from the database
-            # TODO: Put this logic in properly
-            new_game_id = "placeholder"
-
-            settings, created = models.DatasetModel.objects.get_or_create()
-            settings.filepath_db = new_filepath_db
-            settings.game_id = new_game_id
-            settings.save()
-
-    # TODO: THIS ISN"T FINISHED. NOT SURE HOW TO WORK WITH HTMX AND DJANGO MODELS YET
-
-
-
-
-
-
-# @hx_or_full()
-# def plot_grid_heatmap(request):
-#     """Return an HTML fragment containing the Vega chart for the grid heatmap plot."""
-#     # filepath: preference order -> GET param, session value, default constant
-#     filepath_db = request.GET.get("filepath_db") or request.session.get('db_path') or DEFAULT_FILEPATH_DB
-
-#     con = None
-#     chart = alt.Chart().mark_text(text="Could not generate plot 'grid_heatmap'").properties(title="Error")
-#     try:
-#         con = sqlite3.connect(filepath_db)
-#         query = "SELECT time, Grid_x, Grid_y FROM pawn_positions"
-#         df = pd.read_sql_query(query, con)
-#         df['time'] = pd.to_numeric(df['time'], errors='coerce')
-#         df = df.dropna(subset=['time'])
-#         chart = plots.grid_heatmap(df)
-
-#     except Exception as e:
-#         # Log the error
-#         pass
-#     finally:
-#         if con:
-#             con.close()
-
-#     spec = chart.to_dict(format="vega")
-#     html = render_to_string('dashboard/_chart.html', {'spec_json': json.dumps(spec)})
-        
-#     return html
-
-
-
-
-# def pawn_select_partial(request):
-#     """Return a server-rendered select element (partial) with pawn names.
-#     Intended to be loaded by HTMX on page load so the UI is server-driven.
-#     """
-#     # filepath: preference order -> GET param, session value, default constant
-#     filepath_db = request.GET.get("filepath_db") or request.session.get('db_path') or DEFAULT_FILEPATH_DB
-#     pawns = []
-#     con = None
-#     try:
-#         con = sqlite3.connect(filepath_db)
-#         cur = con.cursor()
-#         cur.execute("SELECT DISTINCT pawn_name FROM pawn_state_utility")
-#         rows = cur.fetchall()
-#         pawns = [r[0] for r in rows]
-#     except Exception as e:
-#         # return a small error fragment so HTMX injects visible feedback
-#         return HttpResponse(f"<div class='error'>Failed to load pawn list: {e}</div>")
-#     finally:
-#         try:
-#             if con:
-#                 con.close()
-#         except Exception:
-#             pass
-#     selected = request.GET.get('pawn_name', pawns[0] if pawns else '')
-#     return render(request, 'dashboard/_pawn_select.html', {'pawns': pawns, 'selected': selected})
-
-
-# def set_db_path(request):
-#     """Set the database filepath in the user's session (POST from HTMX) and return a small fragment
-#     that displays the currently-set path. HTMX will swap this fragment into the page; after swap
-#     the client-side HTMX afterSwap handler will reload the pawn select.
-#     """
-#     if request.method == 'POST':
-#         new_path = request.POST.get('db_path', '').strip()
-#         if new_path:
-#             request.session['db_path'] = new_path
-#             request.session.modified = True
-#             # return a small fragment showing the chosen path
-#             return HttpResponse(f"<div id=\"db-path-container\">Database file: <strong>{new_path}</strong></div>")
-#     # fallback: show current path
-#     current = request.session.get('db_path', DEFAULT_FILEPATH_DB)
-#     return HttpResponse(f"<div id=\"db-path-container\">Database file: <strong>{current}</strong></div>")
-
-
-# def log_viewer(request):
-#     return render(request, 'dashboard/log_viewer.html')
-
-
-# def get_log_data(request):
-#     log_file_path = "z:/Hayden/programming/projects/townbuilder/build/Release/logs.log"
-#     log_pattern = re.compile(r'^\[(.*?)\]\s+\[(.*?)\]\s+\[(.*?)\]\s+\[(.*?)\]\s+(.*)$')
-
-#     log_messages = []
-#     log_levels = set()
-#     logger_names = set()
-
-#     try:
-#         with open(log_file_path, 'r') as f:
-#             for line in f:
-#                 match = log_pattern.match(line)
-#                 if match:
-#                     timestamp, thread_id, level, logger, message = match.groups()
-#                     log_levels.add(level)
-#                     logger_names.add(logger)
-#                     log_messages.append({
-#                         'timestamp': timestamp,
-#                         'thread_id': thread_id,
-#                         'level': level,
-#                         'logger': logger,
-#                         'message': message
-#                     })
-#     except FileNotFoundError:
-#         return JsonResponse({'error': 'Log file not found'}, status=404)
-    
-#     logs = pd.DataFrame(log_messages)
-
-#     level_filter = request.GET.get('level')
-#     logger_filter = request.GET.get('logger')
-
-#     if level_filter:
-#         logs = logs[logs['level'] == level_filter]
-#     if logger_filter:
-#         logs = logs[logs['logger'] == logger_filter]
-
-#     return JsonResponse({
-#         'logs': logs.to_dict(orient='records'),
-#         'levels': sorted(log_levels),
-#         'loggers': sorted(logger_names)
-#     })
-
-
-# def counter_partial(request):
-#     # Simple server-rendered partial used by HTMX examples. The partial contains Alpine attributes
-#     # so it becomes interactive once inserted into the DOM (Alpine must be loaded on the page).
-#     return render(request, 'dashboard/_counter.html')
