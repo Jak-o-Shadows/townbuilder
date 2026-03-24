@@ -26,4 +26,9 @@ urlpatterns = [
     path("log_entries/", views.log_entries, name="log_entries"),
     path("log_levels/", views.log_levels, name="log_levels"),
     path("log_loggers/", views.log_loggers, name="log_loggers"),
+
+    # Database file management
+    path("open_files/", views.open_database_files, name="open_files"),
+    path("set_active/<int:file_id>/", views.set_active_file, name="set_active"),
+    path("close_file/<int:file_id>/", views.close_file, name="close_file"),
 ]

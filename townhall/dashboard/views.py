@@ -18,11 +18,23 @@ from django.shortcuts import render
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.core.cache import cache
+from django.conf import settings
 
 alt.data_transformers.enable("vegafusion")
 
 DEFAULT_FILEPATH_DB =  "../build/Release/database_backup.sqlite3"
 DEFAULT_FILEPATH_LOG = "../build/Release/logs.log"
+
+
+def get_active_filepath():
+    """Get the path of the active open database file, or fallback to default."""
+    try:
+        active_file = models.InputDatabaseFile.objects.get(is_active=True, is_open=True)
+        if active_file.exists:
+            return active_file.path
+    except models.InputDatabaseFile.DoesNotExist:
+        pass
+    return DEFAULT_FILEPATH_DB
 
 
 def hx_or_full(template_name="dashboard/full.html"):
@@ -68,8 +80,8 @@ def plot_matplotlib_example(request):
 @hx_or_full()
 def plot_pawn_utility(request):
     """Return an HTML fragment containing the Vega chart for the utility plot."""
-    # filepath: preference order -> GET param, session value, default constant
-    filepath_db = request.GET.get("filepath_db") or request.session.get('db_path') or DEFAULT_FILEPATH_DB
+    # filepath: use active open file or default
+    filepath_db = get_active_filepath()
 
     con = None
     chart = alt.Chart().mark_text(text="Could not generate plot 'utility'").properties(title="Error")
@@ -104,8 +116,8 @@ def plot_pawn_utility(request):
 @hx_or_full()
 def plot_entity_positions(request):
     """Return an HTML fragment containing the Vega chart for the entity positions plot."""
-    # filepath: preference order -> GET param, session value, default constant
-    filepath_db = request.GET.get("filepath_db") or request.session.get('db_path') or DEFAULT_FILEPATH_DB
+    # filepath: use active open file or default
+    filepath_db = get_active_filepath()
 
     con = None
     chart = alt.Chart().mark_text(text="Could not generate plot 'entity_positions'").properties(title="Error")
@@ -135,7 +147,7 @@ def plot_entity_positions(request):
 @hx_or_full()
 def plot_example_state(request):
     """Return a HTML fragment containing the Vega chart for the example state plot."""
-    filepath_db = request.GET.get("filepath_db") or request.session.get('db_path') or DEFAULT_FILEPATH_DB
+    filepath_db = get_active_filepath()
     
     con = None
     chart = alt.Chart().mark_text(text="Could not generate plot 'entity_positions'").properties(title="Error")
@@ -171,7 +183,7 @@ def plot_example_state(request):
 @hx_or_full()
 def plot_pawn_state(request):
     """Return a HTML fragment containing the Vega chart for the pawn state plot."""
-    filepath_db = request.GET.get("filepath_db") or request.session.get('db_path') or DEFAULT_FILEPATH_DB
+    filepath_db = get_active_filepath()
     
     con = None
     chart = alt.Chart().mark_text(text="Could not generate plot 'pawn_state'").properties(title="Error")
@@ -311,6 +323,64 @@ def log_loggers(request):
     sorted_loggers = sorted(loggers)
     html = render_to_string('dashboard/partial_log_loggers.html', {'loggers': sorted_loggers})
     return HttpResponse(html)
+
+
+########################### Database File Management ###########################
+
+@hx_or_full()
+def open_database_files(request):
+    """Handle opening multiple database files."""
+    if request.method == 'POST':
+        uploaded_files = request.FILES.getlist('files')
+        temp_dir = os.path.join(settings.BASE_DIR, 'temp_dbs')
+        os.makedirs(temp_dir, exist_ok=True)
+        for uploaded_file in uploaded_files:
+            temp_path = os.path.join(temp_dir, uploaded_file.name)
+            with open(temp_path, 'wb') as f:
+                for chunk in uploaded_file.chunks():
+                    f.write(chunk)
+            obj, created = models.InputDatabaseFile.objects.get_or_create(
+                path=temp_path,
+                defaults={'is_open': True, 'is_temporary': True, 'label': uploaded_file.name}
+            )
+            if not created:
+                obj.is_open = True
+                obj.save()
+        # Set first as active if none active
+        if not models.InputDatabaseFile.objects.filter(is_active=True).exists():
+            first = models.InputDatabaseFile.objects.filter(is_open=True).first()
+            if first:
+                first.is_active = True
+                first.save()
+    open_files = models.InputDatabaseFile.objects.filter(is_open=True)
+    html = render_to_string('dashboard/partial_open_files.html', {'open_files': open_files})
+    return html
+
+
+def set_active_file(request, file_id):
+    """Set a file as the active one for plotting."""
+    try:
+        file_obj = models.InputDatabaseFile.objects.get(id=file_id, is_open=True)
+        file_obj.is_active = True
+        file_obj.save()
+    except models.InputDatabaseFile.DoesNotExist:
+        pass
+    return HttpResponse('')
+
+
+def close_file(request, file_id):
+    """Close a database file."""
+    try:
+        file_obj = models.InputDatabaseFile.objects.get(id=file_id)
+        file_obj.is_open = False
+        file_obj.is_active = False
+        file_obj.save()
+        # If temporary (uploaded), delete the file
+        if file_obj.is_temporary and os.path.exists(file_obj.path):
+            os.remove(file_obj.path)
+    except models.InputDatabaseFile.DoesNotExist:
+        pass
+    return HttpResponse('')
 
 
 ########################### Log Viewer ###########################

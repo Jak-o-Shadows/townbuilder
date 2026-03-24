@@ -1,0 +1,43 @@
+<div id="open-files-list">
+    <h3>Open Database Files</h3>
+    {% if open_files %}
+        <table>
+            <thead>
+                <tr>
+                    <th>File</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for file in open_files %}
+                    <tr class="{% if file.is_active %}active{% endif %}">
+                        <td>{{ file }}</td>
+                        <td>
+                            {% if file.is_active %}<em>Active</em>{% endif %}
+                            {% if not file.exists %}<span class="error">Missing</span>{% endif %}
+                        </td>
+                        <td>
+                            {% if not file.is_active %}
+                                <button hx-post="{% url 'dashboard:set_active' file.id %}"
+                                        hx-target="#open-files-list"
+                                        hx-swap="innerHTML">Set Active</button>
+                            {% endif %}
+                            <button hx-post="{% url 'dashboard:close_file' file.id %}"
+                                    hx-target="#open-files-list"
+                                    hx-swap="innerHTML">Close</button>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>No files open.</p>
+    {% endif %}
+
+    <form hx-post="{% url 'dashboard:open_files' %}" hx-target="#open-files-list" hx-swap="innerHTML" enctype="multipart/form-data">
+        <label for="file-input">Select Database Files:</label>
+        <input type="file" id="file-input" name="files" multiple accept=".db,.sqlite,.sqlite3">
+        <button type="submit">Add Files</button>
+    </form>
+</div>
