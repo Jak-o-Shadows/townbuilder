@@ -2,13 +2,17 @@
 {% load static %}
 <html>
 <head>
-    <title>Townhall</title>
+    <title>Townhall{% if dataset_id %} - {{ active_dataset }}{% endif %}</title>
     {% include "dashboard/partial_header_content.html" %}
 </head>
 <body>
     <h1>Townhall</h1>
     <header>
-        This is a header
+        {% if active_dataset %}
+        <strong>Current Dataset:</strong> {{ active_dataset }}
+        {% else %}
+        Select a dataset from the sidebar
+        {% endif %}
     </header>
         {% include "dashboard/partial_nav.html" %}
 

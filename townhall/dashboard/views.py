@@ -27,14 +27,15 @@ DEFAULT_FILEPATH_DB =  "../build/Release/asdfdatabase_backup.sqlite3"
 DEFAULT_FILEPATH_LOG = "../build/Release/logs.log"
 
 
-def get_active_filepath():
-    """Get the path of the active open database file, or fallback to default."""
-    try:
-        active_file = models.InputDatabaseFile.objects.get(is_active=True, is_open=True)
-        if active_file.exists:
-            return active_file.path
-    except models.InputDatabaseFile.DoesNotExist:
-        pass
+def get_active_filepath(dataset_id=None):
+    """Get the path of a specific dataset, or fallback to default."""
+    if dataset_id:
+        try:
+            file_obj = models.InputDatabaseFile.objects.get(id=dataset_id, is_open=True)
+            if file_obj.exists:
+                return file_obj.path
+        except models.InputDatabaseFile.DoesNotExist:
+            pass
     return DEFAULT_FILEPATH_DB
 
 
@@ -54,7 +55,20 @@ def hx_or_full(template_name="dashboard/full.html"):
             if is_hx:
                 content = fragment_html
             else:
-                content = render_to_string(template_name, {'content': fragment_html})
+                # Get dataset_id from query params
+                dataset_id = request.GET.get('dataset_id', None)
+                dataset_id = int(dataset_id) if dataset_id else None
+                active_dataset = None
+                if dataset_id:
+                    try:
+                        active_dataset = models.InputDatabaseFile.objects.get(id=dataset_id, is_open=True)
+                    except models.InputDatabaseFile.DoesNotExist:
+                        pass
+                content = render_to_string(template_name, {
+                    'content': fragment_html,
+                    'dataset_id': dataset_id,
+                    'active_dataset': active_dataset
+                })
             return HttpResponse(content)
         return _wrapped
     return decorater
@@ -63,7 +77,18 @@ def hx_or_full(template_name="dashboard/full.html"):
 
 def index(request):
     """Render the main dashboard page. The first plot is loaded via an htmx request from the template."""
-    return render(request, "dashboard/full.html")
+    dataset_id = request.GET.get('dataset_id', None)
+    dataset_id = int(dataset_id) if dataset_id else None
+    active_dataset = None
+    if dataset_id:
+        try:
+            active_dataset = models.InputDatabaseFile.objects.get(id=dataset_id, is_open=True)
+        except models.InputDatabaseFile.DoesNotExist:
+            pass
+    return render(request, "dashboard/full.html", {
+        'dataset_id': dataset_id,
+        'active_dataset': active_dataset
+    })
 
 ######################## Plots #######################
 
@@ -81,8 +106,10 @@ def plot_matplotlib_example(request):
 @hx_or_full()
 def plot_pawn_utility(request):
     """Return an HTML fragment containing the Vega chart for the utility plot."""
-    # filepath: use active open file or default
-    filepath_db = get_active_filepath()
+    # Get dataset_id from query params
+    dataset_id = request.GET.get('dataset_id')
+    dataset_id = int(dataset_id) if dataset_id else None
+    filepath_db = get_active_filepath(dataset_id)
 
     con = None
     chart = alt.Chart().mark_text(text="Could not generate plot 'utility'").properties(title="Error")
@@ -117,8 +144,10 @@ def plot_pawn_utility(request):
 @hx_or_full()
 def plot_entity_positions(request):
     """Return an HTML fragment containing the Vega chart for the entity positions plot."""
-    # filepath: use active open file or default
-    filepath_db = get_active_filepath()
+    # Get dataset_id from query params
+    dataset_id = request.GET.get('dataset_id')
+    dataset_id = int(dataset_id) if dataset_id else None
+    filepath_db = get_active_filepath(dataset_id)
 
     con = None
     chart = alt.Chart().mark_text(text="Could not generate plot 'entity_positions'").properties(title="Error")
@@ -148,7 +177,10 @@ def plot_entity_positions(request):
 @hx_or_full()
 def plot_example_state(request):
     """Return a HTML fragment containing the Vega chart for the example state plot."""
-    filepath_db = get_active_filepath()
+    # Get dataset_id from query params
+    dataset_id = request.GET.get('dataset_id')
+    dataset_id = int(dataset_id) if dataset_id else None
+    filepath_db = get_active_filepath(dataset_id)
     
     con = None
     chart = alt.Chart().mark_text(text="Could not generate plot 'entity_positions'").properties(title="Error")
@@ -184,7 +216,10 @@ def plot_example_state(request):
 @hx_or_full()
 def plot_pawn_state(request):
     """Return a HTML fragment containing the Vega chart for the pawn state plot."""
-    filepath_db = get_active_filepath()
+    # Get dataset_id from query params
+    dataset_id = request.GET.get('dataset_id')
+    dataset_id = int(dataset_id) if dataset_id else None
+    filepath_db = get_active_filepath(dataset_id)
     
     con = None
     chart = alt.Chart().mark_text(text="Could not generate plot 'pawn_state'").properties(title="Error")
@@ -354,28 +389,16 @@ def open_database_files(request):
             if not created:
                 obj.is_open = True
                 obj.save()
-        # Set first as active if none active
-        if not models.InputDatabaseFile.objects.filter(is_active=True).exists():
-            first = models.InputDatabaseFile.objects.filter(is_open=True).first()
-            if first:
-                first.is_active = True
-                first.save()
     open_files = models.InputDatabaseFile.objects.filter(is_open=True)
     html = render_to_string('dashboard/partial_open_files.html', {'open_files': open_files, 'csrf_token': get_token(request)})
     return html
 
 
 def set_active_file(request, file_id):
-    """Set a file as the active one for plotting."""
-    try:
-        file_obj = models.InputDatabaseFile.objects.get(id=file_id, is_open=True)
-        file_obj.is_active = True
-        file_obj.save()
-    except models.InputDatabaseFile.DoesNotExist:
-        pass
-    open_files = models.InputDatabaseFile.objects.filter(is_open=True)
-    html = render_to_string('dashboard/partial_open_files.html', {'open_files': open_files, 'csrf_token': get_token(request)})
-    return HttpResponse(html)
+    """Redirect to dashboard with the specified dataset. Used for opening datasets in new tabs."""
+    from django.http import HttpResponseRedirect
+    from django.urls import reverse
+    return HttpResponseRedirect(f"{reverse('dashboard:index')}?dataset_id={file_id}")
 
 
 def close_file(request, file_id):
@@ -383,7 +406,6 @@ def close_file(request, file_id):
     try:
         file_obj = models.InputDatabaseFile.objects.get(id=file_id)
         file_obj.is_open = False
-        file_obj.is_active = False
         file_obj.save()
         # If temporary (uploaded), delete the file
         if file_obj.is_temporary:

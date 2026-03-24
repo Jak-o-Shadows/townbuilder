@@ -7,8 +7,8 @@
                 <li>
                     <button class="outline">
                     <!--- Putting the get inside the button tag means that middle click works -->
-                    <a href="{% url 'dashboard:plot_pawn_utility' %}"
-                        hx-get="{% url 'dashboard:plot_pawn_utility' %}"
+                    <a href="{% url 'dashboard:plot_pawn_utility' %}{% if dataset_id %}?dataset_id={{ dataset_id }}{% endif %}"
+                        hx-get="{% url 'dashboard:plot_pawn_utility' %}{% if dataset_id %}?dataset_id={{ dataset_id }}{% endif %}"
                         hx-target="article"
                         hx-push-url="true"
                         spinner-before-load-target="article">
@@ -18,8 +18,8 @@
                 </li>
                 <li>
                     <button class="outline">
-                    <a href="{% url 'dashboard:plot_entity_positions' %}"
-                        hx-get="{% url 'dashboard:plot_entity_positions' %}"
+                    <a href="{% url 'dashboard:plot_entity_positions' %}{% if dataset_id %}?dataset_id={{ dataset_id }}{% endif %}"
+                        hx-get="{% url 'dashboard:plot_entity_positions' %}{% if dataset_id %}?dataset_id={{ dataset_id }}{% endif %}"
                         hx-target="article"
                         hx-push-url="true"
                         spinner-before-load-target="article">
@@ -29,8 +29,8 @@
                 </li>
                 <li>
                     <button class="outline">
-                    <a href="{% url 'dashboard:plot_example_state' %}"
-                        hx-get="{% url 'dashboard:plot_example_state' %}"
+                    <a href="{% url 'dashboard:plot_example_state' %}{% if dataset_id %}?dataset_id={{ dataset_id }}{% endif %}"
+                        hx-get="{% url 'dashboard:plot_example_state' %}{% if dataset_id %}?dataset_id={{ dataset_id }}{% endif %}"
                         hx-target="article"
                         hx-push-url="true"
                         spinner-before-load-target="article">
@@ -40,8 +40,8 @@
                 </li>
                 <li>
                     <button class="outline">
-                    <a href="{% url 'dashboard:plot_pawn_state' %}"
-                        hx-get="{% url 'dashboard:plot_pawn_state' %}"
+                    <a href="{% url 'dashboard:plot_pawn_state' %}{% if dataset_id %}?dataset_id={{ dataset_id }}{% endif %}"
+                        hx-get="{% url 'dashboard:plot_pawn_state' %}{% if dataset_id %}?dataset_id={{ dataset_id }}{% endif %}"
                         hx-target="article"
                         hx-push-url="true"
                         spinner-before-load-target="article">
@@ -51,8 +51,8 @@
                 </li>
                 <li>
                     <button class="outline">
-                    <a href="{% url 'dashboard:log_viewer' %}"
-                        hx-get="{% url 'dashboard:log_viewer' %}"
+                    <a href="{% url 'dashboard:log_viewer' %}{% if dataset_id %}?dataset_id={{ dataset_id }}{% endif %}"
+                        hx-get="{% url 'dashboard:log_viewer' %}{% if dataset_id %}?dataset_id={{ dataset_id }}{% endif %}"
                         hx-target="article"
                         hx-push-url="true"
                         spinner-before-load-target="article">

@@ -11,23 +11,20 @@
             </thead>
             <tbody>
                 {% for file in open_files %}
-                    <tr class="{% if file.is_active %}active{% endif %}">
+                    <tr>
                         <td>{{ file }}</td>
                         <td>
-                            {% if file.is_active %}<em>Active</em>{% endif %}
-                            {% if not file.exists %}<span class="error">Missing</span>{% endif %}
+                            {% if not file.exists %}<span class="error">Missing</span>{% else %}<span class="ok">OK</span>{% endif %}
                         </td>
                         <td>
-                            {% if not file.is_active %}
-                                <button hx-post="{% url 'dashboard:set_active' file.id %}"
-                                        hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
-                                        hx-target="#open-files-list"
-                                        hx-swap="innerHTML">Set Active</button>
-                            {% endif %}
+                            <a href="{% url 'dashboard:index' %}?dataset_id={{ file.id }}" target="_blank">
+                                <button>Open in New Tab</button>
+                            </a>
                             <button hx-post="{% url 'dashboard:close_file' file.id %}"
                                     hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
                                     hx-target="#open-files-list"
-                                    hx-swap="innerHTML">Close</button>
+                                    hx-swap="innerHTML"
+                                    class="outline">Close</button>
                         </td>
                     </tr>
                 {% endfor %}
