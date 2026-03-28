@@ -4,6 +4,8 @@ from . import views
 
 urlpatterns = [
     path("", views.index, name="index"),
+    path("datasets/", views.datasets_list, name="datasets"),
+    path("datasets/nav/", views.datasets_nav, name="datasets_nav"),
 
     # Various entries for the main panel
     path("plot/pawn_utility/", views.plot_pawn_utility, name="plot_pawn_utility"),

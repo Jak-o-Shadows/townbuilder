@@ -13,6 +13,7 @@ import altair as alt
 from . import plots
 from . import models
 from . import matplotlib_plots
+from . import forms
 
 from django.shortcuts import render
 from django.http import HttpResponse
@@ -89,6 +90,27 @@ def index(request):
         'dataset_id': dataset_id,
         'active_dataset': active_dataset
     })
+
+
+def datasets_list(request):
+    """Render the datasets management page."""
+    open_files = models.InputDatabaseFile.objects.filter(is_open=True)
+    csrf_token = get_token(request)
+    folder_browse_form = forms.DatasetFolderBrowseForm()
+    dataset_upload_form = forms.DatasetUploadForm()
+    return render(request, "dashboard/datasets.html", {
+        'available_datasets': open_files,
+        'csrf_token': csrf_token,
+        'folder_browse_form': folder_browse_form,
+        'dataset_upload_form': dataset_upload_form
+    })
+
+
+def datasets_nav(request):
+    """Return partial HTML for the datasets dropdown in the navbar."""
+    open_files = models.InputDatabaseFile.objects.filter(is_open=True)
+    html = render_to_string('dashboard/partial_nav_datasets.html', {'available_datasets': open_files})
+    return HttpResponse(html)
 
 ######################## Plots #######################
 
@@ -390,7 +412,7 @@ def open_database_files(request):
                 obj.is_open = True
                 obj.save()
     open_files = models.InputDatabaseFile.objects.filter(is_open=True)
-    html = render_to_string('dashboard/partial_open_files.html', {'open_files': open_files, 'csrf_token': get_token(request)})
+    html = render_to_string('dashboard/partial_dataset_manager.html', {'available_datasets': open_files, 'csrf_token': get_token(request)})
     return html
 
 

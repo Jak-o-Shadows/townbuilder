@@ -1,0 +1,26 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Manage Datasets - Townhall</title>
+    {% include "dashboard/partial_header_content.html" %}
+</head>
+<body>
+    <h1>Townhall - Dataset Management</h1>
+    <header>
+        This is the page header
+    </header>
+    {% include "dashboard/partial_nav.html" %}
+
+    <main>
+        <article>
+            <h2>Datasets</h2>
+            {% include "dashboard/partial_dataset_manager.html" %}
+        </article>
+    </main>
+
+    <footer>
+        This is the page footer
+    </footer>
+</body>
+</html>

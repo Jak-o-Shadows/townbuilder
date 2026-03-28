@@ -1,16 +1,18 @@
 <nav>
     <ul>
-        <li><button>Home</button></li>
+        <li>
+            <a href="{% url 'dashboard:index' %}">Dashboard</a>
+        </li>
+        <li>
+            <a href="{% url 'dashboard:datasets' %}">Datasets</a>
+        </li>
     </ul>
     <ul>
-        <li><button>Stuff</button></li>
         <li>
             <details class="dropdown">
-                <summary>Dropdown</summary>
-                <ul class="dropdown-menu">
-                    <li><a href="#">Link 1</a></li>
-                    <li><a href="#">Link 2</a></li>
-                    <li><a href="#">Link 3</a></li>
+                <summary>Open Datasets</summary>
+                <ul class="dropdown-menu" hx-get="{% url 'dashboard:datasets_nav' %}" hx-trigger="load" hx-target="this">
+                    <li><em>Loading...</em></li>
                 </ul>
             </details>
         </li>

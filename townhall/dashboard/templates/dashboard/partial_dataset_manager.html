@@ -1,6 +1,31 @@
 <div id="open-files-list">
     <h3>Open Database Files</h3>
-    {% if open_files %}
+
+    <!-- First section is the upload button, and file directory entry -->
+     <div id="dataset-upload-section">
+        <form action="" method="post">
+            {% csrf_token %}
+            {{ dataset_upload_form }}
+            <input type="submit" value="Upload">
+        </form>
+    </div>
+    <br />
+    <div id="dataset-monitor-section">
+        <form action="" method="post">
+            {% csrf_token %}
+            {{ dataset_folder_browse_form }}
+            <input type="submit" value="Scan Folder">
+        </form>
+        <!-- Display the list of available files -->
+
+    </div>
+
+
+
+
+
+
+    <div id="available-files-list">
         <table>
             <thead>
                 <tr>
@@ -10,11 +35,15 @@
                 </tr>
             </thead>
             <tbody>
-                {% for file in open_files %}
+                {% for file in available_datasets %}
                     <tr>
                         <td>{{ file }}</td>
                         <td>
-                            {% if not file.exists %}<span class="error">Missing</span>{% else %}<span class="ok">OK</span>{% endif %}
+                        {% if not file.exists %}
+                            <span class="error">Missing</span>
+                        {% else %}
+                            <span class="ok">OK</span>
+                        {% endif %}
                         </td>
                         <td>
                             <a href="{% url 'dashboard:index' %}?dataset_id={{ file.id }}" target="_blank">
@@ -24,20 +53,12 @@
                                     hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
                                     hx-target="#open-files-list"
                                     hx-swap="innerHTML"
+                                    hx-on::after-swap="htmx.ajax('GET', '{% url 'dashboard:datasets_nav' %}', {target: 'ul.dropdown-menu', swap: 'innerHTML'})"
                                     class="outline">Close</button>
                         </td>
                     </tr>
                 {% endfor %}
             </tbody>
         </table>
-    {% else %}
-        <p>No files open.</p>
-    {% endif %}
-
-    <form hx-post="{% url 'dashboard:open_files' %}" hx-target="#open-files-list" hx-swap="innerHTML" enctype="multipart/form-data">
-        {% csrf_token %}
-        <label for="file-input">Select Database Files:</label>
-        <input type="file" id="file-input" name="files" multiple accept=".db,.sqlite,.sqlite3">
-        <button type="submit">Add Files</button>
-    </form>
+    </div>
 </div>
