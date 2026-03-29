@@ -15,9 +15,11 @@
     </div>
     <br />
     <div id="dataset-monitor-section">
-        <form action="{% url 'dashboard:scan_dataset_folder' %}" method="post" hx-target="#folder-viewer">
+        <form hx-post="{% url 'dashboard:scan_dataset_folder' %}"
+              hx-target="#folder-viewer"
+              hx-swap="innerHTML">
             {% csrf_token %}
-            {{ dataset_folder_browse_form }}
+            {{ folder_browse_form }}
             <input type="submit" value="Scan Folder">
         </form>
         <!-- Display the list of available files -->
@@ -28,8 +30,9 @@
 
 
 
-
+    <hline />
     <div id="available-files-list">
+        <h2>Available Files</h2>
         <table>
             <thead>
                 <tr>

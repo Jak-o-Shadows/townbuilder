@@ -466,8 +466,11 @@ def scan_dataset_folder(request):
     # Get the folder from the request
     dir_to_scan = request.POST.get('folder_path', '').strip()
 
-    html = remote_file_browser_html(dir_to_scan)
-    return html
+    try:
+        html = remote_file_browser_html(dir_to_scan)
+    except ValueError as e:
+        html = f'<div class="error">Error: {e}</div>'
+    return HttpResponse(html)
 
 @hx_or_full()
 def upload_datasets(request):
