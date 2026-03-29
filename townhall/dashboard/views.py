@@ -169,14 +169,13 @@ def remote_file_browser_html(dir_current):
     return html
 
 
-@hx_or_full()
 def remote_file_browser(request):
     """Remote file browser view that responds as HTMX fragment."""
     dir_requested = request.GET.get('dir_path')
     dir_current = dir_requested
 
     html = remote_file_browser_html(dir_current)
-    return html
+    return HttpResponse(html)
 
 
 ######################## Plots #######################

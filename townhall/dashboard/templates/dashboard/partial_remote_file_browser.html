@@ -9,8 +9,9 @@
             <a href="{{ browser_url }}?dir_path={{ dir_parent|urlencode }}"
                hx-get="{{ browser_url }}?dir_path={{ dir_parent|urlencode }}"
                hx-target=".remote-file-browser"
-               hx-push-url="true"
-               class="button outline">
+               hx-push-url="false" 
+               class="button outline"
+            > <!-- Don't push URL to enable embedded without mucking the url up-->
                 ⬆️ Up
             </a>
         {% endif %}
@@ -33,7 +34,8 @@
                         <a href="{{ browser_url }}?dir_path={{ dir_current|add:'/'|add:entry.name|urlencode }}"
                            hx-get="{{ browser_url }}?dir_path={{ dir_current|add:'/'|add:entry.name|urlencode }}"
                            hx-target=".remote-file-browser"
-                           hx-push-url="true">
+                           hx-push-url="false"
+                        > <!-- Don't push URL to enable embedded without mucking the url up-->
                             📁 {{ entry.name }}
                         </a>
                     {% else %}
