@@ -12,6 +12,7 @@ class DatasetFileModel(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
+        db_table = 'dashboard_dataset_files'
         ordering = ['-last_seen']
 
     def __str__(self):
@@ -20,9 +21,3 @@ class DatasetFileModel(models.Model):
     @property
     def exists(self):
         return os.path.exists(self.filepath)
-
-    @property
-    def status(self):
-        if self.exists:
-            return 'ok'
-        return 'missing'

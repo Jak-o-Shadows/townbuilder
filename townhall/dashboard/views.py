@@ -1,11 +1,11 @@
+import html
 import sqlite3
 import re
 import json
-import random
-import hashlib
 import os
 import functools
-from turtle import width
+import dataclasses
+import pathlib
 
 import pandas as pd
 import altair as alt
@@ -21,6 +21,7 @@ from django.template.loader import render_to_string
 from django.core.cache import cache
 from django.conf import settings
 from django.middleware.csrf import get_token
+from django.utils import timezone
 
 alt.data_transformers.enable("vegafusion")
 
@@ -32,13 +33,12 @@ def get_active_filepath(dataset_id=None):
     """Get the path of a specific dataset, or fallback to default."""
     if dataset_id:
         try:
-            file_obj = models.InputDatabaseFile.objects.get(id=dataset_id, is_open=True)
+            file_obj = models.DatasetFileModel.objects.get(id=dataset_id, is_open=True)
             if file_obj.exists:
-                return file_obj.path
-        except models.InputDatabaseFile.DoesNotExist:
+                return file_obj.filepath
+        except models.DatasetFileModel.DoesNotExist:
             pass
     return DEFAULT_FILEPATH_DB
-
 
 def hx_or_full(template_name="dashboard/full.html"):
     """Decorator for view functions that return an HTML fragment.
@@ -62,8 +62,8 @@ def hx_or_full(template_name="dashboard/full.html"):
                 active_dataset = None
                 if dataset_id:
                     try:
-                        active_dataset = models.InputDatabaseFile.objects.get(id=dataset_id, is_open=True)
-                    except models.InputDatabaseFile.DoesNotExist:
+                        active_dataset = models.DatasetFileModel.objects.get(id=dataset_id, is_open=True)
+                    except models.DatasetFileModel.DoesNotExist:
                         pass
                 content = render_to_string(template_name, {
                     'content': fragment_html,
@@ -76,6 +76,10 @@ def hx_or_full(template_name="dashboard/full.html"):
 
 
 
+
+
+
+
 def index(request):
     """Render the main dashboard page. The first plot is loaded via an htmx request from the template."""
     dataset_id = request.GET.get('dataset_id', None)
@@ -83,8 +87,8 @@ def index(request):
     active_dataset = None
     if dataset_id:
         try:
-            active_dataset = models.InputDatabaseFile.objects.get(id=dataset_id, is_open=True)
-        except models.InputDatabaseFile.DoesNotExist:
+            active_dataset = models.DatasetFileModel.objects.get(id=dataset_id, is_open=True)
+        except models.DatasetFileModel.DoesNotExist:
             pass
     return render(request, "dashboard/full.html", {
         'dataset_id': dataset_id,
@@ -94,12 +98,17 @@ def index(request):
 
 def datasets_list(request):
     """Render the datasets management page."""
-    open_files = models.InputDatabaseFile.objects.filter(is_open=True)
+    # Show all known datasets and support management operations
+    try:
+        all_files = models.DatasetFileModel.objects.all().order_by('-last_seen')
+    except Exception as e:
+        print(f"dashboard.datasets_list: could not query DatasetFileModel: {e}")
+        all_files = []
     csrf_token = get_token(request)
     folder_browse_form = forms.DatasetFolderBrowseForm()
     dataset_upload_form = forms.DatasetUploadForm()
     return render(request, "dashboard/datasets.html", {
-        'available_datasets': open_files,
+        'available_datasets': all_files,
         'csrf_token': csrf_token,
         'folder_browse_form': folder_browse_form,
         'dataset_upload_form': dataset_upload_form
@@ -108,9 +117,67 @@ def datasets_list(request):
 
 def datasets_nav(request):
     """Return partial HTML for the datasets dropdown in the navbar."""
-    open_files = models.InputDatabaseFile.objects.filter(is_open=True)
-    html = render_to_string('dashboard/partial_nav_datasets.html', {'available_datasets': open_files})
+    available_datasets = models.DatasetFileModel.objects.filter(is_open=True)
+    html = render_to_string('dashboard/partial_nav_datasets.html', {'available_datasets': available_datasets})
     return HttpResponse(html)
+
+
+########################### File Browser ###########################
+    
+@dataclasses.dataclass
+class FileBrowserEntry:
+    name: str
+    is_dir: bool
+    is_file: bool
+    size: int | None
+    mtime: float | None
+
+def remote_file_browser_html(dir_current):
+    if not os.path.isdir(dir_current):
+        raise ValueError("Invalid path {}: not a directory".format(dir_current))
+    
+    #print(f"Remote file browser: current directory {dir_current}")
+
+    entries: list[FileBrowserEntry] = []
+    try:
+        with os.scandir(dir_current) as it:
+            for entry in it:
+                try:
+                    stat = entry.stat(follow_symlinks=False)
+                except Exception:
+                    stat = None
+                entry_subset = FileBrowserEntry(
+                    name=entry.name,
+                    is_dir=entry.is_dir(follow_symlinks=False),
+                    is_file=entry.is_file(follow_symlinks=False),
+                    size=stat.st_size if stat and not entry.is_dir(follow_symlinks=False) else None,
+                    mtime=stat.st_mtime if stat else None
+                )
+                #print(entry_subset)
+                entries.append(entry_subset)
+    except PermissionError:
+        entries = []
+
+    dir_parent = pathlib.Path(dir_current).parent
+    #print(f"Remote file browser: parent directory {dir_parent}")
+
+    html = render_to_string('dashboard/partial_remote_file_browser.html', {
+        'dir_current': dir_current,
+        'dir_parent': dir_parent,
+        'entries': entries,
+    })
+    return html
+
+
+@hx_or_full()
+def remote_file_browser(request):
+    """Remote file browser view that responds as HTMX fragment."""
+    dir_requested = request.GET.get('dir_path')
+    dir_current = dir_requested
+
+    html = remote_file_browser_html(dir_current)
+    return html
+
 
 ######################## Plots #######################
 
@@ -392,49 +459,99 @@ def log_loggers(request):
 
 ########################### Database File Management ###########################
 
+dataset_file_exts = ['.db', '.sqlite', '.sqlite3']
+
+def scan_dataset_folder(request):
+    """Handle the folder scanning form submission."""
+    # Get the folder from the request
+    dir_to_scan = request.POST.get('folder_path', '').strip()
+
+    html = remote_file_browser_html(dir_to_scan)
+    return html
+
 @hx_or_full()
-def open_database_files(request):
-    """Handle opening multiple database files."""
+def upload_datasets(request):
+    """Handle uploads and folder scanning for datasets."""
+    status_message = None
     if request.method == 'POST':
-        uploaded_files = request.FILES.getlist('files')
-        temp_dir = os.path.join(settings.BASE_DIR, 'temp_dbs')
-        os.makedirs(temp_dir, exist_ok=True)
-        for uploaded_file in uploaded_files:
-            temp_path = os.path.join(temp_dir, uploaded_file.name)
-            with open(temp_path, 'wb') as f:
-                for chunk in uploaded_file.chunks():
-                    f.write(chunk)
-            obj, created = models.InputDatabaseFile.objects.get_or_create(
-                path=temp_path,
-                defaults={'is_open': True, 'is_temporary': True, 'label': uploaded_file.name}
-            )
-            if not created:
-                obj.is_open = True
-                obj.save()
-    open_files = models.InputDatabaseFile.objects.filter(is_open=True)
-    html = render_to_string('dashboard/partial_dataset_manager.html', {'available_datasets': open_files, 'csrf_token': get_token(request)})
+        # Folder scan: one folder at a time
+        folder_path = request.POST.get('folder_path', '').strip()
+        if folder_path:
+            folder_path = os.path.abspath(folder_path)
+            if os.path.isdir(folder_path):
+                found = 0
+                for name in sorted(os.listdir(folder_path)):
+                    full_path = os.path.join(folder_path, name)
+                    if not os.path.isfile(full_path):
+                        continue
+                    ext = os.path.splitext(name)[1].lower()
+                    if ext not in ['.db', '.sqlite', '.sqlite3']:
+                        continue
+                    obj, created = models.DatasetFileModel.objects.get_or_create(
+                        filepath=full_path,
+                        defaults={'is_open': False, 'label': name}
+                    )
+                    found += 1
+                status_message = f"Folder scan completed: {found} dataset(s) found."
+            else:
+                status_message = f"Folder path not found: {folder_path}"
+
+        # Upload handling
+        uploaded_files = request.FILES.getlist('dataset_file')
+        if uploaded_files:
+            temp_dir = os.path.join(settings.BASE_DIR, 'temp_dbs')
+            os.makedirs(temp_dir, exist_ok=True)
+            saved = 0
+            for uploaded_file in uploaded_files:
+                temp_path = os.path.join(temp_dir, uploaded_file.name)
+                with open(temp_path, 'wb') as f:
+                    for chunk in uploaded_file.chunks():
+                        f.write(chunk)
+                obj, created = models.DatasetFileModel.objects.get_or_create(
+                    filepath=temp_path,
+                    defaults={'is_open': False, 'label': uploaded_file.name}
+                )
+                saved += 1
+            status_message = (status_message + ' ' if status_message else '') + f"Uploaded {saved} file(s)."
+
+    try:
+        available_datasets = models.DatasetFileModel.objects.all().order_by('-last_seen')
+    except Exception as e:
+        print(f"dashboard.open_database_files: could not query DatasetFileModel: {e}")
+        available_datasets = []
+
+    html = render_to_string('dashboard/partial_dataset_manager.html', {
+        'available_datasets': available_datasets,
+        'csrf_token': get_token(request),
+        'status_message': status_message,
+    })
     return html
 
 
-def set_active_file(request, file_id):
-    """Redirect to dashboard with the specified dataset. Used for opening datasets in new tabs."""
-    from django.http import HttpResponseRedirect
-    from django.urls import reverse
-    return HttpResponseRedirect(f"{reverse('dashboard:index')}?dataset_id={file_id}")
+# def set_active_file(request, file_id):
+#     """Mark a dataset as open and redirect to dashboard to show it."""
+#     from django.http import HttpResponseRedirect
+#     from django.urls import reverse
+#     try:
+#         file_obj = models.DatasetFileModel.objects.get(id=file_id)
+#         file_obj.is_open = True
+#         file_obj.last_seen = timezone.now() if hasattr(file_obj, 'last_seen') else file_obj.last_seen
+#         file_obj.save()
+#     except models.DatasetFileModel.DoesNotExist:
+#         pass
+#     return HttpResponseRedirect(f"{reverse('dashboard:index')}?dataset_id={file_id}")
 
 
-def close_file(request, file_id):
-    """Close a database file."""
-    try:
-        file_obj = models.InputDatabaseFile.objects.get(id=file_id)
-        file_obj.is_open = False
-        file_obj.save()
-        # If temporary (uploaded), delete the file
-        if file_obj.is_temporary:
-            os.remove(file_obj.path)
-    except models.InputDatabaseFile.DoesNotExist:
-        pass
-    open_files = models.InputDatabaseFile.objects.filter(is_open=True)
-    html = render_to_string('dashboard/partial_open_files.html', {'open_files': open_files, 'csrf_token': get_token(request)})
-    return HttpResponse(html)
+# def close_file(request, file_id):
+#     """Close a database file."""
+#     try:
+#         file_obj = models.DatasetFileModel.objects.get(id=file_id)
+#         file_obj.is_open = False
+#         file_obj.save()
+#     except models.DatasetFileModel.DoesNotExist:
+#         pass
+#     available_datasets = models.DatasetFileModel.objects.filter(is_open=True)
+#     html = render_to_string('dashboard/partial_available_datasets.html', {'available_datasets': available_datasets, 'csrf_token': get_token(request)})
+#     return HttpResponse(html)
+
 

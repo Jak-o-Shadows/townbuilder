@@ -7,6 +7,9 @@ urlpatterns = [
     path("datasets/", views.datasets_list, name="datasets"),
     path("datasets/nav/", views.datasets_nav, name="datasets_nav"),
 
+    path("remote_file_browser/", views.remote_file_browser, name="remote_file_browser"),
+
+
     # Various entries for the main panel
     path("plot/pawn_utility/", views.plot_pawn_utility, name="plot_pawn_utility"),
     path("plot/entity_positions/", views.plot_entity_positions, name="plot_entity_positions"),
@@ -30,7 +33,8 @@ urlpatterns = [
     path("log_loggers/", views.log_loggers, name="log_loggers"),
 
     # Database file management
-    path("open_files/", views.open_database_files, name="open_files"),
-    path("set_active/<int:file_id>/", views.set_active_file, name="set_active"),
-    path("close_file/<int:file_id>/", views.close_file, name="close_file"),
+    path("scan_dataset_folder", views.scan_dataset_folder, name="scan_dataset_folder"),
+    path("upload_datasets/", views.upload_datasets, name="upload_datasets"),
+    #path("set_active/<int:file_id>/", views.set_active_file, name="set_active"),
+    #path("close_file/<int:file_id>/", views.close_file, name="close_file"),
 ]

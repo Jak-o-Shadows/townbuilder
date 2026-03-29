@@ -1,0 +1,60 @@
+<div class="remote-file-browser">
+    {% url 'dashboard:remote_file_browser' as browser_url %}
+
+    <h2>Remote File Browser</h2>
+    <p><strong>Current:</strong> {{ dir_current }}</p>
+
+    <div class="remote-file-browser-controls">
+        {% if dir_parent %}
+            <a href="{{ browser_url }}?dir_path={{ dir_parent|urlencode }}"
+               hx-get="{{ browser_url }}?dir_path={{ dir_parent|urlencode }}"
+               hx-target="article"
+               hx-push-url="true"
+               class="button outline">
+                ⬆️ Up
+            </a>
+        {% endif %}
+    </div>
+
+    <table class="file-browser-table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Type</th>
+                <th>Size</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% if entries %}
+                {% for entry in entries %}
+                <tr>
+                    <td>
+                    {% if entry.is_dir %}
+                        <a href="{{ browser_url }}?dir_path={{ dir_current|add:'/'|add:entry.name|urlencode }}"
+                           hx-get="{{ browser_url }}?dir_path={{ dir_current|add:'/'|add:entry.name|urlencode }}"
+                           hx-target="article"
+                           hx-push-url="true">
+                            📁 {{ entry.name }}
+                        </a>
+                    {% else %}
+                        📄 {{ entry.name }}
+                    {% endif %}
+                    </td>
+                    <td>
+                        {% if entry.is_dir %}
+                            📁Directory
+                        {% else %}
+                            📄File
+                        {% endif %}
+                    </td>
+                    <td>{% if entry.size is not None %}{{ entry.size }}{% endif %}</td>
+                </tr>
+                {% endfor %}
+            {% else %}
+                <tr>
+                    <td colspan="3">No files or directories found.</td>
+                </tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>

@@ -1,9 +1,13 @@
 <div id="open-files-list">
-    <h3>Open Database Files</h3>
+    <h3>Database Files</h3>
+
+    {% if status_message %}
+        <div class="status-message">{{ status_message }}</div>
+    {% endif %}
 
     <!-- First section is the upload button, and file directory entry -->
-     <div id="dataset-upload-section">
-        <form action="" method="post">
+    <div id="dataset-upload-section">
+        <form action="{% url 'dashboard:upload_datasets' %}" method="post" enctype="multipart/form-data">
             {% csrf_token %}
             {{ dataset_upload_form }}
             <input type="submit" value="Upload">
@@ -11,13 +15,13 @@
     </div>
     <br />
     <div id="dataset-monitor-section">
-        <form action="" method="post">
+        <form action="{% url 'dashboard:scan_dataset_folder' %}" method="post" hx-target="#folder-viewer">
             {% csrf_token %}
             {{ dataset_folder_browse_form }}
             <input type="submit" value="Scan Folder">
         </form>
         <!-- Display the list of available files -->
-
+        <div id="folder-viewer"></div>
     </div>
 
 
@@ -30,7 +34,8 @@
             <thead>
                 <tr>
                     <th>File</th>
-                    <th>Status</th>
+                    <th>Disk Status</th>
+                    <th>Open State</th>
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -46,15 +51,21 @@
                         {% endif %}
                         </td>
                         <td>
-                            <a href="{% url 'dashboard:index' %}?dataset_id={{ file.id }}" target="_blank">
+                        {% if file.is_open %}
+                            <span class="ok">Open</span>
+                        {% else %}
+                            <span class="warning">Closed</span>
+                        {% endif %}
+                        </td>
+                        <td>
+                            <a target="_blank">
                                 <button>Open in New Tab</button>
                             </a>
-                            <button hx-post="{% url 'dashboard:close_file' file.id %}"
-                                    hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
-                                    hx-target="#open-files-list"
-                                    hx-swap="innerHTML"
-                                    hx-on::after-swap="htmx.ajax('GET', '{% url 'dashboard:datasets_nav' %}', {target: 'ul.dropdown-menu', swap: 'innerHTML'})"
-                                    class="outline">Close</button>
+                            {% if file.is_open %}
+                                todo: close button
+                            {% else %}
+                                todo: open button
+                            {% endif %}
                         </td>
                     </tr>
                 {% endfor %}
