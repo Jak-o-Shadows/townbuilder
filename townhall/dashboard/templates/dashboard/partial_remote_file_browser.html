@@ -23,6 +23,9 @@
                 <th>Name</th>
                 <th>Type</th>
                 <th>Size</th>
+                {% for col in extra_columns %}
+                    <th>{{ col.header }}</th>
+                {% endfor %}
             </tr>
         </thead>
         <tbody>
@@ -42,19 +45,38 @@
                         📄 {{ entry.name }}
                     {% endif %}
                     </td>
+                    
                     <td>
                         {% if entry.is_dir %}
                             📁Directory
                         {% else %}
-                            📄File
+                            {% if entry.file_ext %}
+                                {{ entry.file_ext }}
+                            {% else %}
+                                File
+                            {% endif %}
                         {% endif %}
                     </td>
+
                     <td>{% if entry.size is not None %}{{ entry.size }}{% endif %}</td>
+
+                    <!-- Support extra columns with optional custom templates -->
+                {% for col in extra_columns %}
+                    <td>
+                    {% if col.template %}
+                        {% include col.template with entry=entry col=col %}
+                    {% else %}
+                        <!-- Template wasn't included-->
+                        Error: No template for {{ col.header }}
+                    {% endif %}
+                    </td>
+                {% endfor %}
+
                 </tr>
                 {% endfor %}
             {% else %}
                 <tr>
-                    <td colspan="3">No files or directories found.</td>
+                    <td colspan="{% if extra_columns %}{{ extra_columns|length|add:3 }}{% else %}3{% endif %}">No files or directories found.</td>
                 </tr>
             {% endif %}
         </tbody>

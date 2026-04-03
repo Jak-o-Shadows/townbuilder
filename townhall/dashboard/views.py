@@ -123,12 +123,12 @@ def datasets_nav(request):
 
 
 ########################### File Browser ###########################
-    
+
 @dataclasses.dataclass
 class FileBrowserEntry:
     name: str
     is_dir: bool
-    is_file: bool
+    file_ext: None | str
     size: int | None
     mtime: float | None
 
@@ -149,7 +149,7 @@ def remote_file_browser_html(dir_current):
                 entry_subset = FileBrowserEntry(
                     name=entry.name,
                     is_dir=entry.is_dir(follow_symlinks=False),
-                    is_file=entry.is_file(follow_symlinks=False),
+                    file_ext=os.path.splitext(entry.name)[1].lower() if entry.is_file(follow_symlinks=False) else None,
                     size=stat.st_size if stat and not entry.is_dir(follow_symlinks=False) else None,
                     mtime=stat.st_mtime if stat else None
                 )
