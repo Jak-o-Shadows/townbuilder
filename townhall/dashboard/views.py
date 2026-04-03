@@ -132,7 +132,7 @@ class FileBrowserEntry:
     size: int | None
     mtime: float | None
 
-def remote_file_browser_html(dir_current):
+def remote_file_browser_html(dir_current, sort_field=None, sort_dir='asc'):
     if not os.path.isdir(dir_current):
         raise ValueError("Invalid path {}: not a directory".format(dir_current))
     
@@ -158,6 +158,28 @@ def remote_file_browser_html(dir_current):
     except PermissionError:
         entries = []
 
+    # Sort entries if sort_field is specified
+    if sort_field:
+        reverse = sort_dir == 'desc'
+        if sort_field == 'name':
+            entries.sort(key=lambda e: e.name.lower(), reverse=reverse)
+        elif sort_field == 'type':
+            # Sort directories first, then by file extension
+            entries.sort(key=lambda e: (not e.is_dir, e.file_ext or '', e.name.lower()), reverse=reverse)
+        elif sort_field == 'size':
+            # Directories have no size, so sort them first/last based on direction
+            entries.sort(key=lambda e: (e.size is None, e.size or 0), reverse=reverse)
+        else:
+            # Handle other fields (including extra columns) by attribute access
+            try:
+                if sort_field == 'mtime':
+                    entries.sort(key=lambda e: (getattr(e, sort_field) or 0), reverse=reverse)
+                else:
+                    entries.sort(key=lambda e: getattr(e, sort_field), reverse=reverse)
+            except AttributeError:
+                # If the field doesn't exist, sort by name as fallback
+                entries.sort(key=lambda e: e.name.lower(), reverse=reverse)
+
     dir_parent = pathlib.Path(dir_current).parent
     #print(f"Remote file browser: parent directory {dir_parent}")
 
@@ -165,6 +187,8 @@ def remote_file_browser_html(dir_current):
         'dir_current': dir_current,
         'dir_parent': dir_parent,
         'entries': entries,
+        'sort_field': sort_field,
+        'sort_dir': sort_dir,
     })
     return html
 
@@ -173,8 +197,16 @@ def remote_file_browser(request):
     """Remote file browser view that responds as HTMX fragment."""
     dir_requested = request.GET.get('dir_path')
     dir_current = dir_requested
+    
+    # Parse sorting parameters
+    sort_field = request.GET.get('sort')
+    sort_dir = request.GET.get('dir', 'asc')
+    
+    # Validate sort direction
+    if sort_dir not in ['asc', 'desc']:
+        sort_dir = 'asc'
 
-    html = remote_file_browser_html(dir_current)
+    html = remote_file_browser_html(dir_current, sort_field, sort_dir)
     return HttpResponse(html)
 
 

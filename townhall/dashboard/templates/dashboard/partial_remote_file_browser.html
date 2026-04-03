@@ -1,6 +1,25 @@
 <div class="remote-file-browser">
     {% url 'dashboard:remote_file_browser' as browser_url %}
 
+    <style>
+        .sort-link {
+            color: inherit;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+        .sort-link:hover {
+            text-decoration: underline;
+        }
+        .file-browser-table th {
+            cursor: pointer;
+        }
+        .file-browser-table th:not(:has(.sort-link)) {
+            cursor: default;
+        }
+    </style>
+
     <h2>Remote File Browser</h2>
     <p><strong>Current:</strong> {{ dir_current }}</p>
 
@@ -20,11 +39,59 @@
     <table class="file-browser-table">
         <thead>
             <tr>
-                <th>Name</th>
-                <th>Type</th>
-                <th>Size</th>
+                <th>
+                    <a href="{{ browser_url }}?dir_path={{ dir_current|urlencode }}{% if sort_field == 'name' and sort_dir == 'asc' %}&sort=name&dir=desc{% else %}&sort=name&dir=asc{% endif %}"
+                       hx-get="{{ browser_url }}?dir_path={{ dir_current|urlencode }}{% if sort_field == 'name' and sort_dir == 'asc' %}&sort=name&dir=desc{% else %}&sort=name&dir=asc{% endif %}"
+                       hx-target=".remote-file-browser"
+                       hx-push-url="false"
+                       class="sort-link">
+                        Name
+                        {% if sort_field == 'name' %}
+                            {% if sort_dir == 'asc' %}↑{% else %}↓{% endif %}
+                        {% endif %}
+                    </a>
+                </th>
+                <th>
+                    <a href="{{ browser_url }}?dir_path={{ dir_current|urlencode }}{% if sort_field == 'type' and sort_dir == 'asc' %}&sort=type&dir=desc{% else %}&sort=type&dir=asc{% endif %}"
+                       hx-get="{{ browser_url }}?dir_path={{ dir_current|urlencode }}{% if sort_field == 'type' and sort_dir == 'asc' %}&sort=type&dir=desc{% else %}&sort=type&dir=asc{% endif %}"
+                       hx-target=".remote-file-browser"
+                       hx-push-url="false"
+                       class="sort-link">
+                        Type
+                        {% if sort_field == 'type' %}
+                            {% if sort_dir == 'asc' %}↑{% else %}↓{% endif %}
+                        {% endif %}
+                    </a>
+                </th>
+                <th>
+                    <a href="{{ browser_url }}?dir_path={{ dir_current|urlencode }}{% if sort_field == 'size' and sort_dir == 'asc' %}&sort=size&dir=desc{% else %}&sort=size&dir=asc{% endif %}"
+                       hx-get="{{ browser_url }}?dir_path={{ dir_current|urlencode }}{% if sort_field == 'size' and sort_dir == 'asc' %}&sort=size&dir=desc{% else %}&sort=size&dir=asc{% endif %}"
+                       hx-target=".remote-file-browser"
+                       hx-push-url="false"
+                       class="sort-link">
+                        Size
+                        {% if sort_field == 'size' %}
+                            {% if sort_dir == 'asc' %}↑{% else %}↓{% endif %}
+                        {% endif %}
+                    </a>
+                </th>
                 {% for col in extra_columns %}
-                    <th>{{ col.header }}</th>
+                    <th>
+                        {% if col.sortable %}
+                            <a href="{{ browser_url }}?dir_path={{ dir_current|urlencode }}{% if sort_field == col.field and sort_dir == 'asc' %}&sort={{ col.field }}&dir=desc{% else %}&sort={{ col.field }}&dir=asc{% endif %}"
+                               hx-get="{{ browser_url }}?dir_path={{ dir_current|urlencode }}{% if sort_field == col.field and sort_dir == 'asc' %}&sort={{ col.field }}&dir=desc{% else %}&sort={{ col.field }}&dir=asc{% endif %}"
+                               hx-target=".remote-file-browser"
+                               hx-push-url="false"
+                               class="sort-link">
+                                {{ col.header }}
+                                {% if sort_field == col.field %}
+                                    {% if sort_dir == 'asc' %}↑{% else %}↓{% endif %}
+                                {% endif %}
+                            </a>
+                        {% else %}
+                            {{ col.header }}
+                        {% endif %}
+                    </th>
                 {% endfor %}
             </tr>
         </thead>
@@ -45,7 +112,7 @@
                         📄 {{ entry.name }}
                     {% endif %}
                     </td>
-                    
+
                     <td>
                         {% if entry.is_dir %}
                             📁Directory
