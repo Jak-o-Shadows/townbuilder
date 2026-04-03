@@ -1,0 +1,44 @@
+<div id="available-files-list">
+    <h2>Available Files</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>File</th>
+                <th>Disk Status</th>
+                <th>Open State</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for file in available_datasets %}
+                <tr>
+                    <td>{{ file }}</td>
+                    <td>
+                    {% if not file.exists %}
+                        <span class="error">Missing</span>
+                    {% else %}
+                        <span class="ok">OK</span>
+                    {% endif %}
+                    </td>
+                    <td>
+                    {% if file.is_open %}
+                        <span class="ok">Open</span>
+                    {% else %}
+                        <span class="warning">Closed</span>
+                    {% endif %}
+                    </td>
+                    <td>
+                        <a target="_blank">
+                            <button>Open in New Tab</button>
+                        </a>
+                        {% if file.is_open %}
+                            todo: close button
+                        {% else %}
+                            todo: open button
+                        {% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

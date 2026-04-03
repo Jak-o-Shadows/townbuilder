@@ -132,9 +132,9 @@ class FileBrowserEntry:
     size: int | None
     mtime: float | None
 
-def remote_file_browser_html(dir_current, sort_field=None, sort_dir='asc'):
-    if not os.path.isdir(dir_current):
-        raise ValueError("Invalid path {}: not a directory".format(dir_current))
+def remote_file_browser_html(dir_current, sort_field=None, sort_dir='asc', extra_columns=None, csrf_token=None):
+    if extra_columns is None:
+        extra_columns = []
     
     #print(f"Remote file browser: current directory {dir_current}")
 
@@ -183,13 +183,17 @@ def remote_file_browser_html(dir_current, sort_field=None, sort_dir='asc'):
     dir_parent = pathlib.Path(dir_current).parent
     #print(f"Remote file browser: parent directory {dir_parent}")
 
-    html = render_to_string('dashboard/partial_remote_file_browser.html', {
+    context = {
         'dir_current': dir_current,
         'dir_parent': dir_parent,
         'entries': entries,
         'sort_field': sort_field,
         'sort_dir': sort_dir,
-    })
+        'extra_columns': extra_columns,
+    }
+    if csrf_token:
+        context['csrf_token'] = csrf_token
+    html = render_to_string('dashboard/partial_remote_file_browser.html', context)
     return html
 
 
@@ -497,8 +501,17 @@ def scan_dataset_folder(request):
     # Get the folder from the request
     dir_to_scan = request.POST.get('folder_path', '').strip()
 
+    extra_columns = [
+        {
+            'header': 'Add',
+            'field': None,
+            'sortable': False,
+            'template': 'dashboard/partial_add_file_button.html'
+        }
+    ]
+
     try:
-        html = remote_file_browser_html(dir_to_scan)
+        html = remote_file_browser_html(dir_to_scan, extra_columns=extra_columns, csrf_token=get_token(request))
     except ValueError as e:
         html = f'<div class="error">Error: {e}</div>'
     return HttpResponse(html)
@@ -587,5 +600,46 @@ def upload_datasets(request):
 #     available_datasets = models.DatasetFileModel.objects.filter(is_open=True)
 #     html = render_to_string('dashboard/partial_available_datasets.html', {'available_datasets': available_datasets, 'csrf_token': get_token(request)})
 #     return HttpResponse(html)
+
+
+def add_dataset_file(request):
+    """Add a dataset file by filepath."""
+    if request.method == 'POST':
+        filepath = request.POST.get('filepath', '').strip()
+        if not filepath:
+            return HttpResponse('<div class="error">No filepath provided</div>')
+        
+        # Validate extension
+        ext = os.path.splitext(filepath)[1].lower()
+        if ext not in dataset_file_exts:
+            return HttpResponse('<div class="error">Invalid file type. Only .db, .sqlite, .sqlite3 allowed.</div>')
+        
+        # Check if file exists
+        if not os.path.isfile(filepath):
+            return HttpResponse('<div class="error">File does not exist.</div>')
+        
+        # Get or create DatasetFileModel
+        file_obj, created = models.DatasetFileModel.objects.get_or_create(
+            filepath=filepath,
+            defaults={'is_open': False, 'last_seen': timezone.now()}
+        )
+        if not created:
+            file_obj.last_seen = timezone.now()
+            file_obj.save()
+        
+        # Get updated available_datasets
+        try:
+            available_datasets = models.DatasetFileModel.objects.all().order_by('-last_seen')
+        except Exception as e:
+            available_datasets = []
+        
+        # Render the partial
+        html = render_to_string('dashboard/partial_available_files.html', {
+            'available_datasets': available_datasets,
+            'csrf_token': get_token(request),
+        })
+        return HttpResponse(html)
+    
+    return HttpResponse('<div class="error">Method not allowed</div>')
 
 
