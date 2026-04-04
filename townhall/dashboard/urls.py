@@ -8,6 +8,7 @@ urlpatterns = [
     path("datasets/nav/", views.datasets_nav, name="datasets_nav"),
 
     path("remote_file_browser/", views.remote_file_browser, name="remote_file_browser"),
+    path("dataset_file_browser/", views.dataset_file_browser, name="dataset_file_browser"),
 
 
     # Various entries for the main panel

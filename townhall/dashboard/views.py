@@ -22,6 +22,7 @@ from django.core.cache import cache
 from django.conf import settings
 from django.middleware.csrf import get_token
 from django.utils import timezone
+import django.urls
 
 alt.data_transformers.enable("vegafusion")
 
@@ -132,7 +133,7 @@ class FileBrowserEntry:
     size: int | None
     mtime: float | None
 
-def remote_file_browser_html(dir_current, sort_field=None, sort_dir='asc', extra_columns=None, csrf_token=None):
+def remote_file_browser_html(dir_current, sort_field=None, sort_dir='asc', extra_columns=None, csrf_token=None, browser_url_name='remote_file_browser'):
     if extra_columns is None:
         extra_columns = []
     
@@ -190,6 +191,7 @@ def remote_file_browser_html(dir_current, sort_field=None, sort_dir='asc', extra
         'sort_field': sort_field,
         'sort_dir': sort_dir,
         'extra_columns': extra_columns,
+        'browser_url': django.urls.reverse(f'dashboard:{browser_url_name}'),
     }
     if csrf_token:
         context['csrf_token'] = csrf_token
@@ -211,6 +213,33 @@ def remote_file_browser(request):
         sort_dir = 'asc'
 
     html = remote_file_browser_html(dir_current, sort_field, sort_dir)
+    return HttpResponse(html)
+
+
+def dataset_file_browser(request):
+    """Dataset-specific file browser view with add buttons that responds as HTMX fragment."""
+    dir_requested = request.GET.get('dir_path')
+    dir_current = dir_requested
+    
+    # Parse sorting parameters
+    sort_field = request.GET.get('sort')
+    sort_dir = request.GET.get('dir', 'asc')
+    
+    # Validate sort direction
+    if sort_dir not in ['asc', 'desc']:
+        sort_dir = 'asc'
+
+    # Define extra columns for dataset add functionality
+    extra_columns = [
+        {
+            'header': 'Add',
+            'field': None,
+            'sortable': False,
+            'template': 'dashboard/partial_add_file_button.html'
+        }
+    ]
+
+    html = remote_file_browser_html(dir_current, sort_field, sort_dir, extra_columns=extra_columns, csrf_token=get_token(request), browser_url_name='dataset_file_browser')
     return HttpResponse(html)
 
 
@@ -511,7 +540,7 @@ def scan_dataset_folder(request):
     ]
 
     try:
-        html = remote_file_browser_html(dir_to_scan, extra_columns=extra_columns, csrf_token=get_token(request))
+        html = remote_file_browser_html(dir_to_scan, extra_columns=extra_columns, csrf_token=get_token(request), browser_url_name='dataset_file_browser')
     except ValueError as e:
         html = f'<div class="error">Error: {e}</div>'
     return HttpResponse(html)
