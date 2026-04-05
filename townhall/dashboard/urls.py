@@ -37,6 +37,7 @@ urlpatterns = [
     path("scan_dataset_folder", views.scan_dataset_folder, name="scan_dataset_folder"),
     path("upload_datasets/", views.upload_datasets, name="upload_datasets"),
     path("add_dataset_file/", views.add_dataset_file, name="add_dataset_file"),
-    #path("set_active/<int:file_id>/", views.set_active_file, name="set_active"),
-    #path("close_file/<int:file_id>/", views.close_file, name="close_file"),
+    path("remove_dataset_file/<int:file_id>/", views.remove_dataset_file, name="remove_dataset_file"),
+    path("open_file/<int:file_id>/", views.open_file, name="open_file"),
+    path("close_file/<int:file_id>/", views.close_file, name="close_file"),
 ]

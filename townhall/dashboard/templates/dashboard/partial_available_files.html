@@ -28,14 +28,22 @@
                     {% endif %}
                     </td>
                     <td>
-                        <a target="_blank">
+                        <a target="_blank" href="{% url 'dashboard:index' %}?dataset_id={{ file.id }}">
                             <button>Open in New Tab</button>
                         </a>
                         {% if file.is_open %}
-                            todo: close button
+                            <button hx-post="{% url 'dashboard:close_file' file.id %}"
+                                    hx-target="#available-files-list"
+                                    hx-swap="innerHTML">Close</button>
                         {% else %}
-                            todo: open button
+                            <button hx-post="{% url 'dashboard:open_file' file.id %}"
+                                    hx-target="#available-files-list"
+                                    hx-swap="innerHTML">Open</button>
                         {% endif %}
+                        <button hx-post="{% url 'dashboard:remove_dataset_file' file.id %}"
+                                hx-target="#available-files-list"
+                                hx-swap="innerHTML"
+                                hx-confirm="Are you sure you want to remove this file from the list?">Remove</button>
                     </td>
                 </tr>
             {% endfor %}

@@ -69,7 +69,8 @@ def hx_or_full(template_name="dashboard/full.html"):
                 content = render_to_string(template_name, {
                     'content': fragment_html,
                     'dataset_id': dataset_id,
-                    'active_dataset': active_dataset
+                    'active_dataset': active_dataset,
+                    'csrf_token': get_token(request),
                 })
             return HttpResponse(content)
         return _wrapped
@@ -105,14 +106,13 @@ def datasets_list(request):
     except Exception as e:
         print(f"dashboard.datasets_list: could not query DatasetFileModel: {e}")
         all_files = []
-    csrf_token = get_token(request)
     folder_browse_form = forms.DatasetFolderBrowseForm()
     dataset_upload_form = forms.DatasetUploadForm()
     return render(request, "dashboard/datasets.html", {
         'available_datasets': all_files,
-        'csrf_token': csrf_token,
         'folder_browse_form': folder_browse_form,
-        'dataset_upload_form': dataset_upload_form
+        'dataset_upload_form': dataset_upload_form,
+        'csrf_token': get_token(request),
     })
 
 
@@ -133,7 +133,7 @@ class FileBrowserEntry:
     size: int | None
     mtime: float | None
 
-def remote_file_browser_html(dir_current, sort_field=None, sort_dir='asc', extra_columns=None, csrf_token=None, browser_url_name='remote_file_browser'):
+def remote_file_browser_html(dir_current, sort_field=None, sort_dir='asc', extra_columns=None, browser_url_name='remote_file_browser'):
     if extra_columns is None:
         extra_columns = []
     
@@ -160,6 +160,9 @@ def remote_file_browser_html(dir_current, sort_field=None, sort_dir='asc', extra
         entries = []
 
     # Sort entries if sort_field is specified
+    if not sort_field:
+        # Default sorting: directories first, then by name
+        entries.sort(key=lambda e: (not e.is_dir, e.name.lower()))
     if sort_field:
         reverse = sort_dir == 'desc'
         if sort_field == 'name':
@@ -193,12 +196,12 @@ def remote_file_browser_html(dir_current, sort_field=None, sort_dir='asc', extra
         'extra_columns': extra_columns,
         'browser_url': django.urls.reverse(f'dashboard:{browser_url_name}'),
     }
-    if csrf_token:
-        context['csrf_token'] = csrf_token
+
     html = render_to_string('dashboard/partial_remote_file_browser.html', context)
     return html
 
 
+@hx_or_full("dashboard/base.html")
 def remote_file_browser(request):
     """Remote file browser view that responds as HTMX fragment."""
     dir_requested = request.GET.get('dir_path')
@@ -213,7 +216,7 @@ def remote_file_browser(request):
         sort_dir = 'asc'
 
     html = remote_file_browser_html(dir_current, sort_field, sort_dir)
-    return HttpResponse(html)
+    return html
 
 
 def dataset_file_browser(request):
@@ -239,7 +242,7 @@ def dataset_file_browser(request):
         }
     ]
 
-    html = remote_file_browser_html(dir_current, sort_field, sort_dir, extra_columns=extra_columns, csrf_token=get_token(request), browser_url_name='dataset_file_browser')
+    html = remote_file_browser_html(dir_current, sort_field, sort_dir, extra_columns=extra_columns, browser_url_name='dataset_file_browser')
     return HttpResponse(html)
 
 
@@ -540,7 +543,7 @@ def scan_dataset_folder(request):
     ]
 
     try:
-        html = remote_file_browser_html(dir_to_scan, extra_columns=extra_columns, csrf_token=get_token(request), browser_url_name='dataset_file_browser')
+        html = remote_file_browser_html(dir_to_scan, extra_columns=extra_columns, browser_url_name='dataset_file_browser')
     except ValueError as e:
         html = f'<div class="error">Error: {e}</div>'
     return HttpResponse(html)
@@ -598,37 +601,82 @@ def upload_datasets(request):
 
     html = render_to_string('dashboard/partial_dataset_manager.html', {
         'available_datasets': available_datasets,
-        'csrf_token': get_token(request),
         'status_message': status_message,
     })
     return html
 
+def remove_dataset_file(request, file_id):
+    """Remove a dataset file from the list."""
+    if request.method == 'POST':
+        try:
+            file_obj = models.DatasetFileModel.objects.get(id=file_id)
+            file_obj.delete()
+        except models.DatasetFileModel.DoesNotExist:
+            pass
+        
+        # Get updated available_datasets
+        try:
+            available_datasets = models.DatasetFileModel.objects.all().order_by('-last_seen')
+        except Exception as e:
+            available_datasets = []
+        
+        # Render the partial
+        html = render_to_string('dashboard/partial_available_files.html', {
+            'available_datasets': available_datasets,
+        })
+        return HttpResponse(html)
+    
+    return HttpResponse('<div class="error">Method not allowed</div>')
 
-# def set_active_file(request, file_id):
-#     """Mark a dataset as open and redirect to dashboard to show it."""
-#     from django.http import HttpResponseRedirect
-#     from django.urls import reverse
-#     try:
-#         file_obj = models.DatasetFileModel.objects.get(id=file_id)
-#         file_obj.is_open = True
-#         file_obj.last_seen = timezone.now() if hasattr(file_obj, 'last_seen') else file_obj.last_seen
-#         file_obj.save()
-#     except models.DatasetFileModel.DoesNotExist:
-#         pass
-#     return HttpResponseRedirect(f"{reverse('dashboard:index')}?dataset_id={file_id}")
+
+def open_file(request, file_id):
+    """Open a dataset file."""
+    if request.method == 'POST':
+        try:
+            file_obj = models.DatasetFileModel.objects.get(id=file_id)
+            file_obj.is_open = True
+            file_obj.save()
+        except models.DatasetFileModel.DoesNotExist:
+            pass
+        
+        # Get updated available_datasets
+        try:
+            available_datasets = models.DatasetFileModel.objects.all().order_by('-last_seen')
+        except Exception as e:
+            available_datasets = []
+        
+        # Render the partial
+        html = render_to_string('dashboard/partial_available_files.html', {
+            'available_datasets': available_datasets,
+        })
+        return HttpResponse(html)
+    
+    return HttpResponse('<div class="error">Method not allowed</div>')
 
 
-# def close_file(request, file_id):
-#     """Close a database file."""
-#     try:
-#         file_obj = models.DatasetFileModel.objects.get(id=file_id)
-#         file_obj.is_open = False
-#         file_obj.save()
-#     except models.DatasetFileModel.DoesNotExist:
-#         pass
-#     available_datasets = models.DatasetFileModel.objects.filter(is_open=True)
-#     html = render_to_string('dashboard/partial_available_datasets.html', {'available_datasets': available_datasets, 'csrf_token': get_token(request)})
-#     return HttpResponse(html)
+def close_file(request, file_id):
+    """Close a database file."""
+    if request.method == 'POST':
+        try:
+            file_obj = models.DatasetFileModel.objects.get(id=file_id)
+            file_obj.is_open = False
+            file_obj.save()
+        except models.DatasetFileModel.DoesNotExist:
+            pass
+        
+        # Get updated available_datasets
+        try:
+            available_datasets = models.DatasetFileModel.objects.all().order_by('-last_seen')
+        except Exception as e:
+            available_datasets = []
+        
+        # Render the partial
+        html = render_to_string('dashboard/partial_available_files.html', {
+            'available_datasets': available_datasets,
+        })
+        return HttpResponse(html)
+    
+    return HttpResponse('<div class="error">Method not allowed</div>')
 
 
 def add_dataset_file(request):
@@ -665,7 +713,6 @@ def add_dataset_file(request):
         # Render the partial
         html = render_to_string('dashboard/partial_available_files.html', {
             'available_datasets': available_datasets,
-            'csrf_token': get_token(request),
         })
         return HttpResponse(html)
     

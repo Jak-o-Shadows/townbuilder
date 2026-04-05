@@ -5,7 +5,7 @@
     <title>Manage Datasets - Townhall</title>
     {% include "dashboard/partial_header_content.html" %}
 </head>
-<body>
+<body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
     <h1>Townhall - Dataset Management</h1>
     <header>
         This is the page header

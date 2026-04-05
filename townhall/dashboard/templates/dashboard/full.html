@@ -5,7 +5,7 @@
     <title>Townhall{% if dataset_id %} - {{ active_dataset }}{% endif %}</title>
     {% include "dashboard/partial_header_content.html" %}
 </head>
-<body>
+<body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
     <h1>Townhall</h1>
     <header>
         This is the page header

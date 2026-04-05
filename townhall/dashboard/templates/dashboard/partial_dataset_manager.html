@@ -8,7 +8,6 @@
     <!-- First section is the upload button, and file directory entry -->
     <div id="dataset-upload-section">
         <form action="{% url 'dashboard:upload_datasets' %}" method="post" enctype="multipart/form-data">
-            {% csrf_token %}
             {{ dataset_upload_form }}
             <input type="submit" value="Upload">
         </form>
@@ -18,7 +17,6 @@
         <form hx-post="{% url 'dashboard:scan_dataset_folder' %}"
               hx-target="#folder-viewer"
               hx-swap="innerHTML">
-            {% csrf_token %}
             {{ folder_browse_form }}
             <input type="submit" value="Scan Folder">
         </form>
@@ -30,49 +28,6 @@
 
 
 
-    <hline />
-    <div id="available-files-list">
-        <h2>Available Files</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th>File</th>
-                    <th>Disk Status</th>
-                    <th>Open State</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for file in available_datasets %}
-                    <tr>
-                        <td>{{ file }}</td>
-                        <td>
-                        {% if not file.exists %}
-                            <span class="error">Missing</span>
-                        {% else %}
-                            <span class="ok">OK</span>
-                        {% endif %}
-                        </td>
-                        <td>
-                        {% if file.is_open %}
-                            <span class="ok">Open</span>
-                        {% else %}
-                            <span class="warning">Closed</span>
-                        {% endif %}
-                        </td>
-                        <td>
-                            <a target="_blank">
-                                <button>Open in New Tab</button>
-                            </a>
-                            {% if file.is_open %}
-                                todo: close button
-                            {% else %}
-                                todo: open button
-                            {% endif %}
-                        </td>
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
+    <hr />
+    {% include 'dashboard/partial_available_files.html' %}
 </div>
