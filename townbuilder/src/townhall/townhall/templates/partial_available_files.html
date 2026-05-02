@@ -1,0 +1,64 @@
+<div id="available-files-list">
+    <h2>Available Files</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>File</th>
+                <th>Metadata</th>
+                <th>Disk Status</th>
+                <th>Open State</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for file in available_datasets %}
+                <tr>
+                    <td>{{ file }}</td>
+                    <td>
+                        {% if file.metadata_created_at %}
+                            <div>Created: {{ file.metadata_created_at }}</div>
+                        {% endif %}
+                        {% if file.metadata_uuid %}
+                            <div>UUID: {{ file.metadata_uuid }}</div>
+                        {% endif %}
+                        {% if not file.metadata_created_at and not file.metadata_uuid %}
+                            -
+                        {% endif %}
+                    </td>
+                    <td>
+                    {% if not file.exists %}
+                        <span class="error">Missing</span>
+                    {% else %}
+                        <span class="ok">OK</span>
+                    {% endif %}
+                    </td>
+                    <td>
+                    {% if file.is_open %}
+                        <span class="ok">Open</span>
+                    {% else %}
+                        <span class="warning">Closed</span>
+                    {% endif %}
+                    </td>
+                    <td>
+                        <a target="_blank" href="{% url 'townhall:index' %}?dataset_id={{ file.id }}">
+                            <button>Open in New Tab</button>
+                        </a>
+                        {% if file.is_open %}
+                            <button hx-post="{% url 'townhall:close_file' file.id %}"
+                                    hx-target="#available-files-list"
+                                    hx-swap="innerHTML">Close</button>
+                        {% else %}
+                            <button hx-post="{% url 'townhall:open_file' file.id %}"
+                                    hx-target="#available-files-list"
+                                    hx-swap="innerHTML">Open</button>
+                        {% endif %}
+                        <button hx-post="{% url 'townhall:remove_dataset_file' file.id %}"
+                                hx-target="#available-files-list"
+                                hx-swap="innerHTML"
+                                hx-confirm="Are you sure you want to remove this file from the list?">Remove</button>
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

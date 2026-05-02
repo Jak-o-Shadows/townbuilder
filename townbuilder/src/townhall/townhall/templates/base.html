@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+{% load static %}
+<html>
+<head>
+    <title>Townhall</title>
+    {% include "partial_header_content.html" %}
+</head>
+<body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+    <h1>Townhall</h1>
+    <header>
+        This is the page header
+    </header>
+        {% include "partial_nav.html" %}
+
+        <main>
+            <article>
+                {% if content %}
+                {{ content }}
+                {% else %}
+                {% include "partial_blank_centre.html" %}
+                {% endif %}
+            </article>
+        </main>
+
+    <footer>
+        This is the page footer
+    </footer>
+</body>
+</html>

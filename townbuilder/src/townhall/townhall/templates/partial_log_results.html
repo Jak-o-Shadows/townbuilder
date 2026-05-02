@@ -1,0 +1,14 @@
+{# This template fragment renders the log table with headers and log rows (includes infinite scroll sentinel) #}
+<table class="logs">
+  <thead>
+    <tr>
+      <th>Timestamp</th>
+      <th>Level</th>
+      <th>Logger</th>
+      <th>Message</th>
+    </tr>
+  </thead>
+  <tbody id="log-rows">
+    {% include 'partial_log_rows.html' with logs=logs has_more=has_more next_url=next_url only %}
+  </tbody>
+</table>

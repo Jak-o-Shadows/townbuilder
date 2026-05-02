@@ -1,9 +1,0 @@
-{# This template fragment renders a datalist for selecting loggers #}
-Logger:
-<input list="log-loggers" name="logger" hx-get="{% url 'dashboard:log_entries' %}" hx-target="#log-results" hx-swap="innerHTML" hx-trigger="change" hx-include="#log-filters" />
-<datalist id="log-loggers">
-  <option value="">All</option>
-  {% for logger in loggers %}
-  <option value="{{ logger }}">{{ logger }}</option>
-  {% endfor %}
-</datalist>

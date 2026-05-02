@@ -1,0 +1,23 @@
+<nav>
+    <ul>
+        <li>
+            <a href="{% url 'townhall:index' %}">Plots/Analysis</a>
+        </li>
+        <li>
+            <a href="{% url 'townhall:datasets' %}">Datasets</a>
+        </li>
+        <li>
+            <a href="{% url 'townhall:remote_file_browser' %}?dir_path=.">Remote File Browser</a>
+        </li>
+    </ul>
+    <ul>
+        <li>
+            <details class="dropdown">
+                <summary>Open Datasets</summary>
+                <ul class="dropdown-menu" hx-get="{% url 'townhall:datasets_nav' %}" hx-trigger="load" hx-target="this">
+                    <li><em>Loading...</em></li>
+                </ul>
+            </details>
+        </li>
+    </ul>    
+</nav>

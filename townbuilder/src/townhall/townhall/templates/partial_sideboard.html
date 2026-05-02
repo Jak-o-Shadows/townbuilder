@@ -1,0 +1,66 @@
+<div class="sidebar"><aside>
+    <details open>
+        <summary>☰</summary>
+        <nav>
+            <div class="title">Analysis Displays</div>
+            <ul>
+                <li>
+                    <button class="outline">
+                    <!--- Putting the get inside the button tag means that middle click works -->
+                    <a href="{% url 'townhall:plot_pawn_utility' %}{% if dataset_id %}?dataset_id={{ dataset_id }}{% endif %}"
+                        hx-get="{% url 'townhall:plot_pawn_utility' %}{% if dataset_id %}?dataset_id={{ dataset_id }}{% endif %}"
+                        hx-target="article"
+                        hx-push-url="true"
+                        spinner-before-load-target="article">
+                        Utility
+                    </a>
+                    </button>
+                </li>
+                <li>
+                    <button class="outline">
+                    <a href="{% url 'townhall:plot_entity_positions' %}{% if dataset_id %}?dataset_id={{ dataset_id }}{% endif %}"
+                        hx-get="{% url 'townhall:plot_entity_positions' %}{% if dataset_id %}?dataset_id={{ dataset_id }}{% endif %}"
+                        hx-target="article"
+                        hx-push-url="true"
+                        spinner-before-load-target="article">
+                        Entity Positions
+                    </a>
+                    </button>
+                </li>
+                <li>
+                    <button class="outline">
+                    <a href="{% url 'townhall:plot_example_state' %}{% if dataset_id %}?dataset_id={{ dataset_id }}{% endif %}"
+                        hx-get="{% url 'townhall:plot_example_state' %}{% if dataset_id %}?dataset_id={{ dataset_id }}{% endif %}"
+                        hx-target="article"
+                        hx-push-url="true"
+                        spinner-before-load-target="article">
+                        Example State
+                    </a>
+                    </button>
+                </li>
+                <li>
+                    <button class="outline">
+                    <a href="{% url 'townhall:plot_pawn_state' %}{% if dataset_id %}?dataset_id={{ dataset_id }}{% endif %}"
+                        hx-get="{% url 'townhall:plot_pawn_state' %}{% if dataset_id %}?dataset_id={{ dataset_id }}{% endif %}"
+                        hx-target="article"
+                        hx-push-url="true"
+                        spinner-before-load-target="article">
+                        Pawn State
+                    </a>
+                    </button>
+                </li>
+                <li>
+                    <button class="outline">
+                    <a href="{% url 'townhall:log_viewer' %}{% if dataset_id %}?dataset_id={{ dataset_id }}{% endif %}"
+                        hx-get="{% url 'townhall:log_viewer' %}{% if dataset_id %}?dataset_id={{ dataset_id }}{% endif %}"
+                        hx-target="article"
+                        hx-push-url="true"
+                        spinner-before-load-target="article">
+                        Log Viewer
+                    </a>
+                    </button>
+                </li>
+            </ul>
+        </nav>
+    </details>
+</aside></div> <!-- .sidebar -->

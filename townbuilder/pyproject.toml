@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "townhall"
+version = "0.1"
+dependencies = [
+    "django>=6.0",
+    "pandas",
+    "altair",
+    "numpy",
+    "django-htmx",
+    "matplotlib",
+]
+requires-python = ">3.11.10"
+
+[project.scripts]
+townhall-dev = "townhall.cli:main"
+townhall = "townhall.cli:run"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+townhall = ["src/townhall/templates/**.html", "src/townhallstatic/*"]

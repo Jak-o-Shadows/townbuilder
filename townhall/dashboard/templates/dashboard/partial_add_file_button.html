@@ -1,6 +1,0 @@
-{% if not entry.is_dir %}
-<form method="post" hx-post="{% url 'dashboard:add_dataset_file' %}" hx-target="#available-files-list" hx-swap="innerHTML">
-    <input type="hidden" name="filepath" value="{{ dir_current }}/{{ entry.name }}">
-    <button type="submit">Add</button>
-</form>
-{% endif %}

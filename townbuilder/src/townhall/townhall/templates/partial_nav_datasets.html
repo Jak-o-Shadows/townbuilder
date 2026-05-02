@@ -1,0 +1,14 @@
+{# Dropdown menu for open datasets in navbar #}
+{% if open_files %}
+    {% for file in open_files %}
+        <li>
+            <a href="{% url 'townhall:index' %}?dataset_id={{ file.id }}" 
+               title="{{ file.path }}">
+                {{ file }}
+                {% if not file.exists %}<span style="color: red;">⚠</span>{% endif %}
+            </a>
+        </li>
+    {% endfor %}
+{% else %}
+    <li><em>No datasets open</em></li>
+{% endif %}
