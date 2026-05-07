@@ -10,7 +10,7 @@ import pathlib
 import pandas as pd
 import altair as alt
 
-from . import plots
+from ..plots import plots
 from . import models
 from . import matplotlib_plots
 from . import forms

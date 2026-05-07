@@ -37,7 +37,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'townhall'
+    'townhall.townhall_gui'
 ]
 
 MIDDLEWARE = [
@@ -55,7 +55,7 @@ ROOT_URLCONF = 'townhall.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [os.path.join(BASE_DIR, "townhall/templates")],
+        'DIRS': [os.path.join(BASE_DIR, "townhall/townhall_gui/templates")],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
