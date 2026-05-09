@@ -138,6 +138,22 @@ systems::systems(flecs::world& ecs) {
 
     /////////////// Pawn ///////////////////////////////
 
+    // System to create the dataset metadata table on startup
+    ecs.system<Database::Connection>("CreateTable_DatasetMetadata")
+        .kind(flecs::OnStart)
+        .each([](Database::Connection& conn) {
+            try {
+                soci::session sql(*conn.pool);
+                sql << "CREATE TABLE IF NOT EXISTS dataset_metadata (key TEXT PRIMARY KEY, value TEXT);";
+                sql << "INSERT OR IGNORE INTO dataset_metadata (key, value) VALUES ('dataset_uuid', lower(hex(randomblob(16))));";
+                sql << "INSERT OR IGNORE INTO dataset_metadata (key, value) VALUES ('created_at', datetime('now'));";
+                sql << "INSERT OR IGNORE INTO dataset_metadata (key, value) VALUES ('dataset_name', 'TownBuilder run ' || datetime('now'));";
+                systemsLogger->info("Table 'dataset_metadata' created with uuid, created_at and dataset_name values.");
+            } catch (const std::exception& e) {
+                systemsLogger->error("Error creating table 'dataset_metadata': {}", e.what());
+            }
+        });
+
     // System to create the pawn_state_utility table on startup
     ecs.system<Database::Connection>("CreateTable_PawnStateUtility")
         .kind(flecs::OnStart)
