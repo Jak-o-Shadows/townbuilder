@@ -222,29 +222,46 @@ systems::systems(flecs::world& ecs) {
     ecs.system<Database::Connection>("CreateTable_InputFiles")
         .kind(flecs::OnStart)
         .each([](Database::Connection& conn) {
+            ZoneScopedN("CreateTable_InputFiles");
+            systemsLogger->trace("Creating table for input files");
             try {
                 soci::session sql(*conn.pool);
                 sql.create_table("input_files")
                     .column("filename", soci::dt_string)
-                    .column("filepath", soci::dt_string);
+                    .column("filepath", soci::dt_string)
+                    .column("contents", soci::dt_string);
                 systemsLogger->info("Table 'input_files' created.");
             } catch (const std::exception& e) {
                 systemsLogger->error("Error creating table 'input_files': {}", e.what());
             }
         });
 
-    // Observer to log input files when they are set
-    ecs.observer<Database::InputFiles>("Observer_LogInputFile")
-        .event(flecs::OnSet)
+    ecs.system<Database::InputFiles>("Log_InputFiles")
+        .kind(flecs::OnStart)  // Only run the once at startup. Cannot be an observer as it runs before the database is setup
         .each([](flecs::entity e, const Database::InputFiles& input_files) {
+            ZoneScopedN("Log_InputFiles");
+            systemsLogger->trace("Logging {} input files", input_files.filepaths.size());
             auto& conn = e.world().get<Database::Connection>();
             soci::session sql(*conn.pool);
             for (const auto& filepath : input_files.filepaths) {
                 std::filesystem::path p(filepath);
                 std::string filename = p.filename().string();
-                sql << "INSERT INTO input_files (filename, filepath) VALUES (:filename, :filepath)",
-                soci::use(filename, "filename"),
-                soci::use(filepath, "filepath");
+                std::string contents = "Could not read file";
+                try {
+                    std::ifstream file(filepath, std::ios::binary);
+                    if (file) {
+                        contents.assign(std::istreambuf_iterator<char>(file), {});
+                    } else {
+                        systemsLogger->warn("Failed to open input file for reading: {}", filepath);
+                    }
+                } catch (const std::exception& ex) {
+                    systemsLogger->warn("Exception reading input file {}: {}", filepath, ex.what());
+                }
+
+                sql << "INSERT INTO input_files (filename, filepath, contents) VALUES (:filename, :filepath, :contents)",
+                    soci::use(filename, "filename"),
+                    soci::use(filepath, "filepath"),
+                    soci::use(contents, "contents");
                 systemsLogger->debug("Logged input file: {} at {}", filename, filepath);
             }
             systemsLogger->info("All input files logged to database.");

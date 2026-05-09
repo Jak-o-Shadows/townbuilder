@@ -17,8 +17,8 @@ components::components(flecs::world& ecs) {
         .member<std::string>("destination_filename")
         .add(flecs::Singleton);
     ecs.component<InputFiles>()
-        .member<std::vector<std::string>>("files")
-        .add(flecs::Singleton);
+        .member<std::vector<std::string>>("filepaths");
+//        .add(flecs::Singleton);  // This causes a crash? No idea why.
     componentsLogger->trace("Components Registered");
 
 };
