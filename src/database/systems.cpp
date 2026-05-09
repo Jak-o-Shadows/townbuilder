@@ -9,13 +9,15 @@
 #include "async_system.hpp"
 
 #include <soci/sqlite3/soci-sqlite3.h>
+#include <soci/connection-pool.h>
 #include <sqlite3.h>
+
 #include <string>
 #include <vector>
 #include <cstdio> // For std::remove
 #include <future>
 #include <fstream>
-#include <soci/connection-pool.h>
+#include <filesystem>
 
 namespace Database {
 
@@ -215,6 +217,38 @@ systems::systems(flecs::world& ecs) {
                 systemsLogger->error("Error creating table 'pawn_active_states': {}", e.what());
             }
         });    
+
+    // System to create the input_files table on startup
+    ecs.system<Database::Connection>("CreateTable_InputFiles")
+        .kind(flecs::OnStart)
+        .each([](Database::Connection& conn) {
+            try {
+                soci::session sql(*conn.pool);
+                sql.create_table("input_files")
+                    .column("filename", soci::dt_string)
+                    .column("filepath", soci::dt_string);
+                systemsLogger->info("Table 'input_files' created.");
+            } catch (const std::exception& e) {
+                systemsLogger->error("Error creating table 'input_files': {}", e.what());
+            }
+        });
+
+    // Observer to log input files when they are set
+    ecs.observer<Database::InputFiles>("Observer_LogInputFile")
+        .event(flecs::OnSet)
+        .each([](flecs::entity e, const Database::InputFiles& input_files) {
+            auto& conn = e.world().get<Database::Connection>();
+            soci::session sql(*conn.pool);
+            for (const auto& filepath : input_files.filepaths) {
+                std::filesystem::path p(filepath);
+                std::string filename = p.filename().string();
+                sql << "INSERT INTO input_files (filename, filepath) VALUES (:filename, :filepath)",
+                soci::use(filename, "filename"),
+                soci::use(filepath, "filepath");
+                systemsLogger->debug("Logged input file: {} at {}", filename, filepath);
+            }
+            systemsLogger->info("All input files logged to database.");
+        });
 
     ecs.system<Pawn::PawnFSMContainer, Database::Connection>("LogPawnStateActive")
         .tick_source(Ticks::tick_pawn_behaviour)

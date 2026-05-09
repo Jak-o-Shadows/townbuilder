@@ -17,6 +17,10 @@ struct Snapshot {
     std::string destination_filename;
 };
 
+struct InputFiles {
+    std::vector<std::string> filepaths;
+};
+
 struct components {
     components(flecs::world& ecs);
 };

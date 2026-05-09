@@ -468,8 +468,14 @@ int main(int, char *[]) {
         });
     ecs.defer_end();
     */
+   std::vector<std::string> input_files = {
+        "../../src/config.flecs"
+   };
+    ecs.set<Database::InputFiles>({input_files});
     std::cout << "Loading flecs script" << std::endl;
-    ecs_script_run_file(ecs, "../../src/config.flecs");
+    for (std::string filepath : input_files) {
+        ecs_script_run_file(ecs, filepath.c_str());
+    }
     std::cout << "Flecs script loaded" << std::endl;
 
     /*
