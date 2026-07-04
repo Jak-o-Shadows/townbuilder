@@ -11,6 +11,7 @@ set(DIR_TOWNBUILDER ${CMAKE_CURRENT_LIST_DIR}/../../../)
 target_sources(${PROJECT_NAME} PRIVATE
     ${DIR_TOWNBUILDER}/src/taskflow_scheduler/components.cpp
     ${DIR_TOWNBUILDER}/src/taskflow_scheduler/systems.cpp
+    ${DIR_TOWNBUILDER}/src/taskflow_scheduler/scheduler.cpp
     # Grabbing the townbuiler msgLogging because we'll need em
     ${DIR_TOWNBUILDER}/src/msgLogging/components.cpp
     ${DIR_TOWNBUILDER}/src/msgLogging/systems.cpp
@@ -35,6 +36,10 @@ target_link_libraries(${PROJECT_NAME} flecs::flecs_static)
 find_package(Tracy REQUIRED)
 target_link_libraries(${PROJECT_NAME} Tracy::TracyClient)
 target_compile_definitions(${PROJECT_NAME} PRIVATE TRACY_ENABLE FLECS_PERF_TRACE)
+
+# Taskflow
+find_package(taskflow REQUIRED)
+target_link_libraries(${PROJECT_NAME} Taskflow::Taskflow)
 
 # Spdlog & SOCI for logging (SOCI is a database sink for Spdlog)
 find_package(spdlog REQUIRED)

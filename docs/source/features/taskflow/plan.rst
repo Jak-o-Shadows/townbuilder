@@ -8,7 +8,7 @@ Specifications for :need:`FEAT_TASKFLOW_PARALLELISM`
    :specified_by: REQ_ANNOTATION_MAPPING
    :status: draft
 
-   Implement a class that analyzes systems in the pipeline and constructs a Taskflow graph based on resource access (.in, .out, .inout).
+   Implement a class that analyzes systems in and constructs a Taskflow graph based on resource access (.in, .out, .inout). Each system is a taskflow task.
 
 .. spec:: Taskflow System Executor
    :id: SPEC_SYSTEM_WRAPPER
