@@ -1,0 +1,163 @@
+{
+  "$defs": {
+    "type-feature": {
+      "properties": { "type": { "const": "feature" } }
+    },
+    "type-req": {
+      "properties": { "type": { "const": "req" } }
+    },
+    "type-spec": {
+      "properties": { "type": { "const": "spec" } }
+    },
+    "type-decision": {
+      "properties": { "type": { "const": "decision" } }
+    },
+    "type-test": {
+      "properties": { "type": { "const": "test" } }
+    },
+    "type-impl": {
+      "properties": { "type": { "const": "impl" } }
+    },
+    "type-risk": {
+      "properties": { "type": { "const": "risk" } }
+    }
+  },
+  "schemas": [
+    {
+      "severity": "warning",
+      "message": "ID must be uppercase with numbers and underscores",
+      "validate": {
+        "local": {
+          "properties": {
+            "id": { "pattern": "^[A-Z0-9_]+$" }
+          }
+        }
+      }
+    },
+    {
+      "id": "feature",
+      "select": { "$ref": "#/$defs/type-feature" },
+      "validate": {
+        "local": {
+          "properties": {
+            "id": { "pattern": "^FEAT_\\d{3}$" },
+            "status": { "enum": ["draft", "planned", "in_progress", "done"] }
+          }
+        }
+      }
+    },
+    {
+      "id": "req",
+      "select": { "$ref": "#/$defs/type-req" },
+      "validate": {
+        "local": {
+          "properties": {
+            "id": { "pattern": "^REQ_\\d{3}$" },
+            "priority": { "enum": ["high", "medium", "low"] }
+          },
+          "required": ["priority"]
+        }
+      }
+    },
+    {
+      "id": "spec",
+      "select": { "$ref": "#/$defs/type-spec" },
+      "validate": {
+        "local": {
+          "properties": {
+            "id": { "pattern": "^SPEC_\\d{3}$" },
+            "status": { "enum": ["draft", "review", "approved"] }
+          }
+        }
+      }
+    },
+    {
+      "id": "decision",
+      "select": { "$ref": "#/$defs/type-decision" },
+      "validate": {
+        "local": {
+          "properties": {
+            "id": { "pattern": "^DEC_\\d{3}$" },
+            "status": { "enum": ["proposed", "accepted", "superseded"] }
+          }
+        }
+      }
+    },
+    {
+      "id": "test",
+      "select": { "$ref": "#/$defs/type-test" },
+      "validate": {
+        "local": {
+          "properties": {
+            "id": { "pattern": "^TC_\\d{3}$" },
+            "test_type": { "enum": ["automated", "manual", "smoke"] }
+          },
+          "required": ["test_type"]
+        }
+      }
+    },
+    {
+      "id": "req-links-feature",
+      "severity": "warning",
+      "message": "Requirement should link to at least one feature via 'requires'",
+      "select": { "$ref": "#/$defs/type-req" },
+      "validate": {
+        "network": {
+          "requires": {
+            "minContains": 1
+          }
+        }
+      }
+    },
+    {
+      "id": "spec-links-req",
+      "severity": "warning",
+      "message": "Specification should link to at least one requirement via 'specified_by'",
+      "select": { "$ref": "#/$defs/type-spec" },
+      "validate": {
+        "network": {
+          "specified_by": {
+            "minContains": 1
+          }
+        }
+      }
+    },
+    {
+      "id": "impl",
+      "select": { "$ref": "#/$defs/type-impl" },
+      "validate": {
+        "local": {
+          "properties": {
+            "id": { "pattern": "^IMPL_\\d{3}$" }
+          }
+        }
+      }
+    },
+    {
+      "id": "impl-links-spec",
+      "severity": "violation",
+      "message": "Implementation MUST link to at least one specification",
+      "select": { "$ref": "#/$defs/type-impl" },
+      "validate": {
+        "network": {
+          "implemented_by": {
+            "minContains": 1
+          }
+        }
+      }
+    },
+    {
+      "id": "risk",
+      "select": { "$ref": "#/$defs/type-risk" },
+      "validate": {
+        "local": {
+          "properties": {
+            "id": { "pattern": "^RISK_\\d{3}$" },
+            "severity": { "enum": ["critical", "major", "minor"] }
+          },
+          "required": ["severity"]
+        }
+      }
+    }
+  ]
+}

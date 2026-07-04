@@ -1,0 +1,105 @@
+"$schema" = "https://ubcode.useblocks.com/ubproject.schema.json"
+
+[project]
+name = "Townbuilder"
+description = "Townbuilder Game"
+srcdir = "."
+
+[needs]
+build_json = true
+id_required = true
+id_regex = "[A-Z]{2,10}_\\d{3}"
+
+[needs.fields.priority]
+description = "Priority level"
+nullable = true
+
+[needs.fields.author]
+description = "Responsible author"
+nullable = true
+
+[needs.fields.test_type]
+description = "Type of test (automated, manual, smoke)"
+nullable = true
+
+[needs.fields.severity]
+description = "Severity classification"
+nullable = true
+
+# --- Need Types ---
+
+[[needs.types]]
+directive = "feature"
+title = "Feature"
+prefix = "FEAT_"
+color = "#BFD8D2"
+style = "rectangle"
+
+[[needs.types]]
+directive = "req"
+title = "Requirement"
+prefix = "REQ_"
+color = "#FFB300"
+style = "node"
+
+[[needs.types]]
+directive = "spec"
+title = "Specification"
+prefix = "SPEC_"
+color = "#ec6dd7"
+style = "node"
+
+[[needs.types]]
+directive = "decision"
+title = "Decision"
+prefix = "DEC_"
+color = "#A8D8EA"
+style = "rectangle"
+
+[[needs.types]]
+directive = "test"
+title = "Test Case"
+prefix = "TC_"
+color = "#A6BDD7"
+style = "node"
+
+[[needs.types]]
+directive = "impl"
+title = "Implementation"
+prefix = "IMPL_"
+color = "#fa8638"
+style = "node"
+
+[[needs.types]]
+directive = "risk"
+title = "Risk"
+prefix = "RISK_"
+color = "#DC143C"
+style = "node"
+
+# --- Link Types ---
+
+[needs.links.requires]
+outgoing = "requires"
+incoming = "required by"
+
+[needs.links.specified_by]
+outgoing = "specified by"
+incoming = "specifies"
+
+[needs.links.constrains]
+outgoing = "constrains"
+incoming = "constrained by"
+
+[needs.links.verified_by]
+outgoing = "verified by"
+incoming = "verifies"
+
+[needs.links.implemented_by]
+outgoing = "implemented by"
+incoming = "implements"
+
+[needs.links.mitigates]
+outgoing = "mitigates"
+incoming = "mitigated by"
+color = "#DC143C"
