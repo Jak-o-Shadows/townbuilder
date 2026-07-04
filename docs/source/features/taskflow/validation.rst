@@ -12,7 +12,15 @@ Automated
    :verified_by: SPEC_GRAPH_BUILDER
    :status: draft
 
-   Unit tests to verify the scheduler correctly generates dependency graphs based on component access patterns.
+   Unit tests should verify that each registered system becomes a Taskflow task and that dependency edges are created from the declared access patterns (.in, .out, .inout) in a way that preserves ordering for conflicting resource access.
+
+.. test:: Drop-in Wrapper Verification
+   :id: TC_DROP_IN_WRAPPER
+   :test_type: automated
+   :verified_by: SPEC_SYSTEM_WRAPPER
+   :status: draft
+
+   Verify that existing systems can be declared with the normal Flecs syntax and are executed through the Taskflow wrapper without requiring changes to the system declaration code.
 
 .. test:: Standalone Build Target Verification
    :id: TC_BUILD_TARGET
