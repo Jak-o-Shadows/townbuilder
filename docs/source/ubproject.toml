@@ -8,7 +8,7 @@ srcdir = "."
 [needs]
 build_json = true
 id_required = true
-id_regex = "[A-Z]{2,10}_\\d{3}"
+id_regex = "[A-Z]{2,10}_.*"
 
 [needs.fields.priority]
 description = "Priority level"

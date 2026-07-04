@@ -1,17 +1,15 @@
-.. townbuilder documentation master file, created by
-   sphinx-quickstart on Sat Jul  4 21:41:15 2026.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
+Townbuilder
+===========
 
-townbuilder documentation
-=========================
+Welcome to the Townbuilder project. This documentation contains the formal specifications.
 
-Add your content using ``reStructuredText`` syntax. See the
-`reStructuredText <https://www.sphinx-doc.org/en/master/usage/restructuredtext/index.html>`_
-documentation for details.
-
+This project uses `sphinx-needs <https://sphinx-needs.readthedocs.io/>`_ for traceable requirements management.
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+   :caption: Contents
 
+   constitution/index
+   features/index
+   implementation/index
+   reports/index
