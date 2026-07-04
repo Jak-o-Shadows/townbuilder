@@ -15,6 +15,16 @@ dependencies = [
 ]
 requires-python = ">3.11.10"
 
+[project.optional-dependencies]
+docs = [
+    "sphinx",
+    "sphinx-rtd-theme",
+    "furo",
+    "sphinx-needs",
+    "sphinx-codelinks",
+    "sphinx-autoapi",
+]
+
 [project.scripts]
 townhall-dev = "townhall.cli:main"
 townhall = "townhall.cli:run"
