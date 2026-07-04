@@ -41,7 +41,7 @@ jobs:
       - name: Compile LaTeX to PDF
         uses: xu-cheng/latex-action@v3
         with:
-          root_file: dishboard.tex
+          root_file: townbuilder.tex
           working_directory: docs/build/latex
 
       - name: Upload HTML Artifact
