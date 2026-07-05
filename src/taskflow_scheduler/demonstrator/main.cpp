@@ -1,4 +1,5 @@
 #include "taskflow_scheduler/module.hpp"
+#include "taskflow_scheduler/scheduler.hpp"
 #include "msgLogging/module.hpp"
 
 #include <flecs.h>
@@ -34,7 +35,7 @@ int main(int, char *[]) {
     // Setup a non-module logger for main.cpp
     auto sinks = ecs.get<Logging::LoggerSink>().sinks;
     logger = std::make_shared<spdlog::logger>("main", sinks.begin(), sinks.end());
-    logger->set_level(spdlog::level::trace);  // Set to trace in the knowledge that the observer will fire soon and change it
+    logger->set_level(spdlog::level::debug);  // Set to trace in the knowledge that the observer will fire soon and change it
     spdlog::register_logger(logger);
 
     logger->info("Main logger created");
@@ -104,9 +105,10 @@ int main(int, char *[]) {
 
 
     logger->info("Starting main loop");
+    ecs.set_target_fps(1);
     while (true) {
-        ecs.progress();
         FrameMarkNamed("Frame");
+        ecs.progress();
     }
 
 }
