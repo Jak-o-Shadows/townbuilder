@@ -19,6 +19,8 @@ std::shared_ptr<spdlog::logger> systemsLogger;
 // Configure how many worker stages you want (usually number of hardware threads)
 //  TODO: Figure out what thsi actually does
 static constexpr int WORKER_STAGE_COUNT = 1;
+tf::Executor executor;
+
 
 static flecs::query<> system_query;
 
@@ -67,7 +69,6 @@ void build_taskflow_graph(flecs::world& ecs) {
     ZoneScoped;
     systemsLogger->debug("Building taskflow graph (in func) ");
 
-    tf::Executor executor;
     // Round-robin stage assignment counter (thread-safe)
     std::atomic<int> stage_assign_counter{0};  // TODO: Understand this at all
 
@@ -120,6 +121,9 @@ void build_taskflow_graph(flecs::world& ecs) {
     systemsLogger->debug("Building taskflow graph for each of {} phases", phase_order.size());
     // Create a taskflow task for each system (maintaining order!)
     for (ecs_entity_t phase : phase_order) {
+
+        ecs.defer_begin();
+
         systemsLogger->trace("Building taskflow graph for phase: {}", (phase ? ecs_get_name(ecs.c_ptr(), phase) : "<no phase>"));
         tf::Taskflow taskflow;
 
@@ -146,9 +150,10 @@ void build_taskflow_graph(flecs::world& ecs) {
             // Create the task: capture stage_w and sys_id by value
             float delta_time = 1;  // TODO: figure out what this does, and what to actually do
             systemsLogger->trace("Emplacing task for {}", std::string(sys_info.system_entity.path()));
-            tasks[system_idx] = taskflow.emplace([&ecs, sys_id, delta_time]() {
+            tasks[system_idx] = taskflow.emplace([stage_w, &ecs, sys_id, delta_time]() {
                 systemsLogger->trace("Running system {}", std::string(ecs.entity(sys_id).path()));
-                ecs_run(ecs.c_ptr(), sys_id, delta_time, nullptr);
+                ecs_run(stage_w, sys_id, delta_time, nullptr);
+                systemsLogger->trace("Ran system {}", std::string(ecs.entity(sys_id).path()));
             }).name(sys_info.system_entity.path().c_str()); // optional: name task for debugging
 
             
@@ -225,9 +230,9 @@ void build_taskflow_graph(flecs::world& ecs) {
         systemsLogger->debug("Finished running taskflow for phase {}", phase);
 
         // Merge
-        systemsLogger->trace("Merging deferred operations for phase {}", phase);
-        ecs.merge();  // Merge deferred operations from all stages back to the main world
-        systemsLogger->debug("Merged deferred operations for phase {}", phase);
+        systemsLogger->trace("About to end deferring: operations for phase {}", phase);
+        ecs.defer_end();  // Merge deferred operations from all stages back to the main world
+        systemsLogger->debug("Deferring ended: operations for phase {}", phase);
         
     }
 
