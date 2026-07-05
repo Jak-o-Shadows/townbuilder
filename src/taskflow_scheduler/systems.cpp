@@ -18,7 +18,9 @@ std::shared_ptr<spdlog::logger> systemsLogger;
 
 // Configure how many worker stages you want (usually number of hardware threads)
 //  TODO: Figure out what thsi actually does
-static constexpr int WORKER_STAGE_COUNT = 4;
+static constexpr int WORKER_STAGE_COUNT = 1;
+
+static flecs::query<> system_query;
 
 struct SystemInfo {
     flecs:: entity system_entity;
@@ -51,18 +53,19 @@ ecs_entity_t resolve_phase_cascade(flecs::entity sys_ent) {
     return 0;
 }
 
+std::string get_component_str(flecs::world& ecs, const ecs_id_t term_id) {
+    char *id_str = ecs_id_str(ecs.c_ptr(), term_id);
+    std::string comp = id_str ? id_str : "<unknown>";
+    if (id_str) {
+        ecs_os_free(id_str);
+    }
+    return comp;
+}
+
 
 void build_taskflow_graph(flecs::world& ecs) {
-
-    // TODO: Dont'make this query every time
-    auto system_query =  ecs.query_builder()
-        .with(flecs::System)
-        .with(flecs::Phase).cascade(flecs::DependsOn)
-        .without(flecs::Disabled).up(flecs::DependsOn)
-        .without(flecs::Disabled).up(flecs::ChildOf)
-        .build();
-
-
+    ZoneScoped;
+    systemsLogger->debug("Building taskflow graph (in func) ");
 
     tf::Executor executor;
     // Round-robin stage assignment counter (thread-safe)
@@ -75,13 +78,16 @@ void build_taskflow_graph(flecs::world& ecs) {
     std::vector<SystemInfo> systems;
     systems.reserve(128);  // This is a reasonable upper guess?  // TODO: Consider this more
 
-    system_query.each([&systems, &system_query, &ecs](flecs::entity system_entity) {
+    systemsLogger->trace("Collecting systems for taskflow graph");
+    system_query.each([&systems, &ecs](flecs::entity system_entity) {
         ecs_entity_t id = system_entity.id();
         const ecs_system_t *s = ecs_system_get(ecs.c_ptr(), id);
         ecs_entity_t phase = resolve_phase_cascade(system_entity);
         systems.push_back({system_entity, s, phase});
     });
+    systemsLogger->debug("Collected {} systems for taskflow graph", systems.size());
     
+    systemsLogger->trace("Grouping systems by phase");
     // Group systems by phase. This is required in order to operate on deferred data appropriately
     std::unordered_map<ecs_entity_t, std::vector<size_t>> systems_by_phase;
     std::vector<ecs_entity_t> phase_order;  // To maintain the order of phases
@@ -96,6 +102,7 @@ void build_taskflow_graph(flecs::world& ecs) {
         // Add the system index to the appropriate phase group
         systems_by_phase[phase].push_back(system_idx);
     }
+    systemsLogger->trace("Grouped {} systems into {} phases", systems.size(), phase_order.size());
 
     // Print em
     for (ecs_entity_t phase : phase_order) {
@@ -108,10 +115,12 @@ void build_taskflow_graph(flecs::world& ecs) {
         msg << "END";
         systemsLogger->debug("{}", msg.str());
     }
+    systemsLogger->debug("Displayed {} systems in {} phases", systems.size(), phase_order.size());
 
-
+    systemsLogger->debug("Building taskflow graph for each of {} phases", phase_order.size());
     // Create a taskflow task for each system (maintaining order!)
     for (ecs_entity_t phase : phase_order) {
+        systemsLogger->trace("Building taskflow graph for phase: {}", (phase ? ecs_get_name(ecs.c_ptr(), phase) : "<no phase>"));
         tf::Taskflow taskflow;
 
         std::vector<tf::Task> tasks(systems.size());  // This is the upper bound - probably less
@@ -122,6 +131,7 @@ void build_taskflow_graph(flecs::world& ecs) {
             const SystemInfo& sys_info = systems[system_idx];
             systemsLogger->trace("Creating task for system: {} in phase: {}", sys_info.system_entity.path().c_str(), (phase ? ecs_get_name(ecs.c_ptr(), phase) : "<no phase>"));
 
+            
             ecs_entity_t sys_id = sys_info.system_entity.id();
 
             // Assign a stage to this task (round-robin)
@@ -130,12 +140,18 @@ void build_taskflow_graph(flecs::world& ecs) {
             flecs::world stage_world = ecs.get_stage(stage_id);
             ecs_world_t *stage_w = stage_world.c_ptr();
 
+            int stage_current = stage_id;
+            int stage_count = WORKER_STAGE_COUNT;  // TODO: Understand thsi
+
             // Create the task: capture stage_w and sys_id by value
             float delta_time = 1;  // TODO: figure out what this does, and what to actually do
-            tasks[system_idx] = taskflow.emplace([stage_w, sys_id, delta_time]() {
-                // Run the system on the stage.
-                ecs_run(stage_w, sys_id, delta_time, nullptr);
+            systemsLogger->trace("Emplacing task for {}", std::string(sys_info.system_entity.path()));
+            tasks[system_idx] = taskflow.emplace([&ecs, sys_id, delta_time]() {
+                systemsLogger->trace("Running system {}", std::string(ecs.entity(sys_id).path()));
+                ecs_run(ecs.c_ptr(), sys_id, delta_time, nullptr);
             }).name(sys_info.system_entity.path().c_str()); // optional: name task for debugging
+
+            
             systemsLogger->trace("Created task for system: {} in phase: {}", sys_info.system_entity.path().c_str(), (phase ? ecs_get_name(ecs.c_ptr(), phase) : "<no phase>"));
         }
 
@@ -146,19 +162,24 @@ void build_taskflow_graph(flecs::world& ecs) {
 
         for (const size_t system_idx : systems_by_phase[phase]) {
             const SystemInfo & sys_info = systems[system_idx];
+            systemsLogger->trace("Processing dependencies for {}", std::string(sys_info.system_entity.path()));
             const ecs_system_t *s = sys_info.sys;
             if (!s || !s->query) {
                 continue;  // Skip if no system data or query // TODO: Is this a sensible thing to do?
             }
 
+            systemsLogger->trace("System {} has {} terms", std::string(sys_info.system_entity.path()), s->query->term_count);
             for (int term_index = 0; term_index < s->query->term_count; term_index++) {
                 const ecs_term_t *term = &s->query->terms[term_index];
                 const ecs_entity_t comp_id = term->id;
+                const std::string comp_str = get_component_str(ecs, comp_id);
+                systemsLogger->trace("Processing {}: term {}", std::string(sys_info.system_entity.path()), comp_str);
                 const ecs_inout_kind_t access = static_cast<ecs_inout_kind_t>(term->inout);
 
                 // Read
                 switch (access) {
                     case EcsIn:
+                        systemsLogger->trace("In");
                         // Look for a previous writer
                         if (last_writer.contains(comp_id)) {
                             tasks[last_writer[comp_id]].precede(tasks[system_idx]);
@@ -168,7 +189,9 @@ void build_taskflow_graph(flecs::world& ecs) {
                         break;
                     case EcsInOut:
                         // Deliberately fallthrough
+                        systemsLogger->trace("InOut");
                     case EcsOut:
+                        systemsLogger->trace("Out (or InOut)");
                         // Look for a previous writer
                         if (last_writer.contains(comp_id)) {
                             tasks[last_writer[comp_id]].precede(tasks[system_idx]);
@@ -184,20 +207,27 @@ void build_taskflow_graph(flecs::world& ecs) {
                         last_writer[comp_id] = system_idx;
                         break;
                     default:
+                        systemsLogger->trace("default");
                         // Do nothing for other access types
                         // TODO: Log something to understand this
                         break;
                 }
             }
-
+            systemsLogger->trace("Processed all dependencies for system {}", std::string(sys_info.system_entity.path()));
         }
+        systemsLogger->trace("Finished processing all systems for phase {}", phase);
 
+        systemsLogger->debug("Graph is:");
         taskflow.dump(std::cout);
 
+        systemsLogger->trace("Running taskflow for phase {}", phase);
         executor.run(taskflow).wait();  // Wait for all tasks in this phase to complete before moving to the next phase
+        systemsLogger->debug("Finished running taskflow for phase {}", phase);
 
         // Merge
+        systemsLogger->trace("Merging deferred operations for phase {}", phase);
         ecs.merge();  // Merge deferred operations from all stages back to the main world
+        systemsLogger->debug("Merged deferred operations for phase {}", phase);
         
     }
 
@@ -219,16 +249,18 @@ systems::systems(flecs::world& ecs) {
     ecs.import<TaskflowScheduler::components>();
 
     systemsLogger->trace("Other flecs modules imported");
-
-    auto system_query =  ecs.query_builder()
+    
+    system_query =  ecs.query_builder()
         .with(flecs::System)
         .with(flecs::Phase).cascade(flecs::DependsOn)
         .without(flecs::Disabled).up(flecs::DependsOn)
         .without(flecs::Disabled).up(flecs::ChildOf)
+        .without<TaskflowExempt>()
         .build();
+    systemsLogger->debug("Built query for systems");
 
     ecs.system("SystemLister")
-        .run([system_query](flecs::iter& it) {
+        .run([](flecs::iter& it) {
             ZoneScopedN("SystemLister");
             systemsLogger->debug("Listing all systems:");
             std::ostringstream msg;
@@ -241,7 +273,7 @@ systems::systems(flecs::world& ecs) {
         });
 
     ecs.system("SystemInOutLister")
-        .run([system_query, &ecs](flecs::iter& it) {
+        .run([&ecs](flecs::iter& it) {
             ZoneScopedN("SystemInOutLister");
             systemsLogger->debug("Listing all systems in & outs:");
 
@@ -254,10 +286,13 @@ systems::systems(flecs::world& ecs) {
                 }
                 std::ostringstream msg;
                 msg << std::format("System: {} : ", system_entity.path().c_str());
+                systemsLogger->trace("System: {}", std::string(system_entity.path()));
                 for (int t = 0; t < s->query->term_count; ++t) {
                     const ecs_term_t *term = &s->query->terms[t];
+                    systemsLogger->trace("Component id: {}", term->id);
                     // term->id is the component id; term->inout is the access kind
-                    const char *comp = ecs_get_name(ecs.c_ptr(), term->id);
+                    std::string comp = get_component_str(ecs, term->id);
+
                     const char *access = "unknown";
                     switch (term->inout) {
                         case EcsIn: access = "in"; break;
@@ -265,18 +300,21 @@ systems::systems(flecs::world& ecs) {
                         case EcsInOut: access = "inout"; break;
                         default: access = "other"; break;
                     }
-                    msg << std::format("{}({}) ;", (comp ? comp : "<comp>"), access);
+                    systemsLogger->trace("{}({}) ;", comp, access);
+                    msg << std::format("{}({}) ;", comp, access);
                 }
                 systemsLogger->debug("{} END", msg.str());
             });
         });
 
     ecs.system("TaskflowGraphBuilder")
+        .kind(flecs::OnStart)
         .run([&ecs](flecs::iter& it) {
             ZoneScopedN("TaskflowGraphBuilder");
             systemsLogger->debug("Building taskflow graph");
             build_taskflow_graph(ecs);
-        });
+        })
+        .add(flecs::Disabled);
 
 }
 

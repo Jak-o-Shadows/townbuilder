@@ -8,6 +8,7 @@
 #include <tracy/TracyC.h>
 
 #include <iostream>
+#include <windows.h>  // For Sleep
 
 struct DataComponentA {
     float value;
@@ -59,6 +60,8 @@ int main(int, char *[]) {
         .each([](DataComponentA& data) {
             ZoneScopedN("ProducerSystemA");
             data.value += 1.0f;
+            // Sleep for a while
+            Sleep(500);
             logger->trace("Produced: {}", data.value);
         });
 
@@ -66,6 +69,7 @@ int main(int, char *[]) {
         .term_at(0).in()
         .each([](const DataComponentA& data) {
             ZoneScopedN("ConsumerSystemA");
+            Sleep(100);
             logger->trace("Consumed: {}", data.value);
         });
 
@@ -74,6 +78,7 @@ int main(int, char *[]) {
         .each([](DataComponentB& data) {
             ZoneScopedN("ProducerSystemB");
             data.value += 1;
+            Sleep(700);
             logger->trace("Produced: {}", data.value);
         });
 
@@ -81,6 +86,7 @@ int main(int, char *[]) {
         .term_at(0).in()
         .each([](const DataComponentB& data) {
             ZoneScopedN("ConsumerSystemB");
+            Sleep(100);
             logger->trace("Consumed: {}", data.value);
         });
 
@@ -89,6 +95,7 @@ int main(int, char *[]) {
         .term_at(1).in()
         .each([](const DataComponentA& dataA, const DataComponentB& dataB) {
             ZoneScopedN("CombinedConsumerSystem");
+            Sleep(300);
             logger->trace("Consumed A: {}, B: {}", dataA.value, dataB.value);
         });
 
@@ -106,9 +113,11 @@ int main(int, char *[]) {
 
     logger->info("Starting main loop");
     ecs.set_target_fps(1);
+    ecs.progress();  // Set it all started
     while (true) {
         FrameMarkNamed("Frame");
-        ecs.progress();
+        //ecs.progress();
+        TaskflowScheduler::build_taskflow_graph(ecs);
     }
 
 }
