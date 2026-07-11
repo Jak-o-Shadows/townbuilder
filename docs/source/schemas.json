@@ -53,9 +53,8 @@
         "local": {
           "properties": {
             "id": { "pattern": "^REQ_.*$" },
-            "priority": { "enum": ["high", "medium", "low"] }
           },
-          "required": ["priority"]
+          "required": []
         }
       }
     },
