@@ -12,23 +12,23 @@ Automated
    :verified_by: SPEC_GRAPH_BUILDER
    :status: draft
 
-   Unit tests should verify that each registered system becomes a Taskflow task and that dependency edges are created from the declared access patterns (.in, .out, .inout) in a way that preserves ordering for conflicting resource access.
+   Unit tests should verify that, given a set of systems with known ``.in``/``.out``/``.inout`` annotations, ``build_taskflow_graph()`` produces the correct dependency edges: readers wait on prior writers; writers wait on prior readers and prior writers of the same component.
 
-.. test:: Drop-in Wrapper Verification
-   :id: TC_DROP_IN_WRAPPER
+.. test:: TaskflowExempt Exclusion Verification
+   :id: TC_TASKFLOW_EXEMPT
    :test_type: automated
-   :verified_by: SPEC_SYSTEM_WRAPPER
+   :verified_by: SPEC_TASKFLOW_EXEMPT
    :status: draft
 
-   Verify that existing systems can be declared with the normal Flecs syntax and are executed through the Taskflow wrapper without requiring changes to the system declaration code.
+   Verify that a system entity tagged with ``TaskflowExempt`` is not included in the taskflow graph constructed by ``build_taskflow_graph()``.
 
-.. test:: Standalone Build Target Verification
+.. test:: Standalone Demonstrator Build and Run
    :id: TC_BUILD_TARGET
    :test_type: automated
-   :verified_by: SPEC_SYSTEM_WRAPPER
-   :status: draft
+   :verified_by: SPEC_DEMONSTRATOR
+   :status: done
 
-   Verify that the standalone build target correctly links Taskflow and compiles the scheduler.
+   The ``demonstrator/`` target builds and runs without error. Correct ordering (consumers after producers) can be confirmed from log output.
 
 Manual
 ------
@@ -37,6 +37,14 @@ Manual
    :id: TC_TRACY_LOGGING
    :test_type: manual
    :verified_by: SPEC_TRACY_INTEGRATION
+   :status: done
+
+   Attach the Tracy profiler to the running demonstrator and confirm that task execution spans for each system are logged correctly and that parallel tasks appear overlapping on the timeline.
+
+.. test:: Phase Ordering Verification
+   :id: TC_PHASE_ORDERING
+   :test_type: manual
+   :verified_by: SPEC_GRAPH_BUILDER
    :status: draft
 
-   Inspect Tracy profiler GUI output to confirm task execution spans are logged correctly.
+   Run the demonstrator and confirm via log output that systems in different Flecs phases execute strictly in phase order, with deferred operations merged between phases.

@@ -1,7 +1,7 @@
 Decisions
 =========
 
-Key architectural and technology decisions for AgentClinic. Each decision is
+Key architectural and technology decisions for Townbuilder. Each decision is
 tracked as a ``.. decision::`` directive with a unique ID.
 
 .. needtable::
