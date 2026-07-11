@@ -14,3 +14,6 @@ documents:
    taskflow/requirements
    taskflow/plan
    taskflow/validation
+   imgui-log-sink/requirements
+   imgui-log-sink/plan
+   imgui-log-sink/validation

@@ -99,3 +99,32 @@ incoming = "implements"
 outgoing = "mitigates"
 incoming = "mitigated by"
 color = "#DC143C"
+
+################# CONFIGURE CODELINKS ##
+[codelinks]
+set_local_url = true            # Set to true to enable local code html and URL generation
+local_url_field = "local-url"   # Need's field name for local URL
+set_remote_url = false          # Set to true to enable remote url to be generated
+
+[codelinks.projects.taskflow_scheduler.source_discover]
+src_dir = "../../src/taskflow_scheduler/"
+comment_type = "cpp"
+gitignore = false
+
+[codelinks.projects.taskflow_scheduler.analyse]
+get_oneline_needs = true
+
+# This defines the template for code tracing comments
+[codelinks.projects.taskflow_scheduler.analyse.oneline_comment_style]
+start_sequence = "//#[["
+end_sequence = "]]"
+field_split_char = ","
+# The structure of your in-code tracker: //#[[ Title, ID, Type, Links ]]
+needs_fields = [
+    { name = "title", type = "str" },
+    { name = "id", type = "str" },
+    { name = "type", type = "str", default = "impl" },
+    { name = "implemented_by", type = "list[str]", default = [] }
+]
+
+
