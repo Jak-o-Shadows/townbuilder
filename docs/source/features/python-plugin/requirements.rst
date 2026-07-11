@@ -10,6 +10,13 @@ Requirements for :need:`FEAT_PYTHON_PLUGIN_SYSTEM`
 
     The plugin system must expose its components and loading mechanisms to Python via `pybind11` to facilitate testing, data manipulation, and scripting.
 
+.. req:: Automatic ECS Component Binding
+    :id: REQ_ECS_COMPONENT_PYTHON_BINDING
+    :requires: REQ_PYTHON_BINDINGS
+    :status: open
+
+    Reuse the Flecs component reflection data to avoid duplication of the type data
+
 .. req:: Numpy Integration
     :id: REQ_NUMPY_INTEGRATION
     :requires: FEAT_PYTHON_PLUGIN_SYSTEM
