@@ -32,5 +32,19 @@
 *.app
 
 
+
+
+deps/*
+.vscode/*
+.continue/*
+
+townbuilder/dev_stuff/*
+townbuilder/src/townhall.egg-info/*
+*.pyc
+etc/*
+*.sqlite3
+
+
 build/*
 CMakeUserPresets.json
+docs/build/*
