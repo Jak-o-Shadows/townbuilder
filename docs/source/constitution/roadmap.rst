@@ -13,7 +13,7 @@ Planned features, in delivery order. Each feature is ``.. feature::`` directive 
     :id: FEAT_PLUGIN_SYSTEM
     :status: in_progress
 
-    Enable the engine to load external functionality at runtime via dynamically linked libraries (`.dll` on Windows, `.so` on Linux). The system provides a standardized interface for plugin initialization, per-entity initialization, and per-tick updates.
+    Enable the engine to load external functionality at runtime via dynamically linked libraries (:code:`.dll` on Windows, :code:`.so` on Linux). The system provides a standardized interface for plugin initialization, per-entity initialization, and per-tick updates.
 
 .. feature:: Python Plugin System
     :id: FEAT_PYTHON_PLUGIN_SYSTEM

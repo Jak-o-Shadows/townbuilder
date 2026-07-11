@@ -8,7 +8,7 @@ Requirements for :need:`FEAT_PLUGIN_SYSTEM`
     :requires: FEAT_PLUGIN_SYSTEM
     :status: open
 
-    The system must implement a `PluginLoader` capable of loading dynamic libraries at runtime and resolving required entry points (`plugin_init`, `entity_init`, `plugin_tick`, `plugin_get_results`).
+    The system must be capable of loading dynamic libraries at runtime and resolving required entry points.
 
 .. req:: Plugin Interface
     :id: REQ_PLUGIN_INTERFACE

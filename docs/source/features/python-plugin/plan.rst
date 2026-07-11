@@ -8,12 +8,12 @@ Specifications for :need:`FEAT_PYTHON_PLUGIN_SYSTEM`
     :specified_by: REQ_PYTHON_BINDINGS
     :status: draft
 
-    Utilization of `pybind11` to mirror C++ plugin structures in Python, including dynamic attribute support and custom property getters/setters for data exchange.
+    Utilization of :code:`pybind11` to mirror C++ plugin structures in Python, including dynamic attribute support and custom property getters/setters for data exchange.
 
 .. spec:: Numpy Data Mapping
     :id: SPEC_NUMPY_MAPPING
     :specified_by: REQ_NUMPY_INTEGRATION
     :status: draft
 
-    Implementation of custom buffer protocols and `numpy` array integration for `ComplexChannel` and `ComplexMapArray` structures.
+    Implementation of custom buffer protocols and :code:`numpy` array integration for complicated structures.
 
