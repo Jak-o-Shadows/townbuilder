@@ -14,6 +14,12 @@ documents:
    taskflow/requirements
    taskflow/plan
    taskflow/validation
+   dll-plugin/requirements
+   dll-plugin/plan
+   dll-plugin/validation
+   python-plugin/requirements
+   python-plugin/plan
+   python-plugin/validation
    imgui-log-sink/requirements
    imgui-log-sink/plan
    imgui-log-sink/validation
