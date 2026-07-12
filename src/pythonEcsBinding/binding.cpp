@@ -1,3 +1,5 @@
+//#[[Python-to-ECS binding layer, IMPL_PYTHON_BINDINGS, impl, [SPEC_PYTHON_BINDINGS]]]
+
 #include <flecs.h>
 #include <flecs/addons/meta.h>
 #include <pybind11/pybind11.h>
@@ -92,6 +94,7 @@ void bind_component(const py::module_& m) {
     const EcsType& type = comp.get<EcsType>();
     
     try {
+        //#[[Use Flecs Reflection data, IMPL_PYTHON_FLECS_REFLECTION, impl, [ REQ_ECS_COMPONENT_PYTHON_BINDING]]]
         std::cout << "Binding component for entity: " << found_name << std::endl;
         if (type.kind == ecs_type_kind_t::EcsStructType){
             std::cout << "Binding struct component: " << found_name << std::endl;
@@ -251,4 +254,3 @@ PYBIND11_MODULE(pythonEcsBinding, m) {
     m.def("init_from_python", &init_from_python, "Initialize ECS from Python-created Flecs world",
         py::arg("ecs"));
 }
-                    
