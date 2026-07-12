@@ -8,7 +8,7 @@ Requirements for :need:`FEAT_PYTHON_PLUGIN_SYSTEM`
     :requires: FEAT_PYTHON_PLUGIN_SYSTEM
     :status: open
 
-    The plugin system must expose its components and loading mechanisms to Python via `pybind11` to facilitate testing, data manipulation, and scripting.
+    The plugin system must expose its components and loading mechanisms to Python via :code:`pybind11` to facilitate testing, data manipulation, and scripting.
 
 .. req:: Automatic ECS Component Binding
     :id: REQ_ECS_COMPONENT_PYTHON_BINDING
@@ -22,6 +22,6 @@ Requirements for :need:`FEAT_PYTHON_PLUGIN_SYSTEM`
     :requires: FEAT_PYTHON_PLUGIN_SYSTEM
     :status: open
 
-    Plugins must support high-performance data exchange with Python using `numpy` arrays, specifically for complex-number channels and map data.
+    Plugins must support high-performance data exchange with Python using :code:`numpy` arrays
 
 

@@ -106,20 +106,20 @@ set_local_url = true            # Set to true to enable local code html and URL 
 local_url_field = "local-url"   # Need's field name for local URL
 set_remote_url = false          # Set to true to enable remote url to be generated
 
-[codelinks.projects.taskflow_scheduler.source_discover]
-src_dir = "../../src/taskflow_scheduler/"
+[codelinks.projects.srccpp.source_discover]
+src_dir = "../../src/"
 comment_type = "cpp"
 gitignore = false
 
-[codelinks.projects.taskflow_scheduler.analyse]
+[codelinks.projects.srccpp.analyse]
 get_oneline_needs = true
 
 # This defines the template for code tracing comments
-[codelinks.projects.taskflow_scheduler.analyse.oneline_comment_style]
+[codelinks.projects.srccpp.analyse.oneline_comment_style]
 start_sequence = "//#[["
 end_sequence = "]]"
 field_split_char = ","
-# The structure of your in-code tracker: //#[[ Title, ID, Type, Links ]]
+# The structure of your in-code tracker: //#[[Title, ID, Type, [Link1, Link2]]]
 needs_fields = [
     { name = "title", type = "str" },
     { name = "id", type = "str" },

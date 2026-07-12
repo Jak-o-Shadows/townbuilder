@@ -9,7 +9,7 @@ Validation for :need:`FEAT_PLUGIN_SYSTEM`
     :verified_by: SPEC_PLUGIN_LOADER
     :status: draft
 
-    Verify that `PluginLoader` throws a clear `std::runtime_error` when failing to load a library or resolve symbols.
+    Verify that :code:`PluginLoader` throws a clear :code:`std::runtime_error` when failing to load a library or resolve symbols.
 
 .. test:: Plugin Tick Execution Test
     :id: TC_PLUGIN_TICK
@@ -17,7 +17,7 @@ Validation for :need:`FEAT_PLUGIN_SYSTEM`
     :verified_by: SPEC_PLUGIN_LOADER
     :status: draft
 
-    Ensure `plugin_tick` correctly invokes the external function with appropriate `GUID` and `TickInput`.
+    Ensure :code:`plugin_tick` correctly invokes the external function with appropriate :code:`GUID` and :code:`TickInput`.
 
 .. test:: Library Unloading Test
     :id: TC_LIBRARY_UNLOAD
@@ -25,5 +25,5 @@ Validation for :need:`FEAT_PLUGIN_SYSTEM`
     :verified_by: SPEC_LIFETIME
     :status: draft
 
-    Verify that library handles are correctly freed upon `PluginLoader` destruction.
+    Verify that library handles are correctly freed upon :code:`PluginLoader` destruction.
 

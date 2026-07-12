@@ -17,4 +17,4 @@ Validation for :need:`FEAT_PYTHON_PLUGIN_SYSTEM`
     :verified_by: SPEC_NUMPY_MAPPING
     :status: draft
 
-    Pass a numpy array from Python to `ComplexChannel`, modify it, and verify the changes are reflected in C++ via the mapped pointer.
+    Pass a numpy array from Python to C++, modify it, and verify the changes are reflected in C++ via the mapped pointer.

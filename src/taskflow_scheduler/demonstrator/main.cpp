@@ -20,6 +20,7 @@ struct DataComponentB {
 
 std::shared_ptr<spdlog::logger> logger;
 
+//#[[Standalone taskflow scheduler demonstrator, IMPL_DEMONSTRATOR, impl, [SPEC_DEMONSTRATOR]]]
 int main(int, char *[]) {
     std::cout << "Starting main" << std::endl;
 

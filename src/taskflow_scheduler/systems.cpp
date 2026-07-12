@@ -65,6 +65,7 @@ std::string get_component_str(flecs::world& ecs, const ecs_id_t term_id) {
 }
 
 
+//#[[Phase-grouped dependency graph builder, IMPL_GRAPH_BUILDER, impl, [SPEC_GRAPH_BUILDER]]]
 void build_taskflow_graph(flecs::world& ecs) {
     ZoneScoped;
     systemsLogger->debug("Building taskflow graph (in func) ");

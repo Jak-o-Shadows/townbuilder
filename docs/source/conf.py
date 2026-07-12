@@ -23,6 +23,7 @@ templates_path = ['_templates']
 exclude_patterns = []
 
 needs_from_toml = "ubproject.toml"
+src_trace_config_from_toml = "ubproject.toml"
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
