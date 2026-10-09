@@ -1,11 +1,15 @@
 import sys
+import os
 import pprint
 
 try:  # Giant try-except to catch errors when running from C++
     print("embedExample")
+    print(f"{__file__} working directory: {os.getcwd()}")
     # Add the build directory to the Python path
-    sys.path.append("build/src/pythonEcsBinding/Release")  # For running from command line
-    sys.path.append("../src/pythonEcsBinding/Release")  # For running from C++
+    rel_to_root = "build/Release/src/pythonEcsBinding"
+    dir_base = os.path.dirname(os.path.abspath(__file__))
+    dir_import = os.path.join(dir_base, rel_to_root)
+    sys.path.append(dir_import)
     try:
         import pythonEcsBinding
     except ImportError as e:
