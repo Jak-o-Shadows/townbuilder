@@ -7,10 +7,12 @@
 #include "pawn/module.hpp"
 #include "statemachine/module.hpp"
 #include "async_system.hpp"
+#include "scriptLoader/module.hpp"
 
 #include <soci/sqlite3/soci-sqlite3.h>
 #include <soci/connection-pool.h>
 #include <sqlite3.h>
+#include <nameof.hpp>
 
 #include <string>
 #include <vector>
@@ -83,6 +85,62 @@ std::tuple<> work_save_database_snapshot(const Snapshot& snapshot) {
     return std::make_tuple();
 }
 
+template <typename State>
+void open_pawn_state_interval(flecs::entity pawn, const std::string& state_name) {
+    try {
+        const auto& conn = pawn.world().get<Connection>();
+        soci::session sql(*conn.pool);
+        const double entered_at = pawn.world().get_info()->world_time_total;
+        const std::string pawn_name(pawn.path());
+        sql << "INSERT INTO pawn_state_intervals (pawn_name, state_name, entered_at) "
+               "VALUES (:pawn_name, :state_name, :entered_at)",
+            soci::use(pawn_name, "pawn_name"),
+            soci::use(state_name, "state_name"),
+            soci::use(entered_at, "entered_at");
+    } catch (const soci::soci_error& e) {
+        systemsLogger->error("Failed to open {} interval for pawn {}: {}",
+            state_name, std::string(pawn.path()), e.what());
+    }
+}
+
+void close_pawn_state_interval(flecs::entity pawn, const std::string& state_name) {
+    try {
+        const auto& conn = pawn.world().get<Connection>();
+        soci::session sql(*conn.pool);
+        const double exited_at = pawn.world().get_info()->world_time_total;
+        const std::string pawn_name(pawn.path());
+        sql << "UPDATE pawn_state_intervals "
+               "SET exited_at = :exited_at, duration_s = :exited_at - entered_at "
+               "WHERE id = (SELECT id FROM pawn_state_intervals "
+               "WHERE pawn_name = :pawn_name AND state_name = :state_name "
+               "AND exited_at IS NULL ORDER BY id DESC LIMIT 1)",
+            soci::use(exited_at, "exited_at"),
+            soci::use(pawn_name, "pawn_name"),
+            soci::use(state_name, "state_name");
+    } catch (const soci::soci_error& e) {
+        systemsLogger->error("Failed to close {} interval for pawn {}: {}",
+            state_name, std::string(pawn.path()), e.what());
+    }
+}
+
+template <typename State>
+void register_pawn_state_interval_observers(flecs::world& ecs) {
+    const std::string state_name = std::string(NAMEOF_SHORT_TYPE(State));
+    const std::string observer_prefix = "PawnStateInterval_" + state_name;
+
+    ecs.observer<State>((observer_prefix + "_Enter").c_str())
+        .event(flecs::OnAdd)
+        .each([state_name](flecs::entity pawn, const State&) {
+            open_pawn_state_interval<State>(pawn, state_name);
+        });
+
+    ecs.observer<State>((observer_prefix + "_Exit").c_str())
+        .event(flecs::OnRemove)
+        .each([state_name](flecs::entity pawn, const State&) {
+            close_pawn_state_interval(pawn, state_name);
+        });
+}
+
 
 systems::systems(flecs::world& ecs) {
     flecs::entity m = ecs.module<systems>();
@@ -95,8 +153,13 @@ systems::systems(flecs::world& ecs) {
         .event(flecs::OnSet)
         .each([](Connection& conn) {
             systemsLogger->trace("Creating in-memory database connection pool");
-            const char* db_connection_string = ":memory:";
+            const char* db_connection_string = ":memory:";//"db=file:memdb1?mode=memory&cache=shared";
             const std::size_t pool_size = 8;
+
+            const int rc = sqlite3_config(SQLITE_CONFIG_URI, 1);
+            if (rc != SQLITE_OK) {
+                throw std::runtime_error("Could not enable SQLite URI filenames");
+            }
 
             try {
                 conn.pool = std::make_shared<soci::connection_pool>(pool_size);
@@ -104,7 +167,7 @@ systems::systems(flecs::world& ecs) {
                     soci::session& sql = conn.pool->at(i);
                     sql.open(soci::sqlite3, db_connection_string);
                     // Enable Write-Ahead Logging for each connection.
-                    sql << "PRAGMA journal_mode=WAL;";
+                    //sql << "PRAGMA journal_mode=WAL;";  // TODO: This only works when not using in-memory database
                 }
                 systemsLogger->info("In-memory database connection pool established with {} connections.", pool_size);
 
@@ -136,7 +199,6 @@ systems::systems(flecs::world& ecs) {
         // No .apply() needed, the default does nothing for an empty results tuple.
         .build();
 
-    /////////////// Pawn ///////////////////////////////
 
     // System to create the dataset metadata table on startup
     ecs.system<Database::Connection>("CreateTable_DatasetMetadata")
@@ -154,10 +216,82 @@ systems::systems(flecs::world& ecs) {
             }
         });
 
+    // System to create the input_files table on startup
+    ecs.system<Database::Connection>("CreateTable_ScriptsToLoad")
+        .kind(flecs::OnStart)
+        .each([](Database::Connection& conn) {
+            ZoneScopedN("CreateTable_ScriptsToLoad");
+            systemsLogger->trace("Creating table for scripts to load");
+            try {
+                soci::session sql(*conn.pool);
+                sql.create_table("input_files")
+                    .column("filename", soci::dt_string)
+                    .column("filepath", soci::dt_string)
+                    .column("contents", soci::dt_string);
+                systemsLogger->info("Table 'input_files' created.");
+            } catch (const std::exception& e) {
+                systemsLogger->error("Error creating table 'input_files': {}", e.what());
+            }
+        }).disable();
+
+    ecs.system<ScriptLoader::ScriptsToLoad>("Log_ScriptsToLoad")
+        .kind(flecs::OnStart)  // Only run the once at startup. Cannot be an observer as it runs before the database is setup
+        .each([](flecs::entity e, const ScriptLoader::ScriptsToLoad& input_files) {
+            ZoneScopedN("Log_ScriptsToLoad");
+            systemsLogger->trace("Entering Log_ScriptsToLoad, processing {} input files", input_files.filepaths.size());
+            std::cout << std::format("Entering Log_ScriptsToLoad, processing {} input files", input_files.filepaths.size()) << std::endl;
+            try {
+                systemsLogger->trace("Log_ScriptsToLoad: fetching Database::Connection singleton");
+                auto& conn = e.world().get<Database::Connection>();
+                systemsLogger->trace("Log_ScriptsToLoad: pool pointer is {}", static_cast<const void*>(conn.pool.get()));
+                if (!conn.pool) {
+                    systemsLogger->error("Log_ScriptsToLoad: Database connection pool is null, aborting");
+                    return;
+                }
+                systemsLogger->trace("Log_ScriptsToLoad: acquiring SOCI session from pool");
+                soci::session sql(*conn.pool);
+                systemsLogger->trace("Log_ScriptsToLoad: SOCI session acquired successfully");
+            for (const auto& filepath : input_files.filepaths) {
+                systemsLogger->trace("Log_ScriptsToLoad: reading file {}", filepath);
+                std::filesystem::path p(filepath);
+                std::string filename = p.filename().string();
+                std::string contents = "Could not read file";
+                try {
+                    std::ifstream file(filepath, std::ios::binary);
+                    if (file) {
+                        contents.assign(std::istreambuf_iterator<char>(file), {});
+                        systemsLogger->trace("Log_ScriptsToLoad: read {} bytes from {}", contents.size(), filepath);
+                    } else {
+                        systemsLogger->warn("Failed to open input file for reading: {}", filepath);
+                    }
+                } catch (const std::exception& ex) {
+                    systemsLogger->warn("Exception reading input file {}: {}", filepath, ex.what());
+                }
+
+                systemsLogger->trace("Log_ScriptsToLoad: executing INSERT for {} ({} bytes)", filename, contents.size());
+                sql << "INSERT INTO input_files (filename, filepath, contents) VALUES (:filename, :filepath, :contents)",
+                    soci::use(filename, "filename"),
+                    soci::use(filepath, "filepath"),
+                    soci::use(contents, "contents");
+                systemsLogger->debug("Logged input file: {} at {}", filename, filepath);
+            }
+            systemsLogger->info("All input files logged to database.");
+            } catch (const std::exception& e) {
+                systemsLogger->error("Log_ScriptsToLoad failed with exception: {}", e.what());
+            } catch (...) {
+                systemsLogger->critical("Log_ScriptsToLoad failed with unknown exception");
+            }
+            systemsLogger->trace("Exiting Log_ScriptsToLoad");
+        }).disable();
+
+
+    /////////////// Pawn ///////////////////////////////
+
     // System to create the pawn_state_utility table on startup
     ecs.system<Database::Connection>("CreateTable_PawnStateUtility")
         .kind(flecs::OnStart)
         .each([](Database::Connection& conn) {
+            systemsLogger->trace("Entering CreateTable_PawnStateUtility");
             try {
                 soci::session sql(*conn.pool);
                 sql.create_table("pawn_state_utility")
@@ -170,7 +304,40 @@ systems::systems(flecs::world& ecs) {
                 systemsLogger->error("Error creating table 'pawn_state_utility': {}", e.what());
             }
         });
+
+    ecs.system<Database::Connection>("CreateTable_PawnStateIntervals")
+        .kind(flecs::OnStart)
+        .each([](Database::Connection& conn) {
+            systemsLogger->trace("Entering CreateTable_PawnStateIntervals");
+            try {
+                soci::session sql(*conn.pool);
+                sql << "CREATE TABLE IF NOT EXISTS pawn_state_intervals ("
+                       "id INTEGER PRIMARY KEY AUTOINCREMENT, "
+                       "pawn_name TEXT NOT NULL, "
+                       "state_name TEXT NOT NULL, "
+                       "entered_at REAL NOT NULL, "
+                       "exited_at REAL, "
+                       "duration_s REAL"
+                       ");";
+                systemsLogger->info("Table 'pawn_state_intervals' created.");
+            } catch (const std::exception& e) {
+                systemsLogger->error("Error creating table 'pawn_state_intervals': {}", e.what());
+            }
+        });
     
+    register_pawn_state_interval_observers<Pawn::Alive>(ecs);
+    register_pawn_state_interval_observers<Pawn::Idle>(ecs);
+    register_pawn_state_interval_observers<Pawn::Walking>(ecs);
+    register_pawn_state_interval_observers<Pawn::Working>(ecs);
+    register_pawn_state_interval_observers<Pawn::Fleeing>(ecs);
+    register_pawn_state_interval_observers<Pawn::Combat>(ecs);
+    register_pawn_state_interval_observers<Pawn::Dead>(ecs);
+    register_pawn_state_interval_observers<Pawn::PawnOccupationUnemployed>(ecs);
+    register_pawn_state_interval_observers<Pawn::PawnOccupationWoodcutter>(ecs);
+    register_pawn_state_interval_observers<Pawn::PawnWoodcutterStateWalkingTo>(ecs);
+    register_pawn_state_interval_observers<Pawn::PawnWoodcutterStateReturning>(ecs);
+    register_pawn_state_interval_observers<Pawn::PawnWoodcutterStateChopping>(ecs);
+
     ecs.system<const Statemachine::StateUtility, Database::Connection>("LogPawnStateUtility")
         .term_at(0).in()
         .term_at(0).second(flecs::Wildcard)
@@ -206,10 +373,12 @@ systems::systems(flecs::world& ecs) {
             }
         });
 
+
     // System to create the pawn current table on startup
     ecs.system<Database::Connection>("CreateTable_PawnActiveStates")
         .kind(flecs::OnStart)
         .each([](Database::Connection& conn) {
+            systemsLogger->trace("Entering CreateTable_PawnActiveStates");
             try {
                 soci::session sql(*conn.pool);
                 sql.create_table("pawn_active_states")
@@ -234,54 +403,6 @@ systems::systems(flecs::world& ecs) {
             }
         });    
 
-    // System to create the input_files table on startup
-    ecs.system<Database::Connection>("CreateTable_InputFiles")
-        .kind(flecs::OnStart)
-        .each([](Database::Connection& conn) {
-            ZoneScopedN("CreateTable_InputFiles");
-            systemsLogger->trace("Creating table for input files");
-            try {
-                soci::session sql(*conn.pool);
-                sql.create_table("input_files")
-                    .column("filename", soci::dt_string)
-                    .column("filepath", soci::dt_string)
-                    .column("contents", soci::dt_string);
-                systemsLogger->info("Table 'input_files' created.");
-            } catch (const std::exception& e) {
-                systemsLogger->error("Error creating table 'input_files': {}", e.what());
-            }
-        });
-
-    ecs.system<Database::InputFiles>("Log_InputFiles")
-        .kind(flecs::OnStart)  // Only run the once at startup. Cannot be an observer as it runs before the database is setup
-        .each([](flecs::entity e, const Database::InputFiles& input_files) {
-            ZoneScopedN("Log_InputFiles");
-            systemsLogger->trace("Logging {} input files", input_files.filepaths.size());
-            auto& conn = e.world().get<Database::Connection>();
-            soci::session sql(*conn.pool);
-            for (const auto& filepath : input_files.filepaths) {
-                std::filesystem::path p(filepath);
-                std::string filename = p.filename().string();
-                std::string contents = "Could not read file";
-                try {
-                    std::ifstream file(filepath, std::ios::binary);
-                    if (file) {
-                        contents.assign(std::istreambuf_iterator<char>(file), {});
-                    } else {
-                        systemsLogger->warn("Failed to open input file for reading: {}", filepath);
-                    }
-                } catch (const std::exception& ex) {
-                    systemsLogger->warn("Exception reading input file {}: {}", filepath, ex.what());
-                }
-
-                sql << "INSERT INTO input_files (filename, filepath, contents) VALUES (:filename, :filepath, :contents)",
-                    soci::use(filename, "filename"),
-                    soci::use(filepath, "filepath"),
-                    soci::use(contents, "contents");
-                systemsLogger->debug("Logged input file: {} at {}", filename, filepath);
-            }
-            systemsLogger->info("All input files logged to database.");
-        });
 
     ecs.system<Pawn::PawnFSMContainer, Database::Connection>("LogPawnStateActive")
         .tick_source(Ticks::tick_pawn_behaviour)
@@ -339,6 +460,7 @@ systems::systems(flecs::world& ecs) {
         ecs.system<Database::Connection>("CreateTable_entity_map_position")
         .kind(flecs::OnStart)
         .each([](Database::Connection& conn) {
+            systemsLogger->trace("Entering CreateTable_entity_map_position");
             try {
                 soci::session sql(*conn.pool);
                 sql.create_table("entity_map_position")

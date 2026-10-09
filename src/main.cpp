@@ -4,6 +4,7 @@
 #include "ticks/module.hpp"
 #include "render/module.hpp"
 #include "database/module.hpp"
+#include "scriptLoader/module.hpp"
 #include "coordinates/module.hpp"
 //#include "dis/module.hpp"
 #include "example/module.hpp"
@@ -214,6 +215,7 @@ int main(int, char *[]) {
     ecs.import<Buildings::components>();
     ecs.import<Coordinates::components>();
     ecs.import<Database::components>();
+    ecs.import<ScriptLoader::components>();
     //ecs.import<fdis::components>();
     ecs.import<Map::components>();
     ecs.import<Pathfinding::components>();
@@ -226,6 +228,7 @@ int main(int, char *[]) {
 
     // Database systems next. This enables logging to the database
     ecs.import<Database::systems>();
+    ecs.import<ScriptLoader::systems>();
 
     // Systems next
     ecs.import<Coordinates::systems>();
@@ -253,7 +256,7 @@ int main(int, char *[]) {
 
     // Add an empty Connection singleton for data logging. The observer will populate it.
     ecs.set<Database::Connection>({nullptr});
-    std::cout << "Datbase Connection Added" << std::endl;
+    std::cout << "Database Connection Added" << std::endl;
 
 
     // Export positions to DIS - this is how playback/recording will work.
@@ -536,15 +539,12 @@ int main(int, char *[]) {
         });
     ecs.defer_end();
     */
+
+
     std::vector<std::string> input_files = {
          "../../src/config.flecs"
     };
-    ecs.set<Database::InputFiles>({input_files});
-    std::cout << "Loading flecs script(s)" << std::endl;
-    for (std::string filepath : input_files) {
-        ecs_script_run_file(ecs, filepath.c_str());
-    }
-    std::cout << "Flecs script(s) loaded" << std::endl;
+    ecs.set<ScriptLoader::ScriptsToLoad>({input_files});
 
     /*
     flecs::entity e = ecs.entity("test")

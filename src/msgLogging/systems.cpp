@@ -70,7 +70,7 @@ systems::systems(flecs::world& ecs){
     // When the database connection is ready, create and add the db_sink
     
     ecs.observer<Database::Connection>("Observer_CreateDatabaseLogSink")
-        .event(flecs::OnSet)
+        .event(flecs::OnStart)
         .each([ecs](Database::Connection& conn) {
             if (!conn.pool) {
                 // Pool not created successfully, don't add sink.
