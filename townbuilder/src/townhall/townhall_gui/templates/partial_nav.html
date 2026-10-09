@@ -12,12 +12,16 @@
     </ul>
     <ul>
         <li>
-            <details class="dropdown">
-                <summary>Open Datasets</summary>
-                <ul class="dropdown-menu" hx-get="{% url 'townhall:datasets_nav' %}" hx-trigger="load" hx-target="this">
-                    <li><em>Loading...</em></li>
-                </ul>
-            </details>
+            <form method="get" action="">
+                <label for="navbar-dataset-select"
+                       hx-get="{% url 'townhall:datasets_nav' %}{% if dataset_id %}?dataset_id={{ dataset_id }}{% endif %}"
+                       hx-trigger="load, datasets-changed from:body"
+                       hx-target="#navbar-dataset-select"
+                       hx-swap="innerHTML">Dataset</label>
+                <select id="navbar-dataset-select" name="dataset_id" onchange="this.form.requestSubmit()">
+                    <option value="" {% if not active_dataset %}selected{% endif %}>Default database</option>
+                </select>
+            </form>
         </li>
     </ul>    
 </nav>

@@ -1,8 +1,13 @@
-{# This template fragment renders a select dropdown for filtering logs by level #}
-Level:
-<select name="level" hx-get="{% url 'townhall:log_entries' %}" hx-target="#log-results" hx-swap="innerHTML" hx-trigger="change" hx-include="#log-filters">
-    <option value="">All</option>
-    {% for level in log_levels %}
-    <option class="level-{{ level }}">{{ level }}</option>
-    {% endfor %}
-</select>
+{# This template fragment renders a dropdown menu with checkbox filters for log levels #}
+<details class="log-level-dropdown">
+    <summary>Level</summary>
+    <div class="log-level-options">
+        {% for level in log_levels %}
+        <label class="log-level-option">
+            <input type="checkbox" name="level" value="{{ level }}" hx-get="{% url 'townhall:log_entries' %}" hx-target="#log-results" hx-swap="innerHTML" hx-trigger="change" hx-include="#log-filters" />
+            {{ level }}
+        </label>
+        {% endfor %}
+    </div>
+</details>
+<p class="hint">Select one or more levels to filter the log results.</p>

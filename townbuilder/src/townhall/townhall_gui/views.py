@@ -38,8 +38,20 @@ def get_active_filepath(dataset_id=None):
             if file_obj.exists:
                 return file_obj.filepath
         except models.DatasetFileModel.DoesNotExist:
-            pass
+            print(f"Could not find dataset with id {dataset_id} or it is not open.")
+    print(f"get_active_filepath: dataset_id={dataset_id} not found or not open, using default {DEFAULT_FILEPATH_DB}")
     return DEFAULT_FILEPATH_DB
+
+
+def get_active_dataset(dataset_id=None):
+    """Return the selected open dataset, or None when no valid selection exists."""
+    if not dataset_id:
+        return None
+    try:
+        return models.DatasetFileModel.objects.get(id=int(dataset_id), is_open=True)
+    except (TypeError, ValueError, models.DatasetFileModel.DoesNotExist):
+        return None
+
 
 def hx_or_full(template_name="full.html"):
     """Decorator for view functions that return an HTML fragment.
@@ -57,18 +69,10 @@ def hx_or_full(template_name="full.html"):
             if is_hx:
                 content = fragment_html
             else:
-                # Get dataset_id from query params
-                dataset_id = request.GET.get('dataset_id', None)
-                dataset_id = int(dataset_id) if dataset_id else None
-                active_dataset = None
-                if dataset_id:
-                    try:
-                        active_dataset = models.DatasetFileModel.objects.get(id=dataset_id, is_open=True)
-                    except models.DatasetFileModel.DoesNotExist:
-                        pass
+                active_dataset = get_active_dataset(request.GET.get('dataset_id'))
                 content = render_to_string(template_name, {
                     'content': fragment_html,
-                    'dataset_id': dataset_id,
+                    'dataset_id': active_dataset.id if active_dataset else None,
                     'active_dataset': active_dataset,
                     'csrf_token': get_token(request),
                 })
@@ -84,16 +88,9 @@ def hx_or_full(template_name="full.html"):
 
 def index(request):
     """Render the main townhall page. The first plot is loaded via an htmx request from the template."""
-    dataset_id = request.GET.get('dataset_id', None)
-    dataset_id = int(dataset_id) if dataset_id else None
-    active_dataset = None
-    if dataset_id:
-        try:
-            active_dataset = models.DatasetFileModel.objects.get(id=dataset_id, is_open=True)
-        except models.DatasetFileModel.DoesNotExist:
-            pass
+    active_dataset = get_active_dataset(request.GET.get('dataset_id'))
     return render(request, "full.html", {
-        'dataset_id': dataset_id,
+        'dataset_id': active_dataset.id if active_dataset else None,
         'active_dataset': active_dataset
     })
 
@@ -108,18 +105,25 @@ def datasets_list(request):
         all_files = []
     folder_browse_form = forms.DatasetFolderBrowseForm()
     dataset_upload_form = forms.DatasetUploadForm()
+    active_dataset = get_active_dataset(request.GET.get('dataset_id'))
     return render(request, "datasets.html", {
         'available_datasets': all_files,
         'folder_browse_form': folder_browse_form,
         'dataset_upload_form': dataset_upload_form,
+        'dataset_id': active_dataset.id if active_dataset else None,
+        'active_dataset': active_dataset,
         'csrf_token': get_token(request),
     })
 
 
 def datasets_nav(request):
     """Return partial HTML for the datasets dropdown in the navbar."""
-    available_datasets = models.DatasetFileModel.objects.filter(is_open=True)
-    html = render_to_string('partial_nav_datasets.html', {'available_datasets': available_datasets})
+    open_datasets = models.DatasetFileModel.objects.filter(is_open=True).order_by('-last_seen')
+    active_dataset = get_active_dataset(request.GET.get('dataset_id'))
+    html = render_to_string('partial_nav_datasets.html', {
+        'open_datasets': open_datasets,
+        'active_dataset': active_dataset,
+    })
     return HttpResponse(html)
 
 
@@ -266,11 +270,22 @@ def plot_pawn_utility(request):
     dataset_id = request.GET.get('dataset_id')
     dataset_id = int(dataset_id) if dataset_id else None
     filepath_db = get_active_filepath(dataset_id)
+    print(f"{filepath_db=}")
 
     con = None
     chart = alt.Chart().mark_text(text="Could not generate plot 'utility'").properties(title="Error")
     try:
         con = sqlite3.connect(filepath_db)
+
+        # For debug, print out all the tables 
+        print("Tables in the database:")
+        cursor = con.cursor()
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
+        tables = cursor.fetchall()
+        for table in tables:
+            print(table[0])
+
+
         pawn_name = request.GET.get("pawn_name", "Pawn 1")
 
         query = "SELECT time, pawn_name, state_name, utility FROM pawn_state_utility WHERE pawn_name = ?"
@@ -410,6 +425,37 @@ def plot_pawn_state(request):
     return html
 
 
+@hx_or_full()
+def plot_pawn_state_duration(request):
+    """Return HTML fragment with Vega chart for pawn state durations."""
+    dataset_id = request.GET.get('dataset_id')
+    dataset_id = int(dataset_id) if dataset_id else None
+    filepath_db = get_active_filepath(dataset_id)
+    con = None
+    chart = alt.Chart().mark_text(text="Could not generate plot").properties(title="Error")
+    try:
+        con = sqlite3.connect(filepath_db)
+        query = "SELECT pawn_name, state_name, entered_at, exited_at, duration_s FROM pawn_state_intervals"
+        df = pd.read_sql_query(query, con)
+        try:
+            bin_period_s = int(request.GET.get('bin_period_s', 30))
+        except (TypeError, ValueError):
+            bin_period_s = 30
+        chart = plots.pawn_state_duration_plot(df, bin_period_s=bin_period_s)
+        content_paragraphs = ["Mean/median time in each state per period, across all pawns. Click a cell for the distribution."]
+    except Exception as e:
+        content_paragraphs = [f"An error occurred while generating the plot: {e}"]
+    finally:
+        if con:
+            con.close()
+    spec = chart.to_dict(format="vega")
+    html = render_to_string('partial_single_altair_plot.html', {'spec_json': json.dumps(spec),
+                                                                          'content_header': "Pawn State Durations",
+                                                                          'content_paragraphs': content_paragraphs
+                                                                          })
+    return html
+
+
 
 
 
@@ -445,12 +491,12 @@ def log_entries(request):
         return HttpResponse('<div class="error">Log file not found</div>', status=404)
 
     # Apply filters
-    level = request.GET.get('level', '').strip()
+    levels = [val for val in request.GET.getlist('level') if val.strip()]
     logger = request.GET.get('logger', '').strip()
     q = request.GET.get('q', '').strip()
 
-    if level:
-        messages = [m for m in messages if m['level'] == level]
+    if levels:
+        messages = [m for m in messages if m['level'] in levels]
     if logger:
         messages = [m for m in messages if logger in m['logger']]
     if q:
@@ -649,7 +695,9 @@ def remove_dataset_file(request, file_id):
         html = render_to_string('partial_available_files.html', {
             'available_datasets': available_datasets,
         })
-        return HttpResponse(html)
+        response = HttpResponse(html)
+        response['HX-Trigger'] = 'datasets-changed'
+        return response
     
     return HttpResponse('<div class="error">Method not allowed</div>')
 
@@ -674,7 +722,9 @@ def open_file(request, file_id):
         html = render_to_string('partial_available_files.html', {
             'available_datasets': available_datasets,
         })
-        return HttpResponse(html)
+        response = HttpResponse(html)
+        response['HX-Trigger'] = 'datasets-changed'
+        return response
     
     return HttpResponse('<div class="error">Method not allowed</div>')
 
@@ -699,7 +749,9 @@ def close_file(request, file_id):
         html = render_to_string('partial_available_files.html', {
             'available_datasets': available_datasets,
         })
-        return HttpResponse(html)
+        response = HttpResponse(html)
+        response['HX-Trigger'] = 'datasets-changed'
+        return response
     
     return HttpResponse('<div class="error">Method not allowed</div>')
 

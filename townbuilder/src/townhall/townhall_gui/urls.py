@@ -16,6 +16,7 @@ urlpatterns = [
     path("plot/entity_positions/", views.plot_entity_positions, name="plot_entity_positions"),
     path("plot/example_state", views.plot_example_state, name="plot_example_state"),
     path("plot/pawn_state", views.plot_pawn_state, name="plot_pawn_state"),
+    path("plot/pawn_state_duration/", views.plot_pawn_state_duration, name="plot_pawn_state_duration"),
     #path("plot/grid_heatmap/", views.plot_grid_heatmap, name="plot_grid_heatmap"),
     path("logs", views.log_viewer, name="log_viewer"),
 

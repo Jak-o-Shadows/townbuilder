@@ -6,6 +6,11 @@
 `conda install django`
 `conda install -c conda-forge altair-all mpld3`
 
+## Setup
+To get started
+`townhall-dev makemigrations`
+`townhall-dev migrate`
+
 ## Running
 To run the development server: 
 `python manage.py runserver`
