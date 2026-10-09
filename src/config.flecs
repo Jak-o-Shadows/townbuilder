@@ -81,7 +81,7 @@ prefab Map.Tree_Prefab {
 
 // Pawns
 Pawn.pawnsParent {
-    for x in 0 .. 1 {
+    for x in 0 .. 10 {
         "Pawn_$x": Pawn.Pawn_Prefab {
             Pawn.components.IsAPawn
             Coordinates.components.Grid: {x: 5*x, y: 25-2*x}
