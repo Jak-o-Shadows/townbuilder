@@ -30,27 +30,23 @@ DEFAULT_FILEPATH_DB =  "../build/Release/asdfdatabase_backup.sqlite3"
 DEFAULT_FILEPATH_LOG = "../build/Release/logs.log"
 
 
-def get_active_filepath(dataset_id=None):
-    """Get the path of a specific dataset, or fallback to default."""
+@dataclasses.dataclass(frozen=True)
+class DatasetSelection:
+    dataset: models.DatasetFileModel | None
+    filepath: str
+
+
+def resolve_dataset(dataset_id=None):
+    """Resolve an open dataset and its usable path, falling back to the default database."""
+    dataset = None
     if dataset_id:
         try:
-            file_obj = models.DatasetFileModel.objects.get(id=dataset_id, is_open=True)
-            if file_obj.exists:
-                return file_obj.filepath
-        except models.DatasetFileModel.DoesNotExist:
-            print(f"Could not find dataset with id {dataset_id} or it is not open.")
-    print(f"get_active_filepath: dataset_id={dataset_id} not found or not open, using default {DEFAULT_FILEPATH_DB}")
-    return DEFAULT_FILEPATH_DB
+            dataset = models.DatasetFileModel.objects.get(id=int(dataset_id), is_open=True)
+        except (TypeError, ValueError, models.DatasetFileModel.DoesNotExist):
+            pass
 
-
-def get_active_dataset(dataset_id=None):
-    """Return the selected open dataset, or None when no valid selection exists."""
-    if not dataset_id:
-        return None
-    try:
-        return models.DatasetFileModel.objects.get(id=int(dataset_id), is_open=True)
-    except (TypeError, ValueError, models.DatasetFileModel.DoesNotExist):
-        return None
+    filepath = dataset.filepath if dataset and dataset.exists else DEFAULT_FILEPATH_DB
+    return DatasetSelection(dataset=dataset, filepath=filepath)
 
 
 def hx_or_full(template_name="full.html"):
@@ -69,7 +65,7 @@ def hx_or_full(template_name="full.html"):
             if is_hx:
                 content = fragment_html
             else:
-                active_dataset = get_active_dataset(request.GET.get('dataset_id'))
+                active_dataset = resolve_dataset(request.GET.get('dataset_id')).dataset
                 content = render_to_string(template_name, {
                     'content': fragment_html,
                     'dataset_id': active_dataset.id if active_dataset else None,
@@ -88,7 +84,7 @@ def hx_or_full(template_name="full.html"):
 
 def index(request):
     """Render the main townhall page. The first plot is loaded via an htmx request from the template."""
-    active_dataset = get_active_dataset(request.GET.get('dataset_id'))
+    active_dataset = resolve_dataset(request.GET.get('dataset_id')).dataset
     return render(request, "full.html", {
         'dataset_id': active_dataset.id if active_dataset else None,
         'active_dataset': active_dataset
@@ -105,7 +101,7 @@ def datasets_list(request):
         all_files = []
     folder_browse_form = forms.DatasetFolderBrowseForm()
     dataset_upload_form = forms.DatasetUploadForm()
-    active_dataset = get_active_dataset(request.GET.get('dataset_id'))
+    active_dataset = resolve_dataset(request.GET.get('dataset_id')).dataset
     return render(request, "datasets.html", {
         'available_datasets': all_files,
         'folder_browse_form': folder_browse_form,
@@ -119,7 +115,7 @@ def datasets_list(request):
 def datasets_nav(request):
     """Return partial HTML for the datasets dropdown in the navbar."""
     open_datasets = models.DatasetFileModel.objects.filter(is_open=True).order_by('-last_seen')
-    active_dataset = get_active_dataset(request.GET.get('dataset_id'))
+    active_dataset = resolve_dataset(request.GET.get('dataset_id')).dataset
     html = render_to_string('partial_nav_datasets.html', {
         'open_datasets': open_datasets,
         'active_dataset': active_dataset,
@@ -267,9 +263,7 @@ def plot_matplotlib_example(request):
 def plot_pawn_utility(request):
     """Return an HTML fragment containing the Vega chart for the utility plot."""
     # Get dataset_id from query params
-    dataset_id = request.GET.get('dataset_id')
-    dataset_id = int(dataset_id) if dataset_id else None
-    filepath_db = get_active_filepath(dataset_id)
+    filepath_db = resolve_dataset(request.GET.get('dataset_id')).filepath
     print(f"{filepath_db=}")
 
     con = None
@@ -316,9 +310,7 @@ def plot_pawn_utility(request):
 def plot_entity_positions(request):
     """Return an HTML fragment containing the Vega chart for the entity positions plot."""
     # Get dataset_id from query params
-    dataset_id = request.GET.get('dataset_id')
-    dataset_id = int(dataset_id) if dataset_id else None
-    filepath_db = get_active_filepath(dataset_id)
+    filepath_db = resolve_dataset(request.GET.get('dataset_id')).filepath
 
     con = None
     chart = alt.Chart().mark_text(text="Could not generate plot 'entity_positions'").properties(title="Error")
@@ -349,9 +341,7 @@ def plot_entity_positions(request):
 def plot_example_state(request):
     """Return a HTML fragment containing the Vega chart for the example state plot."""
     # Get dataset_id from query params
-    dataset_id = request.GET.get('dataset_id')
-    dataset_id = int(dataset_id) if dataset_id else None
-    filepath_db = get_active_filepath(dataset_id)
+    filepath_db = resolve_dataset(request.GET.get('dataset_id')).filepath
     
     con = None
     chart = alt.Chart().mark_text(text="Could not generate plot 'entity_positions'").properties(title="Error")
@@ -388,9 +378,7 @@ def plot_example_state(request):
 def plot_pawn_state(request):
     """Return a HTML fragment containing the Vega chart for the pawn state plot."""
     # Get dataset_id from query params
-    dataset_id = request.GET.get('dataset_id')
-    dataset_id = int(dataset_id) if dataset_id else None
-    filepath_db = get_active_filepath(dataset_id)
+    filepath_db = resolve_dataset(request.GET.get('dataset_id')).filepath
     
     con = None
     chart = alt.Chart().mark_text(text="Could not generate plot 'pawn_state'").properties(title="Error")
@@ -428,9 +416,7 @@ def plot_pawn_state(request):
 @hx_or_full()
 def plot_pawn_state_duration(request):
     """Return HTML fragment with Vega chart for pawn state durations."""
-    dataset_id = request.GET.get('dataset_id')
-    dataset_id = int(dataset_id) if dataset_id else None
-    filepath_db = get_active_filepath(dataset_id)
+    filepath_db = resolve_dataset(request.GET.get('dataset_id')).filepath
     con = None
     chart = alt.Chart().mark_text(text="Could not generate plot").properties(title="Error")
     try:
