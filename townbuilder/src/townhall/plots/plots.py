@@ -204,90 +204,179 @@ def grid_heatmap(position_data):
 
 
 def pawn_state_duration_plot(intervals_data, bin_period_s=30, max_time=None):
-    """
-    Produce an Altair chart that shows the the mean/median (toggleable) duration of each state,
-    across all pawns, for all states, binned into time periods.
+    """Plot state-duration summaries by entry-time bin.
 
-    Axis:
-     * The y-axis is the time period - latest time starting at the bottom, similar to a waterfall graph. 
-       This should be binned into time periods (configurable in code, not via the altair plot).
-     * The x-axis is each state.
-     * The colour of each cell is the mean/median duration of that state for that time period.
-
-    However as aggregate metrics can be misleading, depending on the distribution of the data, 
-    clicking on a cell will show the histogram of the durations for that state in that time period, across all pawns.
-    This will be shown in a separate facet/chart below.
+    The heatmap shows mean, median, or standard deviation of state duration
+    per time bin and state.
+    Selecting a heatmap cell filters the duration histogram below it. Open
+    intervals are measured through ``max_time``; when omitted, the latest
+    observed entry or exit time is used.
 
     Parameters
     ----------
-    - intervals_data: DataFrame matching the `pawn_state_intervals` table
-      (columns pawn_name, state_name, entered_at, exited_at, duration_s).
-      Times are game-time seconds; exited_at may be NULL if still open.
-    - bin_period_s: width of each time bin in seconds (Python-side binning
-      on entered_at).
-    - max_time: reference "now" used to close open intervals. Defaults to
-      the max observed entered_at/exited_at.
+    intervals_data : pandas.DataFrame
+        Data from ``pawn_state_intervals`` with ``pawn_name``, ``state_name``,
+        ``entered_at``, ``exited_at``, and ``duration_s`` columns. Times are in
+        game-time seconds; ``exited_at`` and ``duration_s`` may be null for
+        intervals that are still open.
+    bin_period_s : int or float, default=30
+        Width of each time bin in seconds. Bins are based on ``entered_at``.
+    max_time : float, optional
+        Reference time used to calculate the duration of open intervals.
+        Defaults to the maximum observed entry or exit time.
 
     Returns
     -------
-    - Altair Chart (heatmap vconcat'ed with drill-down histogram).
+    altair.VConcatChart
+        A heatmap with selectable aggregate metrics and a linked
+        duration-distribution histogram, or a no-data chart when there are
+        no valid intervals.
     """
+    no_data = pd.DataFrame({"text": ["No data to display"]})
+
+    def no_data_chart():
+        return (
+            alt.Chart(no_data)
+            .mark_text()
+            .encode(text="text:N")
+            .properties(title="State Duration by Time Period")
+        )
+
     if intervals_data is None or intervals_data.empty:
-        return alt.Chart(pd.DataFrame({"text": ["No data to display"]})).mark_text().encode(
-            text="text:N"
-        ).properties(title="State Duration by Time Period")
+        return no_data_chart()
 
     df = intervals_data.copy()
-    df["entered_at"] = pd.to_numeric(df["entered_at"], errors="coerce")
-    df["exited_at"] = pd.to_numeric(df["exited_at"], errors="coerce")
-    df["duration_s"] = pd.to_numeric(df["duration_s"], errors="coerce")
+    numeric_columns = ["entered_at", "exited_at", "duration_s"]
+    df[numeric_columns] = df[numeric_columns].apply(
+        pd.to_numeric,
+        errors="coerce",
+    )
     df = df.dropna(subset=["entered_at", "state_name"])
     if df.empty:
-        return alt.Chart(pd.DataFrame({"text": ["No data to display"]})).mark_text().encode(
-            text="text:N"
-        ).properties(title="State Duration by Time Period")
+        return no_data_chart()
 
     if max_time is None:
-        cands = [float(df["entered_at"].max())]
+        candidate_times = [float(df["entered_at"].max())]
         if df["exited_at"].notna().any():
-            cands.append(float(df["exited_at"].max()))
-        max_time = float(np.nanmax(cands))
-    open_mask = df["duration_s"].isna() | df["exited_at"].isna()
-    df.loc[open_mask, "exited_at"] = df.loc[open_mask, "exited_at"].fillna(max_time)
-    df.loc[open_mask, "duration_s"] = df.loc[open_mask, "exited_at"] - df.loc[open_mask, "entered_at"]
+            candidate_times.append(float(df["exited_at"].max()))
+        max_time = float(np.nanmax(candidate_times))
+
+    open_intervals = df["duration_s"].isna() | df["exited_at"].isna()
+    df.loc[open_intervals, "exited_at"] = (
+        df.loc[open_intervals, "exited_at"].fillna(max_time)
+    )
+    df.loc[open_intervals, "duration_s"] = (
+        df.loc[open_intervals, "exited_at"]
+        - df.loc[open_intervals, "entered_at"]
+    )
     df = df.dropna(subset=["duration_s"])
     df = df[df["duration_s"] >= 0]
     if df.empty:
-        return alt.Chart(pd.DataFrame({"text": ["No data to display"]})).mark_text().encode(
-            text="text:N"
-        ).properties(title="State Duration by Time Period")
+        return no_data_chart()
 
-    df["bin_start"] = np.floor(df["entered_at"] / bin_period_s) * bin_period_s
+    df["bin_start"] = (
+        np.floor(df["entered_at"] / bin_period_s) * bin_period_s
+    )
     df["bin_end"] = df["bin_start"] + bin_period_s
-    df["bin_label"] = df["bin_start"].astype(int).astype(str) + "-" + df["bin_end"].astype(int).astype(str) + "s"
-    agg = df.groupby(["bin_start", "bin_label", "state_name"], as_index=False).agg(
-        mean_s=("duration_s", "mean"), median_s=("duration_s", "median"), n=("duration_s", "size"))
-    bin_order = agg.sort_values("bin_start")["bin_label"].drop_duplicates().tolist()
-    metric = alt.param(name="metric", value="mean",
-        bind=alt.binding_radio(options=["mean", "median"], name="Aggregate: "))
-    heat = alt.Chart(agg).add_params(metric).transform_calculate(
-        agg_value="metric == 'median' ? datum.median_s : datum.mean_s"
-    ).mark_rect().encode(
-        x=alt.X("state_name:N", title="State"),
-        y=alt.Y("bin_label:N", title="Time period (entry)", sort=bin_order),
-        color=alt.Color("agg_value:Q", title="Duration (s)", scale=alt.Scale(scheme="blues")),
-        tooltip=["state_name:N", "bin_label:N",
-            alt.Tooltip("mean_s:Q", title="Mean (s)", format=".2f"),
-            alt.Tooltip("median_s:Q", title="Median (s)", format=".2f"),
-            alt.Tooltip("n:Q", title="Samples")],
-    ).properties(title="Mean/Median State Duration by Time Period",
-        width="container", height="container")
-    sel = alt.selection_point(name="cell_select", fields=["state_name", "bin_label"])
-    heat = heat.add_params(sel).encode(
-        strokeOpacity=alt.condition(sel, alt.value(1.0), alt.value(0.0)), stroke=alt.value("red"))
-    hist = alt.Chart(df).transform_filter(sel).mark_bar().encode(
-        x=alt.X("duration_s:Q", bin=alt.Bin(maxbins=30), title="Duration (s)"),
-        y=alt.Y("count():Q", title="Count"),
-    ).properties(title="Duration distribution for selected cell (click a cell above)",
-        width="container")
-    return alt.vconcat(heat, hist).resolve_scale(color="independent")
+    df["bin_label"] = (
+        df["bin_start"].astype(int).astype(str)
+        + "-"
+        + df["bin_end"].astype(int).astype(str)
+        + "s"
+    )
+
+    grouped = df.groupby(
+        ["bin_start", "bin_label", "state_name"],
+        as_index=False,
+    )
+    aggregates = grouped.agg(
+        mean_s=("duration_s", "mean"),
+        median_s=("duration_s", "median"),
+        std_dev_s=("duration_s", "std"),
+        n=("duration_s", "size"),
+    )
+    bin_order = (
+        aggregates.sort_values("bin_start")["bin_label"]
+        .drop_duplicates()
+        .tolist()
+    )
+
+    metric = alt.param(
+        name="metric",
+        value="mean",
+        bind=alt.binding_radio(
+            options=["mean", "median", "standard deviation"],
+            name="Aggregate: ",
+        ),
+    )
+    selection = alt.selection_point(
+        name="cell_select",
+        fields=["state_name", "bin_label"],
+    )
+
+    heatmap = (
+        alt.Chart(aggregates)
+        .add_params(metric)
+        .transform_calculate(
+            agg_value=(
+                "metric == 'median' ? datum.median_s : "
+                "metric == 'standard deviation' ? datum.std_dev_s : datum.mean_s"
+            )
+        )
+        .mark_rect()
+        .encode(
+            x=alt.X("state_name:N", title="State"),
+            y=alt.Y(
+                "bin_label:N",
+                title="Time period (entry)",
+                sort=bin_order,
+            ),
+            color=alt.Color(
+                "agg_value:Q",
+                title="Duration (s)",
+                scale=alt.Scale(scheme="blues"),
+            ),
+            tooltip=[
+                "state_name:N",
+                "bin_label:N",
+                alt.Tooltip("mean_s:Q", title="Mean (s)", format=".2f"),
+                alt.Tooltip("median_s:Q", title="Median (s)", format=".2f"),
+                alt.Tooltip("std_dev_s:Q", title="Std. dev. (s)", format=".2f"),
+                alt.Tooltip("n:Q", title="Samples"),
+            ],
+        )
+        .properties(
+            title="State Duration Metrics by Time Period",
+            width="container",
+            height="container",
+        )
+        .add_params(selection)
+        .encode(
+            strokeOpacity=alt.condition(
+                selection,
+                alt.value(1.0),
+                alt.value(0.0),
+            ),
+            stroke=alt.value("red"),
+        )
+    )
+
+    histogram = (
+        alt.Chart(df)
+        .transform_filter(selection)
+        .mark_bar()
+        .encode(
+            x=alt.X(
+                "duration_s:Q",
+                bin=alt.Bin(maxbins=30),
+                title="Duration (s)",
+            ),
+            y=alt.Y("count():Q", title="Count"),
+        )
+        .properties(
+            title="Duration distribution for selected cell (click a cell above)",
+            width="container",
+        )
+    )
+
+    return alt.vconcat(heatmap, histogram).resolve_scale(color="independent")
