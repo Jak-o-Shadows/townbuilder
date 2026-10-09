@@ -1,7 +1,6 @@
 cmake_minimum_required(VERSION 3.26.4)
 cmake_policy(SET CMP0063 NEW)
 
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 project(townbuilder LANGUAGES C CXX)
 # SonarQube: Generate compilation database for analysis
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -37,6 +36,8 @@ target_sources(${PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src/render/systems.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/render/renderNavmesh.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/render/renderBasics.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/scriptLoader/components.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/scriptLoader/systems.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/statemachine/components.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/statemachine/systems.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ticks/module.cpp
@@ -73,6 +74,9 @@ set(FLECS_DIR build)
 find_package(flecs REQUIRED)
 target_link_libraries(${PROJECT_NAME} flecs::flecs_static)
 
+# nameof
+find_package(nameof CONFIG REQUIRED)
+target_link_libraries(${PROJECT_NAME} nameof::nameof)
 
 # Tracy
 find_package(Tracy REQUIRED)

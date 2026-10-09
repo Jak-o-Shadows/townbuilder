@@ -14,7 +14,7 @@
     <script type="application/json" class="vega-spec">{{ spec_json|safe }}</script>
     <script>
         spec = JSON.parse(document.querySelector('#plot-area script.vega-spec').textContent);
-        vegaEmbed('#plot-area', spec, {actions: false}).then(function(result) {})
+        vegaEmbed('#plot-area', spec, {actions: true}).then(function(result) {})
         // The WebGL renderer is currently broken with vega-lite. This is very annoying
         //vegaEmbed('#webgl-plot-area', spec, {renderer: 'webgl', actions: false}).then(function(result) {})
     </script>
