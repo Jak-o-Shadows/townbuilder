@@ -246,16 +246,12 @@ def pawn_state_duration_plot(intervals_data, bin_period_s=30, max_time=None):
         return no_data_chart()
 
     df = intervals_data.copy()
-    numeric_columns = ["entered_at", "exited_at", "duration_s"]
-    df[numeric_columns] = df[numeric_columns].apply(
-        pd.to_numeric,
-        errors="coerce",
-    )
     df = df.dropna(subset=["entered_at", "state_name"])
     if df.empty:
         return no_data_chart()
 
     if max_time is None:
+        # Look for the maximum of entered_at and exited_at, ignoring NaN values
         candidate_times = [float(df["entered_at"].max())]
         if df["exited_at"].notna().any():
             candidate_times.append(float(df["exited_at"].max()))
@@ -313,6 +309,7 @@ def pawn_state_duration_plot(intervals_data, bin_period_s=30, max_time=None):
         name="cell_select",
         fields=["state_name", "bin_label"],
     )
+    chart_width = 600
 
     heatmap = (
         alt.Chart(aggregates)
@@ -325,7 +322,11 @@ def pawn_state_duration_plot(intervals_data, bin_period_s=30, max_time=None):
         )
         .mark_rect()
         .encode(
-            x=alt.X("state_name:N", title="State"),
+            x=alt.X(
+                "state_name:N",
+                title="State",
+                axis=alt.Axis(labelAngle=-45),
+            ),
             y=alt.Y(
                 "bin_label:N",
                 title="Time period (entry)",
@@ -347,7 +348,7 @@ def pawn_state_duration_plot(intervals_data, bin_period_s=30, max_time=None):
         )
         .properties(
             title="State Duration Metrics by Time Period",
-            width="container",
+            width=chart_width,
             height="container",
         )
         .add_params(selection)
@@ -375,7 +376,7 @@ def pawn_state_duration_plot(intervals_data, bin_period_s=30, max_time=None):
         )
         .properties(
             title="Duration distribution for selected cell (click a cell above)",
-            width="container",
+            width=chart_width,  # "container" not supported for vconcat, so use fixed width
         )
     )
 
