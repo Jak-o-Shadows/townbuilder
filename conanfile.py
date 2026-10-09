@@ -28,6 +28,7 @@ class FlecsOrbitSimConan(ConanFile):
         self.requires("rapidcsv/8.84")
         self.requires("pybind11/3.0.1")  # Python bindings & embedded python
         self.requires("soci/4.1.2", options={"with_sqlite3": True})
+        self.requires("nameof/0.10.6")
 
         # Game Things
         self.requires("recastnavigation/1.6.0")

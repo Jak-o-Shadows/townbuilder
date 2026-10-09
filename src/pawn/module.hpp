@@ -2,6 +2,7 @@
 
 #include <flecs.h>
 #include <tracy/Tracy.hpp>
+#include <nameof.hpp>
 
 #include "tracy_zones.hpp"
 
@@ -139,30 +140,30 @@ struct BasePawnState : PawnFSM::State {
 
     void enter(Control& control) {
         flecs::entity e = flecs::entity(control.context().ecs, control.context().id);
-        fsmLogger->trace("Pawn {} entering state {}", std::string(e.path()), Statemachine::TypeName<TemplateState>());
+        fsmLogger->trace("Pawn {} entering state {}", std::string(e.path()), NAMEOF_SHORT_TYPE(TemplateState));
           // TODO: Try to replace this with e.ensure - UPDATE 2026-01-01 - ensure doesn't work with relationships?
         Statemachine::StateTiming* timing;
         timing = e.try_get_mut<Statemachine::StateTiming, TemplateState>();
         if (!timing) {
-            fsmLogger->trace("Creating timing data for Pawn {} state {}", std::string(e.path()), Statemachine::TypeName<TemplateState>());
+            fsmLogger->trace("Creating timing data for Pawn {} state {}", std::string(e.path()), NAMEOF_SHORT_TYPE(TemplateState));
             // By zero-initialising it, we can just skip having to modify it after.
             //  this is important because this reaction may be called from a system which defers
             //  ECS changes - and hence we may not be able to set the component,
             //  and then modify it with a get_mut right after
             e.set<Statemachine::StateTiming, TemplateState>({0, 0});
-            fsmLogger->trace("Created timing data for Pawn {} state {}", std::string(e.path()), Statemachine::TypeName<TemplateState>());
+            fsmLogger->trace("Created timing data for Pawn {} state {}", std::string(e.path()), NAMEOF_SHORT_TYPE(TemplateState));
         } else {
             // Reset how long we've been in this state
             timing->timeInState_s = 0;
         }
         e.add<TemplateState>();
-        fsmLogger->trace("Pawn {} entered state {}", std::string(e.path()), Statemachine::TypeName<TemplateState>());
+        fsmLogger->trace("Pawn {} entered state {}", std::string(e.path()), NAMEOF_SHORT_TYPE(TemplateState));
     }
     void exit(Control& control) {
         flecs::entity e = flecs::entity(control.context().ecs, control.context().id);
-        fsmLogger->trace("Pawn {} exiting state {}", std::string(e.path()), Statemachine::TypeName<TemplateState>());
+        fsmLogger->trace("Pawn {} exiting state {}", std::string(e.path()), NAMEOF_SHORT_TYPE(TemplateState));
         e.remove<TemplateState>();
-        fsmLogger->trace("Pawn {} exited state {}", std::string(e.path()), Statemachine::TypeName<TemplateState>());
+        fsmLogger->trace("Pawn {} exited state {}", std::string(e.path()), NAMEOF_SHORT_TYPE(TemplateState));
     }
 };
 

@@ -72,6 +72,10 @@ target_link_libraries(pythonEcsBinding PRIVATE flecs::flecs_static)
 find_package(Tracy REQUIRED)
 target_link_libraries(pythonEcsBinding PRIVATE Tracy::TracyClient)
 
+# nameof
+find_package(nameof CONFIG REQUIRED)
+target_link_libraries(pythonEcsBinding PRIVATE nameof::nameof)
+
 # HFSM2
 find_package(hfsm2 REQUIRED CONFIG)
 target_link_libraries(pythonEcsBinding PRIVATE hfsm2::hfsm2)

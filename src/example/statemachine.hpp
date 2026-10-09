@@ -1,5 +1,7 @@
 #pragma once
 
+#include <nameof.hpp>
+
 #define HFSM2_ENABLE_ALL
 #include <hfsm2/machine.hpp>
 
@@ -49,14 +51,14 @@ struct BaseState : FSM::State {
     // and default enter and exit
     void enter(Control& control) {
         flecs::entity e = flecs::entity(control.context().ecs, control.context().id);
-        statemachineLogger->trace("{} entering state {}", std::string(e.path()), Statemachine::TypeName<TemplateState>());
+        statemachineLogger->trace("{} entering state {}", std::string(e.path()), NAMEOF_SHORT_TYPE(TemplateState));
         Statemachine::StateTiming& timing = e.ensure<Statemachine::StateTiming, TemplateState>();
         timing.timeInState_s = 0;
         e.add<TemplateState>();
     }
     void exit(Control& control) {
         flecs::entity e = flecs::entity(control.context().ecs, control.context().id);
-        statemachineLogger->trace("{} exiting state {}", std::string(e.path()), Statemachine::TypeName<TemplateState>());
+        statemachineLogger->trace("{} exiting state {}", std::string(e.path()), NAMEOF_SHORT_TYPE(TemplateState));
         e.remove<TemplateState>();
     }
 };
