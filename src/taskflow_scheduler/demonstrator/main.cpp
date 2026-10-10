@@ -113,8 +113,7 @@ int main(int, char *[]) {
 
 
     logger->info("Starting main loop");
-    ecs.set_target_fps(1);
-    ecs.progress();  // Set it all started
+    ecs.progress();  // Get it all started
     while (true) {
         FrameMarkNamed("Frame");
         //ecs.progress();

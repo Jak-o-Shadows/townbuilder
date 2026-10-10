@@ -146,7 +146,7 @@ void build_taskflow_graph(flecs::world& ecs) {
             ecs_world_t *stage_w = stage_world.c_ptr();
 
             int stage_current = stage_id;
-            int stage_count = WORKER_STAGE_COUNT;  // TODO: Understand thsi
+            int stage_count = WORKER_STAGE_COUNT;  // TODO: Understand this
 
             // Create the task: capture stage_w and sys_id by value
             float delta_time = 1;  // TODO: figure out what this does, and what to actually do
@@ -223,8 +223,10 @@ void build_taskflow_graph(flecs::world& ecs) {
         }
         systemsLogger->trace("Finished processing all systems for phase {}", phase);
 
-        systemsLogger->debug("Graph is:");
-        taskflow.dump(std::cout);
+        // TODO: Make a way of dumping the taskflow grpah for debugging. Possibly make it a singleton 
+        //  component so another system can just dump it?
+        //systemsLogger->debug("Graph is:");
+        //taskflow.dump(std::cout);
 
         systemsLogger->trace("Running taskflow for phase {}", phase);
         executor.run(taskflow).wait();  // Wait for all tasks in this phase to complete before moving to the next phase
